@@ -1,0 +1,26 @@
+image: python:3.9-slim
+
+before_script:
+  - time apt update
+  - time pip install -r requirements.txt
+  - time cd mdocotion && python setup.py install && cd ..
+
+pages:
+  stage: deploy
+  tags:
+    - hva
+  script:
+    - time mkdocs build --site-dir public
+    - time cp -rf web public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - "docs/**/*"
+        - "mkdocs.yml"
+        - ".gitmodules"
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive

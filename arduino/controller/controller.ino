@@ -17,46 +17,40 @@ bool optionButtonPressed;
 
 const byte ledPin = 0;
 
-void setup()
-{
-  setPins();
-  Serial.begin(115200);
-  while (!Serial)
-  {
-  }
-  if (Serial){
-    digitalWrite(ledPin, HIGH);
-  }
+void setup() {
+    // Pins are by default set to INPUT
+    pinMode(ledPin, OUTPUT);
+    Serial.begin(115200);
+
+    if (Serial){
+        digitalWrite(ledPin, HIGH);
+    }
 }
 
-void loop()
-{
+void loop() {
+    // TODO: Read input from controller.
 }
 
-void setPins()
-{
-  pinMode(aButton, INPUT);
-  pinMode(bButton, INPUT);
-  pinMode(dpadUp, INPUT);
-  pinMode(dpadDown, INPUT);
-  pinMode(dpadLeft, INPUT);
-  pinMode(dpadRight, INPUT);
-  pinMode(optionButton, INPUT);
-  pinMode(ledPin, OUTPUT);
-}
+void readPins() {
 
-void readPins()
-{
-  if (digitalRead(aButton) == 0x1)
+  // Can be simplified to:
+  aButtonPressed = digitalRead(aButton);
+  /* if (digitalRead(aButton) == 0x1)
   {
     aButtonPressed = true;
   } else {
     aButtonPressed = false;
-  }
+  } */
 }
 
 void sendData()
 {
+
+    // NOTE:
+    // Possibility to send only one byte of data, where each bit
+    // represents the state of the button.
+    // buttonData |= state ? 1 << buttonPosition : 0;
+
   // Open a Json document
   StaticJsonDocument<400> buttonData;
   // Add data and serialize

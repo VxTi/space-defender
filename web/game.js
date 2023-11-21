@@ -2,6 +2,7 @@
 const gravitationalConstant = 9.81;
 const frictionConstant = 0.5;
 const framerate = 60; // frames per second.
+const movementSpeed = 200; // movement speed in pixels per second.
 
 var player;
 
@@ -16,14 +17,12 @@ function preload() {
     resources.set("player", loadImage("./assets/player.png"));
 }
 
-let aabb;
-
 function setup() {
 
     createCanvas(window.innerWidth, window.innerHeight);
     player = new Player(100, 100);
-    aabb = new AABB(500, 500, 30, 30);
-
+    for (let i = 0; i < 10; i++)
+        Environment.introduce(new Player(Math.random() * 1000, Math.random() * 800));
 }
 
 function draw() {
@@ -33,24 +32,25 @@ function draw() {
     let sgnX = 0;
     let sgnY = 0;
 
-    if (keyIsDown(LEFT_ARROW)) sgnX++;
-    if (keyIsDown(RIGHT_ARROW)) sgnX--;
-    if (keyIsDown(UP_ARROW)) sgnY++;
-    if (keyIsDown(DOWN_ARROW)) sgnY--;
+    if (keyIsDown(65)) sgnX++;
+    if (keyIsDown(68)) sgnX--;
+    if (keyIsDown(87)) sgnY++;
+    if (keyIsDown(83)) sgnY--;
 
     image(resources.get('player'), player.posX, player.posY, player.width, player.height);
 
-    let is = aabb.intersects(player);
 
+    for (var i = 0; i < Environment.players.length; i++) {
+        let other = Environment.players[i];
+        let intersects = other.intersects(player);
+        fill(intersects ? 255 : 0, 50, 0);
+        rect(other.left, other.top, other.width, other.height);
+    }
 
-    fill(is ? 255 : 0, 50, 0);
+    let dT = deltaTime / 1000;
 
-    rect(aabb.left, aabb.top, aabb.width, aabb.height);
-
-    let dT = deltaTime / 500;
-
-    player.velocityX = -sgnX * 2000 * dT;
-    player.velocityY = -sgnY * 2000 * dT;
+    player.velocityX = -sgnX * movementSpeed;
+    player.velocityY = -sgnY * movementSpeed;
     player.update(dT);
 
 
@@ -93,6 +93,20 @@ class AABB {
         return x >= this.left && x <= this.right && y >= this.top && y <= this.bottom;
     }
 
+    intersectsX(boundingBox) {
+        if (!(boundingBox instanceof AABB))
+            return false;
+        return this.right >= boundingBox.left && this.left <= boundingBox.right;
+    }
+
+    // Function for checking Y collisions with `boundingBox`
+    intersectsY(boundingBox) {
+        if (!(boundingBox instanceof AABB))
+            return false;
+        return this.bottom >= boundingBox.top && this.top <= boundingBox.bottom;
+    }
+
+    // Function for checking X and Y collisions with `boundingBox`
     intersects(boundingBox) {
 
         // Check whether our input is of type BoundingBox
@@ -100,13 +114,7 @@ class AABB {
         if (!(boundingBox instanceof AABB))
             return false;
 
-        const horizontalCollision = this.right >= boundingBox.left && this.left <= boundingBox.right;
-
-        // Check for vertical overlap
-        const verticalCollision = this.bottom >= boundingBox.top && this.top <= boundingBox.bottom;
-
-        // Collision occurs if both horizontal and vertical overlap
-        return horizontalCollision && verticalCollision;
+        return this.intersectsX(boundingBox) && this.intersectsY(boundingBox);
     }
 }
 
@@ -124,7 +132,7 @@ class Environment {
         if (!(player instanceof Player))
             return;
 
-        this.players.add(player);
+        this.players.push(player);
     }
 
     static update(deltaT) {
@@ -152,10 +160,24 @@ class Player extends AABB {
     }
 
     update(deltaT) {
+        let { colX, colY }  = false;
+        for (let i = 0; i < Environment.players.length; i++) {
+            let p = Environment.players[i];
+            if (this === p)
+                continue;
+
+            if (this.intersectsX(p) && !colX)
+                colX = true;
+
+            if (this.intersectsY(p) && !colY)
+                colY = true;
+
+
+        }
         this.posX += this.velocityX * deltaT;
         this.posY += this.velocityY * deltaT;
-        this.velocityX = (Math.floor(this.velocityX * 100 - 1) / 100);
-        this.velocityY = (Math.floor(this.velocityY * 100 - 1) / 100);
+        this.velocityX = (Math.floor(this.velocityX * 1000 - 1) / 1000);
+        this.velocityY = (Math.floor(this.velocityY * 1000 - 1) / 1000);
         this.updateBoundaries(this.posX, this.posY);
         // This is to apply gravity. Collision detection follows.
     }

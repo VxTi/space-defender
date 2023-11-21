@@ -5,17 +5,30 @@ const framerate = 60; // frames per second.
 
 var player;
 
+// Hashmap containing all the resoucres as images.
+// These resources must be loaded in the preload function.
+// Adding new resources can be done using 'resources.set('key', object)'
+const resources = new Map();
+
+// This function is called before the setup function.
+// This can be used to load images for resources.
+function preload() {
+    resources.set("player", loadImage("./assets/player.png"));
+}
+
+let aabb;
+
 function setup() {
 
     createCanvas(window.innerWidth, window.innerHeight);
     player = new Player(100, 100);
+    aabb = new AABB(500, 500, 30, 30);
 
 }
 
 function draw() {
     background(0);
     fill(255, 0, 0);
-    rect(player.posX, player.posY, player.width, player.height);
 
     let sgnX = 0;
     let sgnY = 0;
@@ -25,9 +38,26 @@ function draw() {
     if (keyIsDown(UP_ARROW)) sgnY++;
     if (keyIsDown(DOWN_ARROW)) sgnY--;
 
-    player.accelerationX -= sgnX * 0.1;
-    player.accelerationY -= sgnY * 0.1;
-    player.update(deltaTime);
+    image(resources.get('player'), player.posX, player.posY, player.width, player.height);
+
+    let is = aabb.intersects(player);
+
+
+    fill(is ? 255 : 0, 50, 0);
+
+    rect(aabb.left, aabb.top, aabb.width, aabb.height);
+
+    let dT = deltaTime / 500;
+
+    player.velocityX = -sgnX * 2000 * dT;
+    player.velocityY = -sgnY * 2000 * dT;
+    player.update(dT);
+
+
+}
+
+function generateTerrain(image) {
+
 
 
 }
@@ -70,8 +100,13 @@ class AABB {
         if (!(boundingBox instanceof AABB))
             return false;
 
-        return Math.max(boundingBox.right, this.right) >= Math.min(boundingBox.left, this.left)
-            && Math.max(boundingBox.bottom, this.bottom) >= Math.min(boundingBox.top, this.top);
+        const horizontalCollision = this.right >= boundingBox.left && this.left <= boundingBox.right;
+
+        // Check for vertical overlap
+        const verticalCollision = this.bottom >= boundingBox.top && this.top <= boundingBox.bottom;
+
+        // Collision occurs if both horizontal and vertical overlap
+        return horizontalCollision && verticalCollision;
     }
 }
 
@@ -105,6 +140,7 @@ class Player extends AABB {
     velocityY;
     accelerationX;
     accelerationY;
+    onGround;
 
     constructor(posX, posY) {
         super(posX, posY, 30, 50);
@@ -112,19 +148,15 @@ class Player extends AABB {
         this.posY = posY;
         this.velocityX = 0;
         this.velocityY = 0;
-        this.accelerationX = 0;
-        this.accelerationY = 0;
+        this.onGround = false;
     }
 
     update(deltaT) {
         this.posX += this.velocityX * deltaT;
         this.posY += this.velocityY * deltaT;
-        this.velocityX += this.accelerationX * deltaT;
-        this.velocityY += this.accelerationY * deltaT;
-        this.accelerationX = 0;
-        this.accelerationY = 0;
+        this.velocityX = (Math.floor(this.velocityX * 100 - 1) / 100);
+        this.velocityY = (Math.floor(this.velocityY * 100 - 1) / 100);
         this.updateBoundaries(this.posX, this.posY);
-        console.log(this.posX + ", " + this.posY);
         // This is to apply gravity. Collision detection follows.
     }
 

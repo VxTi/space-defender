@@ -83,15 +83,40 @@ function checkBluetoothConnections() {
     if (!(navigator.bluetooth))
         throw new Error("Bluetooth not supported on this browser!");
 
+    let bleServiceUUID = '73770700-a4e0-4ff2-bd68-47a5250d5ec2';
+    let bleCharacteristicsUUID = '544a3ce0-5ca6-411e-a0c2-17789dc0cec8'
+
     navigator.bluetooth.requestDevice({
-        acceptAllDevices: 'true'
-    }/*{ filters: [{ services: ['battery_service'] }] }*/)
+        acceptAllDevices: 'true',
+        optionalServices: ['battery_service', bleServiceUUID]
+    })
         .then(device => {
-            // do something with it.
-            console.log("Connected with device:");
-            console.log(device);
+            return device.gatt.connect();  // Connect to GATT Server
         })
-        .catch(error => console.error(error));
+        .then(gattServer => {
+            console.log(gattServer);
+            return gattServer.getPrimaryService(bleServiceUUID);
+        })
+        .then(service => {
+            console.log("Service discovered:", service.uuid);
+            return service.getCharacteristic(bleCharacteristicsUUID);
+        })
+        .then(characteristic => {
+            console.log("Characteristic discovered:", characteristic.uuid);
+            characteristic.startNotifications();
+            console.log("Notifications Started.");
+            return characteristic.readValue();
+        })
+        .then(value => {
+            console.log("Read value: ", value);
+            const decodedValue = new TextDecoder().decode(value);
+            console.log("Decoded value: ", decodedValue);
+        })
+        .catch(error => {
+            if (error instanceof DOMException) {
+
+            }
+        });
 }
 
 
@@ -273,5 +298,92 @@ class Environment {
             if (aabb instanceof Entity)
                 aabb.update(deltaT);
         });
+    }
+}
+
+class BluetoothConnection {
+    deviceName;
+    device;
+    serviceUuid;
+    characteristicsUuid;
+    server;
+    service;
+    characteristics;
+    onReceiveFn;
+    onDisconnectFn;
+    onConnectFn;
+
+    constructor(serviceId, characteristicUuid, onConnect, onReceive, onDisconnect) {
+        this.serviceUuid = serviceId;
+        this.characteristicsUuid = characteristicUuid;
+        this.onConnectFn = onConnect;
+        this.onReceiveFn = onReceive;
+        this.onDisconnectFn = onDisconnect;
+    }
+
+    static get available() { return (navigator.bluetooth); }
+
+    write(data) {
+        // Check whether we're connected to the device first.
+        if (this.isConnected()) {
+
+            this.characteristics.writeValue(new Uint8Array([data]));
+            // If connected, send the data to the specified BLE characteristic.
+            this.service.getCharacteristic(this.characteristicsUuid)
+                .then(characteristic => {
+                    return characteristic.writeValue(new Uint8Array([data]));
+                })
+                .catch(error => {
+                    console.error("An error occurred whilst trying to send Bluetooth data", error);
+                });
+        }
+    }
+
+    connect() {
+        if (BluetoothConnection.available) {
+            navigator.bluetooth.requestDevice({
+                filters: [{
+                    services: [this.serviceUuid]
+                }]
+            })
+                .then(device => {
+                    this.device = device;
+
+                    // If we have an onConnect function, call it!
+                    if (this.onConnectFn)
+                        this.onConnectFn(this.device);
+
+                    this.device.addEventListener('gattservicedisconnected', this.onDisconnectFn);
+                    this.deviceName = device.name;
+                    // attempt to connect to the device.
+                    this.server = device.gatt.connect();
+                    // Get GATT Service
+                    this.service = this.server.getPrimaryService(this.serviceUuid);
+                    // Get the specified characteristic by uuid
+                    this.characteristics = this.service.getCharacteristic(this.characteristicsUuid);
+                    this.characteristics.startNotifications();
+                    // Add event listener for when the website receives data from the GATT BT Device
+                    this.characteristics.addEventListener('characteristicvaluechanged', (event) => {
+
+                        // Check if we have an onReceive function, if we do, call it.
+                        if (this.onReceiveFn) {
+                            this.onReceiveFn(new TextDecoder().decode(event.target.value));
+                        }
+                    });
+                    this.characteristics.readValue();
+                });
+        }
+    }
+
+    isConnected() {
+        return this.server && this.server.connected;
+    }
+
+    disconnect() {
+        if (this.isConnected() && this.characteristics) {
+            this.characteristics.stopNotifications()
+                .then(() => this.server.disconnect())
+                .error(error => console.error("An error occurred whilst disconnecting bluetooth device", error));
+        }
     }
 }

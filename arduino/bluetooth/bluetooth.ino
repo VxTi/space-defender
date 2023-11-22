@@ -15,14 +15,24 @@
 #include <BLE2902.h>
 #include <ArduinoJson.h>
 
-#define aButtonPin 12
-#define bButtonPin 11
-#define dpadUpPin 3
-#define dpadDownPin 46
-#define dpadLeftPin 8
-#define dpadRightPin 9
-#define optButtonPin 10
-#define ledPin 4
+// Port indices for all buttons / LEDs
+#define PIN_BUTTON_UP    3
+#define PIN_BUTTON_LEFT  8
+#define PIN_BUTTON_RIGHT 9
+#define PIN_BUTTON_DOWN  46
+#define PIN_BUTTON_A     12
+#define PIN_BUTTON_B     11
+#define PIN_BUTTON_OPT   10
+#define PIN_LED          4
+
+// Bit position definitions of all buttons
+#define BUTTON_UP_BP 0
+#define BUTTON_LEFT_BP 1
+#define BUTTON_RIGHT_BP 2
+#define BUTTON_DOWN_BP 3
+#define BUTTON_A_BP 4
+#define BUTTON_B_BP 5
+#define BUTTON_OPT_BP 6
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pSensorCharacteristic = NULL;
@@ -61,8 +71,15 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
 };
 
 
-String obtainPinReadouts(){
-  String jsonString = "";
+char obtainPinReadouts(){
+
+    return (1 << (BUTTON_A_BP & digitalRead(PIN_BUTTON_A))) |
+            (1 << (BUTTON_B_BP & digitalRead(PIN_BUTTON_B)))
+            (1 << (BUTTON_UP_BP & digitalRead(PIN_BUTTON_UP)))
+            (1 << (BUTTON_LEFT_BP & digitalRead(PIN_BUTTON_LEFT)))
+            (1 << (BUTTON_RIGHT_BP & digitalRead(PIN_BUTTON_RIGHT)))
+            (1 << (BUTTON_DOWN_BP & digitalRead(PIN_BUTTON_DOWN)));
+  /* String jsonString = "";
   StaticJsonDocument<400> pinData;
   // Add data and serialize
   pinData["A"] = digitalRead(aButtonPin);
@@ -73,7 +90,7 @@ String obtainPinReadouts(){
   pinData["R"] = digitalRead(dpadRightPin);
   pinData["O"] = digitalRead(optButtonPin);
   serializeJson(pinData, jsonString);
-  return jsonString;
+  return jsonString; */
 }
 
 void setup() {
@@ -129,8 +146,8 @@ void loop() {
     // notify changed value
     if (deviceConnected) {
         digitalWrite(ledPin, HIGH);
-        String message = obtainPinReadouts();
-        pSensorCharacteristic->setValue(message.c_str());
+        char data = obtainPinReadouts();
+        pSensorCharacteristic->setValue(data);
         pSensorCharacteristic->notify();
         Serial.print("Message sent: ");
         Serial.println(message);

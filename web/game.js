@@ -1,6 +1,8 @@
 const frictionConstant = 0.5;
 const framerate = 60; // frames per second.
-const movementSpeed = 200; // movement speed in pixels per second.
+var pixelsPerMeter;
+const movementSpeedMetersPerSecond = 5.5;
+var movementSpeedPixelsPerSecond; // movement speed in pixels per second.
 
 var player;
 
@@ -13,6 +15,9 @@ const resources = new Map();
 // This can be used to load images for resources.
 function preload() {
     resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
+    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth;
+    movementSpeedPixelsPerSecond = pixelsPerMeter * movementSpeedMetersPerSecond;
+    console.log(`Movement speed: ${movementSpeedMetersPerSecond} m/s at ${movementSpeedPixelsPerSecond} p/s`);
 }
 
 // Setup function for loading in various
@@ -26,6 +31,8 @@ function setup() {
 
 }
 
+// Draw function is called every 1/60th a second.
+// This means it has a 16.6ms interval.
 function draw() {
     background(0);
     fill(255, 0, 0);
@@ -50,14 +57,15 @@ function draw() {
 
     let dT = deltaTime / 1000;
 
-    player.velocityX = -sgnX * movementSpeed;
-    player.velocityY = -sgnY * movementSpeed * 1.5;
+    player.accelerate(-sgnX * movementSpeedPixelsPerSecond, player.collidingY ? -sgnY * movementSpeedPixelsPerSecond * 3 : 0);
     player.update(dT);
-
+    console.log(player.posX + ", " + player.posY);
 
 }
 
-
+// Function for loading a map, based on a provided image.
+// This image must be decoded into map elements and then placed
+// into the Environment class's objects
 function loadMap(mapImage) {
     if (!(mapImage instanceof p5.Image))
         throw new TypeError("Provided argument is not of type p5.Image");
@@ -65,6 +73,8 @@ function loadMap(mapImage) {
 
 
 }
+
+
 
 class AABB {
     left;
@@ -137,7 +147,8 @@ class Entity extends AABB {
     velocityY;
     accelerationX;
     accelerationY;
-    onGround;
+    collidingX;
+    collidingY;
 
     constructor(posX, posY) {
         super(posX, posY, 30, 50);
@@ -148,55 +159,77 @@ class Entity extends AABB {
         this.onGround = false;
     }
 
-    update(deltaT) {
-        let collidesX = false;
-        let collidesY = false;
+    // Set the acceleration with parameters x and y
+    accelerate(x, y) {
+        this.accelerationX = x;
+        this.accelerationY = y;
+    }
 
-        this.velocityY += Environment.gravitationalConstant * 15;
+    // Set the velocity with parameters x and y
+    velocity(x, y) {
+        this.velocityX = x;
+        this.velocityY = y;
+    }
 
+    #nextX(dT) {
+        return this.posX + dT * (this.velocityX + this.accelerationX);
+    }
+
+    #nextY(dT) {
+        return this.posY + dT * (this.velocityY + this.accelerationY);
+    }
+
+    update(dT) {
+        if (!this.collidingY)
+            this.accelerationY += Environment.G;
+        this.collidingX = this.collidingY = false;
+
+        // Check if the next position of the entity is colliding with another
         for (let i = 0; i < Environment.boundingBoxes.length; i++) {
             let p = Environment.boundingBoxes[i];
             if (this === p)
                 continue;
 
-            let cpyX = this.copy().translate(
-                this.posX + this.velocityX * deltaT,
-                this.posY
-            );
+            // Check for X collisions
+            if (!this.collidingX && this.copy().translate(this.#nextX(dT), this.posY)
+                .intersects(p))
+                this.collidingX = true;
 
-            let cpyY = this.copy().translate(
-                this.posX,
-                this.posY + this.velocityY * deltaT
-            )
+            // Check for Y collisions
+            if (!this.collidingY &&
+                this.copy().translate(this.posX, this.#nextY(dT))
+                    .intersects(p))
+                this.collidingY = true;
 
-            if (!collidesX && cpyX.intersects(p))
-                collidesX = true;
-
-            if (!collidesY && cpyY.intersects(p))
-                collidesY = true;
-
-            if (collidesX && collidesY)
+            // If we're colliding on both axis, stop further checks
+            if (this.collidingX && this.collidingY)
                 break;
         }
 
-        if (!collidesX) {
-            this.posX += this.velocityX * deltaT;
-        }
+        // Check if either axes collide
+        // If they do, prevent further movement.
+        if (!this.collidingX)
+            this.posX = this.#nextX(dT);
 
-        if (!collidesY) {
-            this.posY += this.velocityY * deltaT;
-        }
+        if (!this.collidingY)
+            this.posY = this.#nextY(dT);
 
-        this.velocityX = (Math.floor(this.velocityX * 1000 - 1) / 1000);
-        this.velocityY = (Math.floor(this.velocityY * 1000 - 1) / 1000);
+        // Reduce acceleration with a predefined friction coefficient
+        this.velocityX += this.accelerationX * dT;
+        this.velocityY += this.accelerationY * dT;
+        this.accelerationX = this.collidingX ? 0 : 0.9 * this.accelerationX;
+        this.accelerationY = this.collidingY ? 0 : 0.9 * this.accelerationY;
+
+        // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.posY = Math.min(this.posY, window.innerHeight - this.height);
+
+        // Update
         this.translate(this.posX, this.posY);
-        // This is to apply gravity. Collision detection follows.
     }
 }
 
 class Environment {
-    static gravitationalConstant = 9.81;
+    static G = 9.81; // gravitational constant in meters/second
     static boundingBoxes = [];
     static collides(boundingBox) {
         for (let other in this.boundingBoxes) {

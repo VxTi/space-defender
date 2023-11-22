@@ -1,5 +1,7 @@
 #include <ArduinoJson.h>
 
+#define PIN_BUTTON_A 0
+
 const byte aButton = 0;
 bool aButtonPressed;
 const byte bButton = 0;
@@ -35,12 +37,6 @@ void readPins() {
 
   // Can be simplified to:
   aButtonPressed = digitalRead(aButton);
-  /* if (digitalRead(aButton) == 0x1)
-  {
-    aButtonPressed = true;
-  } else {
-    aButtonPressed = false;
-  } */
 }
 
 void sendData()

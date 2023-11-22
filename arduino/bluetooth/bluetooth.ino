@@ -13,7 +13,6 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-#include <ArduinoJson.h>
 
 // Port indices for all buttons / LEDs
 #define PIN_BUTTON_UP    3
@@ -26,13 +25,13 @@
 #define PIN_LED          4
 
 // Bit position definitions of all buttons
-#define BUTTON_UP_BP 0
-#define BUTTON_LEFT_BP 1
+#define BUTTON_UP_BP    0
+#define BUTTON_LEFT_BP  1
 #define BUTTON_RIGHT_BP 2
-#define BUTTON_DOWN_BP 3
-#define BUTTON_A_BP 4
-#define BUTTON_B_BP 5
-#define BUTTON_OPT_BP 6
+#define BUTTON_DOWN_BP  3
+#define BUTTON_A_BP     4
+#define BUTTON_B_BP     5
+#define BUTTON_OPT_BP   6
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pSensorCharacteristic = NULL;
@@ -60,7 +59,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic* pLedCharacteristic) {
-        std::string value = pLedCharacteristic->getValue();
+        String value = pLedCharacteristic->getValue();
         if (value.length() > 0) {
             Serial.print("Characteristic event, written: ");
             Serial.println(static_cast<int>(value[0])); // Print the integer value
@@ -95,7 +94,7 @@ char obtainPinReadouts(){
 
 void setup() {
   Serial.begin(115200);
-  pinMode(ledPin, OUTPUT);
+  pinMode(PIN_LED, OUTPUT);
 
   // Create the BLE Device
   BLEDevice::init("ESP32 Controller");
@@ -145,17 +144,17 @@ void setup() {
 void loop() {
     // notify changed value
     if (deviceConnected) {
-        digitalWrite(ledPin, HIGH);
+        digitalWrite(PIN_LED, HIGH);
         char data = obtainPinReadouts();
-        pSensorCharacteristic->setValue(data);
+        pSensorCharacteristic->setValue((uint8_t*)&data, 1);
         pSensorCharacteristic->notify();
-        Serial.print("Message sent: ");
-        Serial.println(message);
+        Serial.printf("Message sent: %d\n", data);
+
         delay(10); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
     }
     // disconnecting
     if (!deviceConnected && oldDeviceConnected) {
-        digitalWrite(ledPin, LOW);
+        digitalWrite(PIN_LED, LOW);
         Serial.println("Device disconnected.");
         delay(500); // give the bluetooth stack the chance to get things ready
         pServer->startAdvertising(); // restart advertising
@@ -167,8 +166,8 @@ void loop() {
         // do stuff here on connecting
         oldDeviceConnected = deviceConnected;
         Serial.println("Device Connected");
-        digitalWrite(ledPin, HIGH);
+        digitalWrite(PIN_LED, HIGH);
         delay(100);
-        digitalWrite(ledPin, LOW);
+        digitalWrite(PIN_LED, LOW);
     }
 }

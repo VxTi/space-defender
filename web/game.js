@@ -23,6 +23,11 @@ function preload() {
 // Setup function for loading in various
 function setup() {
 
+    document.querySelector(".controller-connect")
+        .addEventListener("click", () => {
+        checkBluetoothConnections();
+    })
+
     createCanvas(window.innerWidth, window.innerHeight);
 
     player = new Entity(100, 100);
@@ -59,7 +64,6 @@ function draw() {
 
     player.accelerate(-sgnX * movementSpeedPixelsPerSecond, player.collidingY ? -sgnY * movementSpeedPixelsPerSecond * 3 : 0);
     player.update(dT);
-    console.log(player.posX + ", " + player.posY);
 
 }
 
@@ -74,6 +78,19 @@ function loadMap(mapImage) {
 
 }
 
+
+function checkBluetoothConnections() {
+    if (!(bluetooth in navigator))
+        throw new Error("Bluetooth not supported on this browser!");
+
+    navigator.bluetooth.requestDevice({ filters: [{ services: ['battery_service'] }] })
+        .then(device => {
+            // do something with it.
+            console.log("Connected with device:");
+            console.log(device);
+        })
+        .catch(error => console.error(error));
+}
 
 
 class AABB {

@@ -13,6 +13,16 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <ArduinoJson.h>
+
+#define aButtonPin 12
+#define bButtonPin 11
+#define dpadUpPin 3
+#define dpadDownPin 46
+#define dpadLeftPin 8
+#define dpadRightPin 9
+#define optButtonPin 10
+#define ledPin 4
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pSensorCharacteristic = NULL;
@@ -20,8 +30,6 @@ BLECharacteristic* pLedCharacteristic = NULL;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 uint32_t value = 0;
-
-const int ledPin = 18; // Use the appropriate GPIO pin for your setup
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -48,21 +56,32 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
             Serial.println(static_cast<int>(value[0])); // Print the integer value
 
             int receivedValue = static_cast<int>(value[0]);
-            if (receivedValue == 1) {
-                digitalWrite(ledPin, HIGH);
-            } else {
-                digitalWrite(ledPin, LOW);
-            }
         }
     }
 };
+
+
+String obtainPinReadouts(){
+  String jsonString = "";
+  StaticJsonDocument<400> pinData;
+  // Add data and serialize
+  pinData["A"] = digitalRead(aButtonPin);
+  pinData["B"] = digitalRead(bButtonPin);
+  pinData["U"] = digitalRead(dpadUpPin);
+  pinData["D"] = digitalRead(dpadDownPin);
+  pinData["L"] = digitalRead(dpadLeftPin);
+  pinData["R"] = digitalRead(dpadRightPin);
+  pinData["O"] = digitalRead(optButtonPin);
+  serializeJson(pinData, jsonString);
+  return jsonString;
+}
 
 void setup() {
   Serial.begin(115200);
   pinMode(ledPin, OUTPUT);
 
   // Create the BLE Device
-  BLEDevice::init("ESP32S3");
+  BLEDevice::init("ESP32 Controller");
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -109,15 +128,17 @@ void setup() {
 void loop() {
     // notify changed value
     if (deviceConnected) {
-        pSensorCharacteristic->setValue(String(value).c_str());
+        digitalWrite(ledPin, HIGH);
+        String message = obtainPinReadouts();
+        pSensorCharacteristic->setValue(message.c_str());
         pSensorCharacteristic->notify();
-        value++;
-        Serial.print("New value notified: ");
-        Serial.println(value);
-        delay(3000); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
+        Serial.print("Message sent: ");
+        Serial.println(message);
+        delay(10); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
     }
     // disconnecting
     if (!deviceConnected && oldDeviceConnected) {
+        digitalWrite(ledPin, LOW);
         Serial.println("Device disconnected.");
         delay(500); // give the bluetooth stack the chance to get things ready
         pServer->startAdvertising(); // restart advertising
@@ -129,5 +150,8 @@ void loop() {
         // do stuff here on connecting
         oldDeviceConnected = deviceConnected;
         Serial.println("Device Connected");
+        digitalWrite(ledPin, HIGH);
+        delay(100);
+        digitalWrite(ledPin, LOW);
     }
 }

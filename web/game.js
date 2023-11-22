@@ -80,10 +80,12 @@ function loadMap(mapImage) {
 
 
 function checkBluetoothConnections() {
-    if (!(bluetooth in navigator))
+    if (!(navigator.bluetooth))
         throw new Error("Bluetooth not supported on this browser!");
 
-    navigator.bluetooth.requestDevice({ filters: [{ services: ['battery_service'] }] })
+    navigator.bluetooth.requestDevice({
+        acceptAllDevices: 'true'
+    }/*{ filters: [{ services: ['battery_service'] }] }*/)
         .then(device => {
             // do something with it.
             console.log("Connected with device:");

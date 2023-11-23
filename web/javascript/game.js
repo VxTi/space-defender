@@ -1,7 +1,7 @@
 const frictionConstant = 0.5;
 const framerate = 60; // frames per second.
 var pixelsPerMeter;
-const movementSpeedMetersPerSecond = 5.5;
+const movementSpeedMetersPerSecond = 10;
 
 // Window dimensions in arbitrary game 'meters'
 var windowWidthInMeters;
@@ -68,7 +68,7 @@ function draw() {
     }
 
     let dT = deltaTime / 1000;
-    player.acceleration.add(-sgnX * movementSpeedMetersPerSecond, sgnY * movementSpeedMetersPerSecond * 3);
+    player.acceleration.translate(-sgnX * movementSpeedMetersPerSecond, sgnY * movementSpeedMetersPerSecond * 3);
     player.update(dT);
 
 }
@@ -99,8 +99,9 @@ function checkBluetoothConnections() {
     BluetoothService.search({filters: [{ name: 'ESP32 Controller'}], optionalServices: [bleServiceUUID]})
         .then(device => {
             let connection = new BluetoothService(device);
-            connection.onConnectFn = (device) => console.log(device);
-            connection.onReceive = (device, content) => console.log("Received content: " + content, device);
+            connection.onConnect = (device) => console.log(device);
+            connection.onReceive = (device, content) => console.log("Received content: " + content);
+            connection.onDisconnect = (e) => console.log("BT device disconnected", e);
             connection.primaryCharacteristicUuid = bleCharacteristicsUUID;
             connection.primaryServiceId = bleServiceUUID;
             connection.connect();
@@ -240,7 +241,14 @@ class Entity extends AABB {
         this.velocity.add(this.acceleration.x * dT, this.acceleration.y * dT);
 
         // Reduce acceleration with a predefined friction coefficient
-        this.acceleration.mult(this.collidingX ? 0 : 0.9, this.collidingY ? 0 : 0.75);
+        if (Math.abs(this.acceleration.x + this.velocity.x) <= 0.1) {
+            this.acceleration.x = 0;
+            this.velocity.x = 0;
+        }
+        if (Math.abs(this.acceleration.y + this.velocity.y) <= 0.1) {
+            this.acceleration.y = 0;
+            this.velocity.y = 0;
+        }
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);
@@ -278,8 +286,9 @@ class Environment {
     // Skips non-entities
     static update(deltaT) {
         this.boundingBoxes.forEach(aabb => {
-            if (aabb instanceof Entity)
+            if (aabb instanceof Entity) {
                 aabb.update(deltaT);
+            }
         });
     }
 }

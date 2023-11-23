@@ -99,7 +99,7 @@ class BluetoothService {
                     this.characteristics.startNotifications();
                     // Add event listener for when the website receives data from the GATT BT Device
                     this.characteristics.addEventListener('characteristicvaluechanged', (event) => {
-
+                        console.log(event);
                         // Check if we have an onReceive function, if we do, call it.
                         if (this.onReceiveFn) {
                             this.onReceiveFn(this.characteristics, new TextDecoder().decode(event.target.value));

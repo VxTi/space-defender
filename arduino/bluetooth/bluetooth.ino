@@ -59,14 +59,16 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic* pLedCharacteristic) {
-        String value = pLedCharacteristic->getValue();
-        if (value.length() > 0) {
-            Serial.print("Characteristic event, written: ");
-            Serial.println(static_cast<int>(value[0])); // Print the integer value
+    std::__cxx11::string value = pLedCharacteristic->getValue();
+    if (!value.empty()) {
+        Serial.print("Characteristic event, written: ");
+        Serial.println(static_cast<int>(value[0])); // Print the integer value
 
-            int receivedValue = static_cast<int>(value[0]);
-        }
+        int receivedValue = static_cast<int>(value[0]);
+        // Further processing with receivedValue...
     }
+}
+
 };
 
 

@@ -59,12 +59,9 @@ class connectionCallback: public BLEServerCallbacks {
 
 /*class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic* pLedCharacteristic) {
-    std::__cxx11::string value = pLedCharacteristic->getValue();
-    if (!value.empty()) {
-        Serial.print("Characteristic event, written: ");
-        Serial.println(static_cast<int>(value[0])); // Print the integer value
-
-        int receivedValue = static_cast<int>(value[0]);
+    String value = pLedCharacteristic->getValue();
+    if (value) {
+        Serial.printf("Characteristic event, written: %s\r\n", value);
         // Further processing with receivedValue...
     }
 }
@@ -78,12 +75,11 @@ char obtainPinReadouts(){
 char
 /*
     return (digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
-            (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
-            (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
-            (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) |
-            (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
-            (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP);
-*/
+           (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
+           (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
+           (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) |
+           (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
+           (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP);
 }
 
 void setup() {

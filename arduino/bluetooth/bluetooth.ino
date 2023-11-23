@@ -35,19 +35,19 @@
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pSensorCharacteristic = NULL;
-BLECharacteristic* pLedCharacteristic = NULL;
+// BLECharacteristic* pLedCharacteristic = NULL;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
-uint32_t value = 0;
+// uint32_t value = 0;
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
 #define SERVICE_UUID        "73770700-a4e0-4ff2-bd68-47a5250d5ec2"
-#define SENSOR_CHARACTERISTIC_UUID "544a3ce0-5ca6-411e-a0c2-17789dc0cec8"
-#define LED_CHARACTERISTIC_UUID "791ac637-4048-44c7-8ac9-bc1ae24aefc7"
+#define CHARACTERISTIC_UUID "544a3ce0-5ca6-411e-a0c2-17789dc0cec8"
+// #define LED_CHARACTERISTIC_UUID "791ac637-4048-44c7-8ac9-bc1ae24aefc7"
 
-class MyServerCallbacks: public BLEServerCallbacks {
+class connectionCallback: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
     };
@@ -57,7 +57,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
     }
 };
 
-class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
+/*class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic* pLedCharacteristic) {
     std::__cxx11::string value = pLedCharacteristic->getValue();
     if (!value.empty()) {
@@ -70,28 +70,20 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
 }
 
 };
-
+*/
 
 char obtainPinReadouts(){
 
+// 8bit binary: [ CONNECT | A BUTTON | B BUTTON | DPAD UP | DPAD DOWN | DPAD LEFT | DPAD RIGHT | OPTION BUTTON ]
+char
+/*
     return (digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
             (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
             (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
             (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) |
             (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
             (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP);
-  /* String jsonString = "";
-  StaticJsonDocument<400> pinData;
-  // Add data and serialize
-  pinData["A"] = digitalRead(aButtonPin);
-  pinData["B"] = digitalRead(bButtonPin);
-  pinData["U"] = digitalRead(dpadUpPin);
-  pinData["D"] = digitalRead(dpadDownPin);
-  pinData["L"] = digitalRead(dpadLeftPin);
-  pinData["R"] = digitalRead(dpadRightPin);
-  pinData["O"] = digitalRead(optButtonPin);
-  serializeJson(pinData, jsonString);
-  return jsonString; */
+*/
 }
 
 void setup() {
@@ -103,14 +95,14 @@ void setup() {
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
+  pServer->setCallbacks(new connectionCallback());
 
   // Create the BLE Service
-  BLEService *pService = pServer->createService(SERVICE_UUID);
+  BLEService *bleService = pServer->createService(SERVICE_UUID);
 
   // Create a BLE Characteristic
-  pSensorCharacteristic = pService->createCharacteristic(
-                      SENSOR_CHARACTERISTIC_UUID,
+  pSensorCharacteristic = bleService->createCharacteristic(
+                      CHARACTERISTIC_UUID,
                       BLECharacteristic::PROPERTY_READ   |
                       BLECharacteristic::PROPERTY_WRITE  |
                       BLECharacteristic::PROPERTY_NOTIFY |
@@ -118,21 +110,22 @@ void setup() {
                     );
 
   // Create the ON button Characteristic
-  pLedCharacteristic = pService->createCharacteristic(
+  /*
+  pLedCharacteristic = bleService->createCharacteristic(
                       LED_CHARACTERISTIC_UUID,
                       BLECharacteristic::PROPERTY_WRITE
-                    );
+                    );*/
 
   // Register the callback for the ON button characteristic
-  pLedCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
+  // pLedCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
 
   // https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.descriptor.gatt.client_characteristic_configuration.xml
   // Create a BLE Descriptor
   pSensorCharacteristic->addDescriptor(new BLE2902());
-  pLedCharacteristic->addDescriptor(new BLE2902());
+  // pLedCharacteristic->addDescriptor(new BLE2902());
 
   // Start the service
-  pService->start();
+  bleService->start();
 
   // Start advertising
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();

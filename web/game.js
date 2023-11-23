@@ -2,7 +2,6 @@ const frictionConstant = 0.5;
 const framerate = 60; // frames per second.
 var pixelsPerMeter;
 const movementSpeedMetersPerSecond = 5.5;
-var movementSpeedPixelsPerSecond; // movement speed in pixels per second.
 
 var player;
 
@@ -16,8 +15,6 @@ const resources = new Map();
 function preload() {
     resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
     pixelsPerMeter = document.querySelector(".pixel-size").clientWidth;
-    movementSpeedPixelsPerSecond = pixelsPerMeter * movementSpeedMetersPerSecond;
-    console.log(`Movement speed: ${movementSpeedMetersPerSecond} m/s at ${movementSpeedPixelsPerSecond} p/s`);
 }
 
 // Setup function for loading in various
@@ -31,9 +28,11 @@ function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
 
     player = new Entity(100, 100);
-    for (let i = 0; i < 30; i++)
+    for (let i = 0; i < 10; i++)
         Environment.introduce(new Entity(Math.random() * window.innerWidth, Math.random() * window.innerHeight));
 
+
+    loadMap();
 }
 
 // Draw function is called every 1/60th a second.
@@ -50,19 +49,18 @@ function draw() {
     if (keyIsDown(32)) sgnY++;
     if (keyIsDown(83)) sgnY--;
 
-    image(resources.get('entityPlayer'), player.posX, player.posY, player.width, player.height);
+    image(resources.get('entityPlayer'), player.position.x * pixelsPerMeter, window.innerHeight - (player.height - player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
 
 
     for (var i = 0; i < Environment.boundingBoxes.length; i++) {
         let other = Environment.boundingBoxes[i];
         let intersects = other.intersects(player);
         fill(intersects ? 255 : 0, 50, 0);
-        rect(other.left, other.top, other.width, other.height);
+        rect(other.left, window.innerHeight - other.top - other.height, other.width, other.height);
     }
 
     let dT = deltaTime / 1000;
-
-    player.accelerate(-sgnX * movementSpeedPixelsPerSecond, player.collidingY ? -sgnY * movementSpeedPixelsPerSecond * 3 : 0);
+    player.acceleration.add(-sgnX * movementSpeedMetersPerSecond, sgnY * movementSpeedMetersPerSecond * 3);
     player.update(dT);
 
 }
@@ -71,10 +69,14 @@ function draw() {
 // This image must be decoded into map elements and then placed
 // into the Environment class's objects
 function loadMap(mapImage) {
-    if (!(mapImage instanceof p5.Image))
-        throw new TypeError("Provided argument is not of type p5.Image");
+    /*if (!(mapImage instanceof p5.Image))
+        throw new TypeError("Provided argument is not of type p5.Image");*/
 
-
+    let n = 50;
+    let s = window.innerWidth / n;
+    for (let i = 0; i < n; i++) {
+        Environment.introduce(new AABB(s * i, noise(i / n * 10) * 100, s, s));
+    }
 
 }
 
@@ -86,37 +88,6 @@ function checkBluetoothConnections() {
     let bleServiceUUID = '73770700-a4e0-4ff2-bd68-47a5250d5ec2';
     let bleCharacteristicsUUID = '544a3ce0-5ca6-411e-a0c2-17789dc0cec8'
 
-    navigator.bluetooth.requestDevice({
-        acceptAllDevices: 'true',
-        optionalServices: ['battery_service', bleServiceUUID]
-    })
-        .then(device => {
-            return device.gatt.connect();  // Connect to GATT Server
-        })
-        .then(gattServer => {
-            console.log(gattServer);
-            return gattServer.getPrimaryService(bleServiceUUID);
-        })
-        .then(service => {
-            console.log("Service discovered:", service.uuid);
-            return service.getCharacteristic(bleCharacteristicsUUID);
-        })
-        .then(characteristic => {
-            console.log("Characteristic discovered:", characteristic.uuid);
-            characteristic.startNotifications();
-            console.log("Notifications Started.");
-            return characteristic.readValue();
-        })
-        .then(value => {
-            console.log("Read value: ", value);
-            const decodedValue = new TextDecoder().decode(value);
-            console.log("Decoded value: ", decodedValue);
-        })
-        .catch(error => {
-            if (error instanceof DOMException) {
-
-            }
-        });
 }
 
 
@@ -127,6 +98,7 @@ class AABB {
     bottom;
     width;
     height;
+    static collisionDetectionPrecision = 1; // Lower number means higher precision.
 
     // Constructor for defining a bounding box with specified dimensions.
     constructor(x, y, width, height) {
@@ -185,90 +157,81 @@ class AABB {
 }
 class Entity extends AABB {
 
-    posX;
-    posY;
-    velocityX;
-    velocityY;
-    accelerationX;
-    accelerationY;
+    position;
+    velocity;
+    acceleration;
     collidingX;
     collidingY;
 
     constructor(posX, posY) {
         super(posX, posY, 30, 50);
-        this.posX = posX;
-        this.posY = posY;
-        this.velocityX = 0;
-        this.velocityY = 0;
-        this.onGround = false;
-    }
-
-    // Set the acceleration with parameters x and y
-    accelerate(x, y) {
-        this.accelerationX = x;
-        this.accelerationY = y;
-    }
-
-    // Set the velocity with parameters x and y
-    velocity(x, y) {
-        this.velocityX = x;
-        this.velocityY = y;
-    }
-
-    #nextX(dT) {
-        return this.posX + dT * (this.velocityX + this.accelerationX);
-    }
-
-    #nextY(dT) {
-        return this.posY + dT * (this.velocityY + this.accelerationY);
+        this.position = new Vec2(posX, posY);
+        this.velocity = new Vec2(0, 0);
+        this.acceleration = new Vec2(0, 0);
     }
 
     update(dT) {
         if (!this.collidingY)
-            this.accelerationY += Environment.G;
+            this.acceleration.addY(-Environment.G * pixelsPerMeter);
         this.collidingX = this.collidingY = false;
-
+        let cpy;
         // Check if the next position of the entity is colliding with another
         for (let i = 0; i < Environment.boundingBoxes.length; i++) {
             let p = Environment.boundingBoxes[i];
             if (this === p)
                 continue;
 
+
             // Check for X collisions
-            if (!this.collidingX && this.copy().translate(this.#nextX(dT), this.posY)
-                .intersects(p))
-                this.collidingX = true;
+            if (!this.collidingX) {
+                cpy = this.copy();
+                // Velocity is measured in pixels, so let's check for every n pixels for collision
+                for (let i = 0; i < Math.round(Math.abs(this.velocityX * dT) / AABB.collisionDetectionPrecision); i++) {
+                    if (cpy.translate(this.posX + (i * AABB.collisionDetectionPrecision) * Math.sign(this.velocityX * dT), this.posY).intersects(p)) {
+                        this.collidingX = true;
+                        break;
+                    }
+                }
+            }
 
             // Check for Y collisions
-            if (!this.collidingY &&
-                this.copy().translate(this.posX, this.#nextY(dT))
-                    .intersects(p))
-                this.collidingY = true;
+            if (!this.collidingY) {
+                cpy = this.copy();
+                // Velocity is measured in pixels, so let's check for every n pixels for collision
+                for (let i = 0; i < Math.round(Math.abs(this.velocityY * dT) / AABB.collisionDetectionPrecision); i++) {
+                    if (cpy.translate(this.posX, this.posY + (i * AABB.collisionDetectionPrecision) * Math.sign(this.velocityY * dT)).intersects(p)) {
+                        this.collidingY = true;
+                        break;
+                    }
+                }
+            }
 
             // If we're colliding on both axis, stop further checks
             if (this.collidingX && this.collidingY)
                 break;
         }
 
-        // Check if either axes collide
-        // If they do, prevent further movement.
-        if (!this.collidingX)
-            this.posX = this.#nextX(dT);
+        // Add velocity to position
+        this.position.add(
+            this.collidingX ? 0 : this.velocity.x * dT,
+            this.collidingY ? 0 : this.velocity.y * dT
+        );
 
-        if (!this.collidingY)
-            this.posY = this.#nextY(dT);
+        // Add acceleration to velocity
+        this.velocity.add(this.acceleration.x * dT, this.acceleration.y * dT);
 
         // Reduce acceleration with a predefined friction coefficient
-        this.velocityX += this.accelerationX * dT;
-        this.velocityY += this.accelerationY * dT;
-        this.accelerationX = this.collidingX ? 0 : 0.9 * this.accelerationX;
-        this.accelerationY = this.collidingY ? 0 : 0.9 * this.accelerationY;
+        this.acceleration.mult(this.collidingX ? 0 : 0.9, this.collidingY ? 0 : 0.9);
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
-        this.posY = Math.min(this.posY, window.innerHeight - this.height);
+        this.position.y = Math.max(this.position.y, 0);
+
+
+        document.querySelector(".data")
+            .innerText = `Cx: ${this.collidingX}, Cy: ${this.collidingY}, Vx: ${this.velocity.x}, Vy: ${this.velocity.y}, Ax: ${this.acceleration.x}, Ay: ${this.acceleration.y}`;
 
         // Update
-        this.translate(this.posX, this.posY);
+        this.translate(this.position.x, this.position.y);
     }
 }
 
@@ -323,13 +286,12 @@ class BluetoothConnection {
 
     static get available() { return (navigator.bluetooth); }
 
-    write(data) {
+    write(data, characteristicId) {
         // Check whether we're connected to the device first.
         if (this.isConnected()) {
 
-            this.characteristics.writeValue(new Uint8Array([data]));
-            // If connected, send the data to the specified BLE characteristic.
-            this.service.getCharacteristic(this.characteristicsUuid)
+            // If connected, send data to the either provided or pre-defined characteristic
+            this.service.getCharacteristic(characteristicId || this.characteristicsUuid)
                 .then(characteristic => {
                     return characteristic.writeValue(new Uint8Array([data]));
                 })
@@ -367,7 +329,7 @@ class BluetoothConnection {
 
                         // Check if we have an onReceive function, if we do, call it.
                         if (this.onReceiveFn) {
-                            this.onReceiveFn(new TextDecoder().decode(event.target.value));
+                            this.onReceiveFn(this.characteristics, new TextDecoder().decode(event.target.value));
                         }
                     });
                     this.characteristics.readValue();
@@ -385,5 +347,68 @@ class BluetoothConnection {
                 .then(() => this.server.disconnect())
                 .error(error => console.error("An error occurred whilst disconnecting bluetooth device", error));
         }
+    }
+}
+
+// Quick class for a 2-dimensional vector
+class Vec2 {
+    x;
+    y;
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    copy() { return new Vec2(this.x, this.y); }
+    translateX(x) { this.x = x; return this; }
+    translateY(y) { this.y = y; return this; }
+    translate(x, y) {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+    add(x, y) {
+        this.x += x;
+        this.y += y;
+        return this;
+    }
+    addX(x) {
+        this.x += x;
+        return this;
+    }
+    addY(y) {
+        this.y += y;
+        return this;
+    }
+
+    mult(x, y) {
+        if (x instanceof Vec2) {
+            this.x *= x.x;
+            this.y *= x.y;
+            return this;
+        } else {
+            this.x *= x;
+            this.y *= y;
+            return this;
+        }
+    }
+
+    multX(x) {
+        this.x *= x;
+        return this;
+    }
+
+    multY(y) {
+        this.y *= y;
+        return this;
+    }
+
+    magnitude() {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    }
+
+    normalize() {
+        let mag = this.magnitude();
+        return new Vec2(this.x / mag, this.y / mag);
     }
 }

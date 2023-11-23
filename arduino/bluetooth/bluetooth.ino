@@ -74,12 +74,12 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
 
 char obtainPinReadouts(){
 
-    return (1 << (BUTTON_A_BP & digitalRead(PIN_BUTTON_A))) |
-            (1 << (BUTTON_B_BP & digitalRead(PIN_BUTTON_B))) |
-            (1 << (BUTTON_UP_BP & digitalRead(PIN_BUTTON_UP))) |
-            (1 << (BUTTON_LEFT_BP & digitalRead(PIN_BUTTON_LEFT))) |
-            (1 << (BUTTON_RIGHT_BP & digitalRead(PIN_BUTTON_RIGHT))) |
-            (1 << (BUTTON_DOWN_BP & digitalRead(PIN_BUTTON_DOWN)));
+    return (digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
+            (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
+            (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
+            (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) |
+            (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
+            (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP);
   /* String jsonString = "";
   StaticJsonDocument<400> pinData;
   // Add data and serialize

@@ -3,6 +3,10 @@ const framerate = 60; // frames per second.
 var pixelsPerMeter;
 const movementSpeedMetersPerSecond = 5.5;
 
+// Window dimensions in arbitrary game 'meters'
+var windowWidthInMeters;
+var windowHeightInMeters;
+
 var player;
 
 // Hashmap containing all the resoucres as images.
@@ -10,11 +14,15 @@ var player;
 // Adding new resources can be done using 'resources.set('key', object)'
 const resources = new Map();
 
+clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
+
 // This function is called before the setup function.
 // This can be used to load images for resources.
 function preload() {
     resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
     pixelsPerMeter = document.querySelector(".pixel-size").clientWidth;
+    windowWidthInMeters = window.innerWidth / pixelsPerMeter;
+    windowHeightInMeters = window.innerHeight / pixelsPerMeter;
 }
 
 // Setup function for loading in various
@@ -27,9 +35,9 @@ function setup() {
 
     createCanvas(window.innerWidth, window.innerHeight);
 
-    player = new Entity(100, 100);
+    player = new Entity(5, 5);
     for (let i = 0; i < 10; i++)
-        Environment.introduce(new Entity(Math.random() * window.innerWidth, Math.random() * window.innerHeight));
+        Environment.introduce(new Entity(Math.random() * window.innerWidth / pixelsPerMeter, Math.random() * window.innerHeight / pixelsPerMeter));
 
 
     loadMap();
@@ -87,6 +95,17 @@ function checkBluetoothConnections() {
 
     let bleServiceUUID = '73770700-a4e0-4ff2-bd68-47a5250d5ec2';
     let bleCharacteristicsUUID = '544a3ce0-5ca6-411e-a0c2-17789dc0cec8'
+
+    BluetoothService.search({filters: [{ name: 'ESP32 Controller'}], optionalServices: [bleServiceUUID]})
+        .then(device => {
+            let connection = new BluetoothService(device);
+            connection.onConnectFn = (device) => console.log(device);
+            connection.onReceive = (device, content) => console.log("Received content: " + content, device);
+            connection.primaryCharacteristicUuid = bleCharacteristicsUUID;
+            connection.primaryServiceId = bleServiceUUID;
+            connection.connect();
+        })
+        .catch(err => console.error("An error occurred whilst attempting to connect to Bluetooth device", err));
 
 }
 
@@ -164,7 +183,7 @@ class Entity extends AABB {
     collidingY;
 
     constructor(posX, posY) {
-        super(posX, posY, 30, 50);
+        super(posX, posY, 1, 2);
         this.position = new Vec2(posX, posY);
         this.velocity = new Vec2(0, 0);
         this.acceleration = new Vec2(0, 0);
@@ -221,10 +240,11 @@ class Entity extends AABB {
         this.velocity.add(this.acceleration.x * dT, this.acceleration.y * dT);
 
         // Reduce acceleration with a predefined friction coefficient
-        this.acceleration.mult(this.collidingX ? 0 : 0.9, this.collidingY ? 0 : 0.9);
+        this.acceleration.mult(this.collidingX ? 0 : 0.9, this.collidingY ? 0 : 0.75);
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);
+        this.position.x = clamp(this.position.x, 0, windowWidthInMeters - this.width);
 
 
         document.querySelector(".data")
@@ -264,7 +284,23 @@ class Environment {
     }
 }
 
-class BluetoothConnection {
+/*
+ * Bluetooth service class.
+ * With this class you're able to make a bluetooth connection with multiple devices at the same time.
+ * To start, one must call "BluetoothService.search(optional filters)" to receive a Bluetooth device.
+ *
+ * Once one has selected a device successfully, you can then do 'BluetoothService.search(...).then(device => ...)'
+ * To further connect, you can create an instance of the class in the 'then(device => ...)' call by doing
+ * 'then(device => new BluetoothService(device))'
+ * A short example would look like the following:
+ *  - - - - -
+ * let bluetoothDevice = BluetoothService.search().then(device => new BluetoothService(device);
+ * bluetoothDevice.onConnect = (device) => console.log("Connected to device", device);
+ * bluetoothDevice.onReceive = (device, content) => console.log("Received content from device: " + content, device);
+ * bluetoothDevice.connect();
+ * - - - - -
+ */
+class BluetoothService {
     deviceName;
     device;
     serviceUuid;
@@ -276,12 +312,35 @@ class BluetoothConnection {
     onDisconnectFn;
     onConnectFn;
 
-    constructor(serviceId, characteristicUuid, onConnect, onReceive, onDisconnect) {
-        this.serviceUuid = serviceId;
-        this.characteristicsUuid = characteristicUuid;
-        this.onConnectFn = onConnect;
-        this.onReceiveFn = onReceive;
-        this.onDisconnectFn = onDisconnect;
+    static async search(filters) {
+        if (!BluetoothService.available)
+            return new Promise(null);
+
+        return await navigator.bluetooth.requestDevice(filters || {acceptAllDevices: 'true'})
+
+    }
+
+    constructor(device) {
+        this.device = device;
+    }
+
+    set onConnect(func) {
+        this.onConnectFn = func;
+    }
+
+    set onReceive(func) {
+        this.onReceiveFn = func;
+    }
+
+    set onDisconnect(func) {
+        this.onDisconnectFn = func;
+    }
+    set primaryCharacteristicUuid(uuid) {
+        this.characteristicsUuid = uuid;
+    }
+
+    set primaryServiceId(id) {
+        this.serviceUuid = id;
     }
 
     static get available() { return (navigator.bluetooth); }
@@ -301,28 +360,23 @@ class BluetoothConnection {
         }
     }
 
+    // Attempts to connect
     connect() {
-        if (BluetoothConnection.available) {
-            navigator.bluetooth.requestDevice({
-                filters: [{
-                    services: [this.serviceUuid]
-                }]
-            })
-                .then(device => {
-                    this.device = device;
+        if (BluetoothService.available) {
+            if (typeof this.device !== "undefined" && this.device) {
 
+                (async () => {
+                    this.device.addEventListener('gattservicedisconnected', this.onDisconnectFn);
+                    this.deviceName = this.device.name;
+                    // attempt to connect to the device.
+                    this.server = await this.device.gatt.connect();
                     // If we have an onConnect function, call it!
                     if (this.onConnectFn)
                         this.onConnectFn(this.device);
-
-                    this.device.addEventListener('gattservicedisconnected', this.onDisconnectFn);
-                    this.deviceName = device.name;
-                    // attempt to connect to the device.
-                    this.server = device.gatt.connect();
                     // Get GATT Service
-                    this.service = this.server.getPrimaryService(this.serviceUuid);
+                    this.service = await this.server.getPrimaryService(this.serviceUuid);
                     // Get the specified characteristic by uuid
-                    this.characteristics = this.service.getCharacteristic(this.characteristicsUuid);
+                    this.characteristics = await this.service.getCharacteristic(this.characteristicsUuid);
                     this.characteristics.startNotifications();
                     // Add event listener for when the website receives data from the GATT BT Device
                     this.characteristics.addEventListener('characteristicvaluechanged', (event) => {
@@ -332,15 +386,19 @@ class BluetoothConnection {
                             this.onReceiveFn(this.characteristics, new TextDecoder().decode(event.target.value));
                         }
                     });
-                    this.characteristics.readValue();
-                });
+                })
+                ();
+
+            }
         }
     }
 
+    // Method for checking whether the Bluetooth device is connected
     isConnected() {
         return this.server && this.server.connected;
     }
 
+    // Method for disconnecting the currently connected Bluetooth device
     disconnect() {
         if (this.isConnected() && this.characteristics) {
             this.characteristics.stopNotifications()

@@ -15,33 +15,32 @@
 #include <BLE2902.h>
 
 // Port indices for all buttons / LEDs
-#define PIN_BUTTON_UP     3
-#define PIN_BUTTON_LEFT   8
-#define PIN_BUTTON_RIGHT  9
-#define PIN_BUTTON_DOWN  46
-#define PIN_BUTTON_A     12
-#define PIN_BUTTON_B     11
-#define PIN_BUTTON_OPT   10
-#define PIN_LED           4
-#define PIN_JOYSTICK_X   13
-#define PIN_JOYSTICK_Y   14
+#define PIN_BUTTON_UP 3
+#define PIN_BUTTON_LEFT 8
+#define PIN_BUTTON_RIGHT 9
+#define PIN_BUTTON_DOWN 46
+#define PIN_BUTTON_A 12
+#define PIN_BUTTON_B 11
+#define PIN_BUTTON_OPT 10
+#define PIN_LED 4
+#define PIN_JOYSTICK_X 13
+#define PIN_JOYSTICK_Y 14
 
 // Bit position definitions of all buttons
-#define BUTTON_UP_BP      0
-#define BUTTON_LEFT_BP    1
-#define BUTTON_RIGHT_BP   2
-#define BUTTON_DOWN_BP    3
-#define BUTTON_A_BP       4
-#define BUTTON_B_BP       5
-#define BUTTON_OPT_BP     6
+#define BUTTON_UP_BP 0
+#define BUTTON_LEFT_BP 1
+#define BUTTON_RIGHT_BP 2
+#define BUTTON_DOWN_BP 3
+#define BUTTON_A_BP 4
+#define BUTTON_B_BP 5
+#define BUTTON_OPT_BP 6
 
 #define DEVICE_BT_NAME "ESP32 Controller"
 
-uint8_t * controller_data = (uint8_t *) malloc(4);
+uint8_t *controller_data = (uint8_t *)malloc(4);
 
 BLEServer *pServer = NULL;
-BLECharacteristic *pSensorCharacteristic = NULL;
-// BLECharacteristic* pLedCharacteristic = NULL;
+BLECharacteristic *controllerCharacteristic = NULL;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 bool debugMode = false;
@@ -80,9 +79,11 @@ void definePinModes()
   pinMode(PIN_JOYSTICK_Y, INPUT);
 }
 
-void toggleDebugMode(){
+void toggleDebugMode()
+{
   delay(100);
-  if(digitalRead(PIN_BUTTON_B) && digitalRead(PIN_BUTTON_LEFT)){
+  if (digitalRead(PIN_BUTTON_B) && digitalRead(PIN_BUTTON_LEFT))
+  {
     debugMode = true;
     Serial.print("Debug mode enabled!");
 
@@ -100,7 +101,8 @@ void toggleDebugMode(){
   }
 }
 
-void debugPrint(String text){
+void debugPrint(String text)
+{
   if (debugMode)
   {
     Serial.println(text);
@@ -109,30 +111,28 @@ void debugPrint(String text){
 
 void readInput()
 {
-  controller_data[0] = (uint8_t)(
-    (digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
-    (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) | 
-    (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
-    (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) | 
-    (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
-    (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP)
-    );
-  
+  controller_data[0] = (uint8_t)((digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
+                                 (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
+                                 (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
+                                 (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) |
+                                 (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
+                                 (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP));
+
   uint16_t x = analogRead(PIN_JOYSTICK_X);
   uint16_t y = analogRead(PIN_JOYSTICK_Y);
 
-//Serial.printf("x: %.1f, y: %.1f\r\n", (float) (x * 0.0879120879), (float) (y * 0.0879120879));
+  // Serial.printf("x: %.1f, y: %.1f\r\n", (float) (x * 0.0879120879), (float) (y * 0.0879120879));
 
-  controller_data[1] = (uint8_t) ((x >> 4) & 0xFF);
-  controller_data[2] = (uint8_t) (((x & 0xF) << 4 | (y >> 8) & 0xF) & 0xFF);
-  controller_data[3] = (uint8_t) (y & 0xFF);
+  controller_data[1] = (uint8_t)((x >> 4) & 0xFF);
+  controller_data[2] = (uint8_t)(((x & 0xF) << 4 | (y >> 8) & 0xF) & 0xFF);
+  controller_data[3] = (uint8_t)(y & 0xFF);
 }
 
 void setup()
 {
   Serial.begin(115200);
   definePinModes();
-  //toggleDebugMode();
+  // toggleDebugMode();
   analogReadResolution(12);
 
   // Create the BLE Device
@@ -146,12 +146,12 @@ void setup()
   BLEService *bleService = pServer->createService(SERVICE_UUID);
 
   // Create a BLE Characteristic
-  pSensorCharacteristic = bleService->createCharacteristic(
+  controllerCharacteristic = bleService->createCharacteristic(
       CHARACTERISTIC_UUID,
       BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE);
 
   // Create a BLE Descriptor
-  pSensorCharacteristic->addDescriptor(new BLE2902());
+  controllerCharacteristic->addDescriptor(new BLE2902());
 
   // Start the service
   bleService->start();
@@ -172,11 +172,11 @@ void loop()
   {
     digitalWrite(PIN_LED, HIGH);
     readInput();
-    pSensorCharacteristic->setValue(controller_data, 4);
-    pSensorCharacteristic->notify();
+    controllerCharacteristic->setValue(controller_data, 4);
+    controllerCharacteristic->notify();
 
-    //debugPrint("Message sent:");
-    //debugPrint(String(data));
+    // debugPrint("Message sent:");
+    // debugPrint(String(data));
 
     delay(10); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
   }

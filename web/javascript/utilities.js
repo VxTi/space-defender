@@ -9,7 +9,7 @@
  * 'then(device => new BluetoothService(device))'
  * A short example would look like the following:
  *  - - - - -
- * let bluetoothDevice = BluetoothService.search().then(device => new BluetoothService(device);
+ * BluetoothService.search(filters).then(device => new BluetoothService(device);
  * bluetoothDevice.onConnect = (device) => console.log("Connected to device", device);
  * bluetoothDevice.onReceive = (device, content) => console.log("Received content from device: " + content, device);
  * bluetoothDevice.connect();

@@ -63,6 +63,7 @@ class connectionCallback : public BLEServerCallbacks
 
 void definePinModes()
 {
+
   pinMode(PIN_LED, OUTPUT);
   pinMode(PIN_BUTTON_A, INPUT);
   pinMode(PIN_BUTTON_B, INPUT);
@@ -77,6 +78,7 @@ void toggleDebugMode(){
   if(digitalRead(PIN_BUTTON_B) && digitalRead(PIN_BUTTON_LEFT)){
     debugMode = true;
     Serial.print("Debug mode enabled!");
+
     digitalWrite(PIN_LED, HIGH);
     delay(100);
     digitalWrite(PIN_LED, LOW);

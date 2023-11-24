@@ -78,7 +78,7 @@ function draw() {
     }
 
     let dT = deltaTime / 1000;
-    player.acceleration.translate(-sgnX * movementSpeedMetersPerSecond, sgnY * movementSpeedMetersPerSecond * 3);
+    player.move(new Vec2(-sgnX, sgnY));
     player.update(dT);
 
 }
@@ -114,9 +114,9 @@ function checkBluetoothConnections() {
 
                 let res = content.charCodeAt(0);
 
-                player.move(
+                player.move(new Vec2(
                     -((res >> Input.BUTTON_LEFT_BP) & 1) +
-                ((res >> Input.BUTTON_RIGHT_BP) & 1), (res >> Input.BUTTON_A_BP) & 1);
+                ((res >> Input.BUTTON_RIGHT_BP) & 1), (res >> Input.BUTTON_A_BP) & 1));
 
             };
             connection.onDisconnect = (e) => console.log("BT device disconnected", e);

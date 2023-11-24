@@ -109,15 +109,14 @@ function checkBluetoothConnections() {
     BluetoothService.search({filters: [{ name: 'ESP32 Controller'}], optionalServices: [bleServiceUUID]})
         .then(device => {
             let connection = new BluetoothService(device);
-            connection.onConnect = (device) => console.log(device);
+            connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);
             connection.onReceive = (device, content) => {
 
                 let res = content.charCodeAt(0);
-                if ((res >> Input.BUTTON_LEFT_BP) === 1)
-                    player.velocity.x -= 1;
 
-                if ((res >> Input.BUTTON_RIGHT_BP) === 1)
-                    player.velocity.x += 1;
+                player.move(
+                    -((res >> Input.BUTTON_LEFT_BP) & 1) +
+                ((res >> Input.BUTTON_RIGHT_BP) & 1), (res >> Input.BUTTON_A_BP) & 1);
 
             };
             connection.onDisconnect = (e) => console.log("BT device disconnected", e);
@@ -198,20 +197,34 @@ class Entity extends AABB {
 
     position;
     velocity;
-    acceleration;
     collidingX;
     collidingY;
+
+    static DefaultMovementVector = new Vec2(movementSpeedMetersPerSecond, movementSpeedMetersPerSecond * 2);
+
 
     constructor(posX, posY) {
         super(posX, posY, 1, 2);
         this.position = new Vec2(posX, posY);
         this.velocity = new Vec2(0, 0);
-        this.acceleration = new Vec2(0, 0);
+    }
+
+    // Function that allows the entity to move based on the input vector.
+    // The provided vector must be normalized, e.g. -1 <= x & y <= 1
+    // If this isn't the case, the player will move faster than necessary.
+    move(movementVector) {
+        if (!(movementVector instanceof Vec2))
+            return;
+
+        this.velocity.translate(
+            movementVector.x * Entity.DefaultMovementVector.x,
+            movementVector.y * Entity.DefaultMovementVector.y
+        );
     }
 
     update(dT) {
         if (!this.collidingY)
-            this.acceleration.addY(-Environment.G * pixelsPerMeter);
+            this.velocity.addY(-Environment.G * pixelsPerMeter);
         this.collidingX = this.collidingY = false;
         let cpy;
         // Check if the next position of the entity is colliding with another
@@ -225,8 +238,8 @@ class Entity extends AABB {
             if (!this.collidingX) {
                 cpy = this.copy();
                 // Velocity is measured in pixels, so let's check for every n pixels for collision
-                for (let i = 0; i < Math.round(Math.abs(this.velocityX * dT) / AABB.collisionDetectionPrecision); i++) {
-                    if (cpy.translate(this.posX + (i * AABB.collisionDetectionPrecision) * Math.sign(this.velocityX * dT), this.posY).intersects(p)) {
+                for (let i = 0; i < Math.round(Math.abs(this.velocity.x * dT) / AABB.collisionDetectionPrecision); i++) {
+                    if (cpy.translate(this.position.x + (i * AABB.collisionDetectionPrecision) * Math.sign(this.velocity.x * dT), this.position.y).intersects(p)) {
                         this.collidingX = true;
                         break;
                     }
@@ -237,8 +250,8 @@ class Entity extends AABB {
             if (!this.collidingY) {
                 cpy = this.copy();
                 // Velocity is measured in pixels, so let's check for every n pixels for collision
-                for (let i = 0; i < Math.round(Math.abs(this.velocityY * dT) / AABB.collisionDetectionPrecision); i++) {
-                    if (cpy.translate(this.posX, this.posY + (i * AABB.collisionDetectionPrecision) * Math.sign(this.velocityY * dT)).intersects(p)) {
+                for (let i = 0; i < Math.round(Math.abs(this.velocity.y * dT) / AABB.collisionDetectionPrecision); i++) {
+                    if (cpy.translate(this.position.x, this.position.y + (i * AABB.collisionDetectionPrecision) * Math.sign(this.velocity.y * dT)).intersects(p)) {
                         this.collidingY = true;
                         break;
                     }
@@ -256,18 +269,11 @@ class Entity extends AABB {
             this.collidingY ? 0 : this.velocity.y * dT
         );
 
-        // Add acceleration to velocity
-        this.velocity.add(this.acceleration.x * dT, this.acceleration.y * dT);
-
-        // Reduce acceleration with a predefined friction coefficient
-        if (Math.abs(this.acceleration.x + this.velocity.x) <= 0.1) {
-            this.acceleration.x = 0;
+        if (this.collidingX)
             this.velocity.x = 0;
-        }
-        if (Math.abs(this.acceleration.y + this.velocity.y) <= 0.1) {
-            this.acceleration.y = 0;
+
+        if (this.collidingY)
             this.velocity.y = 0;
-        }
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);

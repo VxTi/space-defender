@@ -74,6 +74,7 @@ void definePinModes()
 }
 
 void toggleDebugMode(){
+  delay(100);
   if(digitalRead(PIN_BUTTON_B) && digitalRead(PIN_BUTTON_LEFT)){
     debugMode = true;
     Serial.print("Debug mode enabled!");

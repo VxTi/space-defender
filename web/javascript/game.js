@@ -100,7 +100,7 @@ function checkBluetoothConnections() {
         .then(device => {
             let connection = new BluetoothService(device);
             connection.onConnect = (device) => console.log(device);
-            connection.onReceive = (device, content) => console.log("Received content: " + content);
+            connection.onReceive = (device, content) => console.log("Received content: " + content.charCodeAt(0));
             connection.onDisconnect = (e) => console.log("BT device disconnected", e);
             connection.primaryCharacteristicUuid = bleCharacteristicsUUID;
             connection.primaryServiceId = bleServiceUUID;
@@ -253,10 +253,6 @@ class Entity extends AABB {
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);
         this.position.x = clamp(this.position.x, 0, windowWidthInMeters - this.width);
-
-
-        document.querySelector(".data")
-            .innerText = `Cx: ${this.collidingX}, Cy: ${this.collidingY}, Vx: ${this.velocity.x}, Vy: ${this.velocity.y}, Ax: ${this.acceleration.x}, Ay: ${this.acceleration.y}`;
 
         // Update
         this.translate(this.position.x, this.position.y);

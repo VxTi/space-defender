@@ -72,12 +72,15 @@ class connectionCallback: public BLEServerCallbacks {
 */
 
 uint8_t obtainPinReadouts(){
-    return (uint8_t) ((digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
+
+    return (uint8_t) (
+      (digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
             (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
             (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
             (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) |
             (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
-            (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP));
+            (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP)
+            );
 }
 
 void setup() {
@@ -125,7 +128,7 @@ void loop() {
         uint8_t data = obtainPinReadouts();
         pSensorCharacteristic->setValue(&data, 1);
         pSensorCharacteristic->notify();
-        Serial.printf("Message sent:");
+        Serial.printf("Message sent (%d):", data);
         for (uint8_t i = 0; i < 8; i++) {
           Serial.printf("%d", (data >> i) & 1);
         }

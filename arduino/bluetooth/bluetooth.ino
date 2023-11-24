@@ -167,8 +167,8 @@ void loop() {
     // notify changed value
     if (deviceConnected) {
         digitalWrite(PIN_LED, HIGH);
-        String data = obtainPinReadouts();
-        pSensorCharacteristic->setValue("Test");
+        char data = obtainPinReadouts();
+        pSensorCharacteristic->setValue(data);
         pSensorCharacteristic->notify();
         Serial.printf("Message sent: %d\n", data);
 

@@ -1,11 +1,12 @@
-const frictionConstant = 0.5;
 const framerate = 60; // frames per second.
 var pixelsPerMeter;
+const metersInWidth = 130;
 const movementSpeedMetersPerSecond = 10;
 
 // Window dimensions in arbitrary game 'meters'
 var windowWidthInMeters;
 var windowHeightInMeters;
+var gameActive = false;
 
 var player;
 
@@ -30,7 +31,7 @@ clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
 // This can be used to load images for resources.
 function preload() {
     resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
-    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth;
+    pixelsPerMeter = window.innerWidth / metersInWidth//document.querySelector(".pixel-size").clientWidth / 2;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
 }
@@ -46,9 +47,6 @@ function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
 
     player = new Entity(5, 5);
-    for (let i = 0; i < 10; i++)
-        Environment.introduce(new Entity(Math.random() * window.innerWidth / pixelsPerMeter, Math.random() * window.innerHeight / pixelsPerMeter));
-
 
     loadMap();
 }
@@ -74,7 +72,7 @@ function draw() {
         let other = Environment.boundingBoxes[i];
         let intersects = other.intersects(player);
         fill(intersects ? 255 : 0, 50, 0);
-        rect(other.left, window.innerHeight - other.top - other.height, other.width, other.height);
+        rect(other.left * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter, other.width * pixelsPerMeter, other.height * pixelsPerMeter);
     }
 
     let dT = deltaTime / 1000;
@@ -90,10 +88,9 @@ function loadMap(mapImage) {
     /*if (!(mapImage instanceof p5.Image))
         throw new TypeError("Provided argument is not of type p5.Image");*/
 
-    let n = 50;
-    let s = window.innerWidth / n;
+    let n = window.innerWidth / pixelsPerMeter;
     for (let i = 0; i < n; i++) {
-        Environment.introduce(new AABB(s * i, noise(i / n * 10) * 100, s, s));
+        Environment.introduce(new AABB(i, 0, 1, 3 + noise(i / 7) * 10 + noise(i / 13) * 7 + noise(i / 16) * 4));
     }
 
 }
@@ -111,11 +108,6 @@ function checkBluetoothConnections() {
             let connection = new BluetoothService(device);
             connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);
             connection.onReceive = (event, content) => {
-
-                if (content.length !== 4)
-                    return;
-
-                let res = content.charCodeAt(0);
 
                 /*player.move(new Vec2(
                     -((res >> Input.BUTTON_LEFT_BP) & 1) + ((res >> Input.BUTTON_RIGHT_BP) & 1),

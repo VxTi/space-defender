@@ -31,13 +31,19 @@ body, html {
 
 .game-menu-button {
     display: block;
+    text-align: center;
+    margin-top: 3px;
     width: 400px;
-    height: 80px;
+    height: 30px;
     margin: 10px;
     border-radius: 10px;
     color: white;
     font-family: sans-serif;
-    background-color: #b61111;
+    background-color: #17213a;
+}
+
+.game-menu-button:hover {
+    background-color: #162421;
 }
 
 .game-menu-button > span {

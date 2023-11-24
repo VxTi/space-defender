@@ -33,6 +33,8 @@
 #define BUTTON_B_BP     5
 #define BUTTON_OPT_BP   6
 
+#define DEVICE_BT_NAME "ESP32 Controller"
+
 BLEServer* pServer = NULL;
 BLECharacteristic* pSensorCharacteristic = NULL;
 // BLECharacteristic* pLedCharacteristic = NULL;
@@ -99,7 +101,7 @@ void setup() {
   pinMode(PIN_LED, OUTPUT);
 
   // Create the BLE Device
-  BLEDevice::init("ESP32 Controller");
+  BLEDevice::init(DEVICE_BT_NAME);
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();

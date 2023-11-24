@@ -9,6 +9,16 @@ var windowHeightInMeters;
 
 var player;
 
+const Input = {
+    BUTTON_UP_BP: 0,
+    BUTTON_LEFT_BP: 1,
+    BUTTON_RIGHT_BP: 2,
+    BUTTON_DOWN_BP: 3,
+    BUTTON_A_BP: 4,
+    BUTTON_B_BP: 5,
+    BUTTON_OPT_BP: 6
+}
+
 // Hashmap containing all the resoucres as images.
 // These resources must be loaded in the preload function.
 // Adding new resources can be done using 'resources.set('key', object)'
@@ -100,7 +110,16 @@ function checkBluetoothConnections() {
         .then(device => {
             let connection = new BluetoothService(device);
             connection.onConnect = (device) => console.log(device);
-            connection.onReceive = (device, content) => console.log("Received content: " + content.charCodeAt(0));
+            connection.onReceive = (device, content) => {
+
+                let res = content.charCodeAt(0);
+                if ((res >> Input.BUTTON_LEFT_BP) === 1)
+                    player.velocity.x -= 1;
+
+                if ((res >> Input.BUTTON_RIGHT_BP) === 1)
+                    player.velocity.x += 1;
+
+            };
             connection.onDisconnect = (e) => console.log("BT device disconnected", e);
             connection.primaryCharacteristicUuid = bleCharacteristicsUUID;
             connection.primaryServiceId = bleServiceUUID;

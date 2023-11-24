@@ -1,10 +1,10 @@
 /*
   Rui Santos
   Complete project details at https://RandomNerdTutorials.com/esp32-web-bluetooth/
-  
+
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files.
-  
+
   The above copyright notice and this permission notice shall be included in all
   copies or substantial portions of the Software.
 */
@@ -35,51 +35,34 @@
 
 #define DEVICE_BT_NAME "ESP32 Controller"
 
-BLEServer* pServer = NULL;
-BLECharacteristic* pSensorCharacteristic = NULL;
+BLEServer *pServer = NULL;
+BLECharacteristic *pSensorCharacteristic = NULL;
 // BLECharacteristic* pLedCharacteristic = NULL;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
-// uint32_t value = 0;
+bool debugMode = false;
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
 #define SERVICE_UUID "73770700-a4e0-4ff2-bd68-47a5250d5ec2"
 #define CHARACTERISTIC_UUID "544a3ce0-5ca6-411e-a0c2-17789dc0cec8"
-// #define LED_CHARACTERISTIC_UUID "791ac637-4048-44c7-8ac9-bc1ae24aefc7"
 
-class connectionCallback : public BLEServerCallbacks {
-  void onConnect(BLEServer* pServer) {
+class connectionCallback : public BLEServerCallbacks
+{
+  void onConnect(BLEServer *pServer)
+  {
     deviceConnected = true;
   };
 
-  void onDisconnect(BLEServer* pServer) {
+  void onDisconnect(BLEServer *pServer)
+  {
     deviceConnected = false;
   }
 };
 
-/*class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic* pLedCharacteristic) {
-    String value = pLedCharacteristic->getValue();
-    if (value) {
-        Serial.printf("Characteristic event, written: %s\r\n", value);
-        // Further processing with receivedValue...
-    }
-}
-
-};
-*/
-
-uint8_t obtainPinReadouts() {
-
-  uint8_t res = (uint8_t)((digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) | (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) | (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) | (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) | (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) | (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP));
-  Serial.printf("R: %d\r\n", res);
-  return res;
-}
-
-void setup() {
-  Serial.begin(115200);
+void definePinModes()
+{
   pinMode(PIN_LED, OUTPUT);
   pinMode(PIN_BUTTON_A, INPUT);
   pinMode(PIN_BUTTON_B, INPUT);
@@ -88,6 +71,45 @@ void setup() {
   pinMode(PIN_BUTTON_RIGHT, INPUT);
   pinMode(PIN_BUTTON_DOWN, INPUT);
   pinMode(PIN_BUTTON_OPT, INPUT);
+}
+
+void toggleDebugMode(){
+  if(digitalRead(PIN_BUTTON_B) && digitalRead(PIN_BUTTON_LEFT)){
+    debugMode = true;
+    Serial.print("Debug mode enabled!");
+    digitalWrite(PIN_LED, HIGH);
+    delay(100);
+    digitalWrite(PIN_LED, LOW);
+    delay(100);
+    digitalWrite(PIN_LED, HIGH);
+    delay(100);
+    digitalWrite(PIN_LED, LOW);
+    delay(100);
+    digitalWrite(PIN_LED, HIGH);
+    delay(600);
+    digitalWrite(PIN_LED, LOW);
+  }
+}
+
+void debugPrint(String text){
+  if (debugMode)
+  {
+    Serial.println(text);
+  }
+}
+
+uint8_t obtainPinReadouts()
+{
+  uint8_t res = (uint8_t)((digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) | (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) | (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) | (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) | (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) | (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP));
+  debugPrint(String(res));
+  return res;
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  definePinModes();
+  toggleDebugMode();
 
   // Create the BLE Device
   BLEDevice::init(DEVICE_BT_NAME);
@@ -97,12 +119,12 @@ void setup() {
   pServer->setCallbacks(new connectionCallback());
 
   // Create the BLE Service
-  BLEService* bleService = pServer->createService(SERVICE_UUID);
+  BLEService *bleService = pServer->createService(SERVICE_UUID);
 
   // Create a BLE Characteristic
   pSensorCharacteristic = bleService->createCharacteristic(
-    CHARACTERISTIC_UUID,
-    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE);
+      CHARACTERISTIC_UUID,
+      BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE);
 
   // Create a BLE Descriptor
   pSensorCharacteristic->addDescriptor(new BLE2902());
@@ -111,43 +133,52 @@ void setup() {
   bleService->start();
 
   // Start advertising
-  BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->setScanResponse(false);
-  pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
+  pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
-  Serial.println("Waiting a client connection to notify...");
+  debugPrint("Waiting a client connection to notify...");
 }
 
-void loop() {
+void loop()
+{
   // notify changed value
-  if (deviceConnected) {
+  if (deviceConnected)
+  {
     digitalWrite(PIN_LED, HIGH);
     uint8_t data = obtainPinReadouts();
     pSensorCharacteristic->setValue(&data, 1);
     pSensorCharacteristic->notify();
-    Serial.printf("Message sent (%d):", data);
-    for (uint8_t i = 0; i < 8; i++) {
+
+    debugPrint("Message sent:");
+    debugPrint(String(data));
+    if(debugMode){
+    for (uint8_t i = 0; i < 8; i++)
+    {
       Serial.printf("%d", (data >> i) & 1);
     }
     Serial.print("\n");
+    }
 
-    delay(100);  // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
+    delay(10); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
   }
   // disconnecting
-  if (!deviceConnected && oldDeviceConnected) {
+  if (!deviceConnected && oldDeviceConnected)
+  {
     digitalWrite(PIN_LED, LOW);
-    Serial.println("Device disconnected.");
-    delay(500);                   // give the bluetooth stack the chance to get things ready
-    pServer->startAdvertising();  // restart advertising
-    Serial.println("Start advertising");
+    debugPrint("Device disconnected.");
+    delay(500);                  // give the bluetooth stack the chance to get things ready
+    pServer->startAdvertising(); // restart advertising
+    debugPrint("Start advertising");
     oldDeviceConnected = deviceConnected;
   }
   // connecting
-  if (deviceConnected && !oldDeviceConnected) {
+  if (deviceConnected && !oldDeviceConnected)
+  {
     // do stuff here on connecting
     oldDeviceConnected = deviceConnected;
-    Serial.println("Device Connected");
+    debugPrint("Device Connected");
     digitalWrite(PIN_LED, HIGH);
     delay(100);
     digitalWrite(PIN_LED, LOW);

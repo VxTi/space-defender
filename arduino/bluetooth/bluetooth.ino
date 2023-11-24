@@ -73,8 +73,27 @@ class connectionCallback: public BLEServerCallbacks {
 
 char obtainPinReadouts(){
 
+    return (digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
+            (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
+            (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
+            (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) |
+            (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
+            (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP);
+
+
+/*
+String returnString = String(digitalRead(PIN_BUTTON_A)) +
+                      String(digitalRead(PIN_BUTTON_B)) +
+                      String(digitalRead(PIN_BUTTON_UP)) +
+                      String(digitalRead(PIN_BUTTON_DOWN)) +
+                      String(digitalRead(PIN_BUTTON_LEFT)) +
+                      String(digitalRead(PIN_BUTTON_RIGHT)) +
+                      String(digitalRead(PIN_BUTTON_OPT)) +
+                      String(deviceConnected);
+return returnString;
+*/
 // 8bit binary: [ CONNECT | A BUTTON | B BUTTON | DPAD UP | DPAD DOWN | DPAD LEFT | DPAD RIGHT | OPTION BUTTON ]
-char binary[] = "00000000"; // Placeholder
+/*char binary[] = "00000000"; // Placeholder
 binary[7] = stoi(deviceConnected); // Connected? 1 / 0
 binary[6] = digitalRead(PIN_BUTTON_A);
 binary[5] = digitalRead(PIN_BUTTON_B);
@@ -83,8 +102,8 @@ binary[3] = digitalRead(PIN_BUTTON_DOWN);
 binary[2] = digitalRead(PIN_BUTTON_LEFT);
 binary[1] = digitalRead(PIN_BUTTON_RIGHT);
 binary[0] = digitalRead(PIN_BUTTON_OPT);
+*/
 
-return binary
 /*
     return (digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
            (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
@@ -150,7 +169,7 @@ void loop() {
     // notify changed value
     if (deviceConnected) {
         digitalWrite(PIN_LED, HIGH);
-        char data[] = obtainPinReadouts();
+        char data = obtainPinReadouts();
         pSensorCharacteristic->setValue(data);
         pSensorCharacteristic->notify();
         Serial.printf("Message sent: %d\n", data);

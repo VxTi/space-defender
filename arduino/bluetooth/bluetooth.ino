@@ -71,48 +71,13 @@ class connectionCallback: public BLEServerCallbacks {
 };
 */
 
-char obtainPinReadouts(){
-
-    return (digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
+uint8_t obtainPinReadouts(){
+    return (uint8_t) ((digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
             (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
             (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
             (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) |
             (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
-            (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP);
-
-
-/*
-String returnString = String(digitalRead(PIN_BUTTON_A)) +
-                      String(digitalRead(PIN_BUTTON_B)) +
-                      String(digitalRead(PIN_BUTTON_UP)) +
-                      String(digitalRead(PIN_BUTTON_DOWN)) +
-                      String(digitalRead(PIN_BUTTON_LEFT)) +
-                      String(digitalRead(PIN_BUTTON_RIGHT)) +
-                      String(digitalRead(PIN_BUTTON_OPT)) +
-                      String(deviceConnected);
-return returnString;
-*/
-// 8bit binary: [ CONNECT | A BUTTON | B BUTTON | DPAD UP | DPAD DOWN | DPAD LEFT | DPAD RIGHT | OPTION BUTTON ]
-/*char binary[] = "00000000"; // Placeholder
-binary[7] = stoi(deviceConnected); // Connected? 1 / 0
-binary[6] = digitalRead(PIN_BUTTON_A);
-binary[5] = digitalRead(PIN_BUTTON_B);
-binary[4] = digitalRead(PIN_BUTTON_UP);
-binary[3] = digitalRead(PIN_BUTTON_DOWN);
-binary[2] = digitalRead(PIN_BUTTON_LEFT);
-binary[1] = digitalRead(PIN_BUTTON_RIGHT);
-binary[0] = digitalRead(PIN_BUTTON_OPT);
-*/
-
-/*
-    return (digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
-           (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
-           (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
-           (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) |
-           (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
-           (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP);
-}
-*/
+            (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP));
 }
 
 void setup() {
@@ -138,20 +103,8 @@ void setup() {
                       BLECharacteristic::PROPERTY_INDICATE
                     );
 
-  // Create the ON button Characteristic
-  /*
-  pLedCharacteristic = bleService->createCharacteristic(
-                      LED_CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_WRITE
-                    );*/
-
-  // Register the callback for the ON button characteristic
-  // pLedCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
-
-  // https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.descriptor.gatt.client_characteristic_configuration.xml
-  // Create a BLE Descriptor
+ // Create a BLE Descriptor
   pSensorCharacteristic->addDescriptor(new BLE2902());
-  // pLedCharacteristic->addDescriptor(new BLE2902());
 
   // Start the service
   bleService->start();
@@ -169,12 +122,16 @@ void loop() {
     // notify changed value
     if (deviceConnected) {
         digitalWrite(PIN_LED, HIGH);
-        char data = obtainPinReadouts();
-        pSensorCharacteristic->setValue(data);
+        uint8_t data = obtainPinReadouts();
+        pSensorCharacteristic->setValue(&data, 1);
         pSensorCharacteristic->notify();
-        Serial.printf("Message sent: %d\n", data);
+        Serial.printf("Message sent:");
+        for (uint8_t i = 0; i < 8; i++) {
+          Serial.printf("%d", (data >> i) & 1);
+        }
+        Serial.print("\n");
 
-        delay(10); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
+        delay(100); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
     }
     // disconnecting
     if (!deviceConnected && oldDeviceConnected) {

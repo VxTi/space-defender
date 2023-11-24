@@ -67,7 +67,7 @@ function draw() {
     if (keyIsDown(32)) sgnY++;
     if (keyIsDown(83)) sgnY--;
 
-    image(resources.get('entityPlayer'), player.position.x * pixelsPerMeter, window.innerHeight - (player.height - player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
+    image(resources.get('entityPlayer'), player.position.x * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
 
 
     for (var i = 0; i < Environment.boundingBoxes.length; i++) {
@@ -78,7 +78,7 @@ function draw() {
     }
 
     let dT = deltaTime / 1000;
-    player.move(new Vec2(-sgnX, sgnY));
+    //player.move(new Vec2(-sgnX, sgnY));
     player.update(dT);
 
 }
@@ -110,13 +110,22 @@ function checkBluetoothConnections() {
         .then(device => {
             let connection = new BluetoothService(device);
             connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);
-            connection.onReceive = (device, content) => {
+            connection.onReceive = (event, content) => {
+
+                if (content.length !== 4)
+                    return;
 
                 let res = content.charCodeAt(0);
 
-                player.move(new Vec2(
+                /*player.move(new Vec2(
                     -((res >> Input.BUTTON_LEFT_BP) & 1) + ((res >> Input.BUTTON_RIGHT_BP) & 1),
-                    (res >> Input.BUTTON_A_BP) & 1));
+                    (res >> Input.BUTTON_A_BP) & 1));*/
+                let errorOffset = 0.314159265 - 0.237;
+                let angleX = (0.000767177693 * (((event.target.value.getUint8(1) << 4) | (event.target.value.getUint8(2) >> 4)) & 0xFFF)) - Math.PI / 2 + errorOffset;
+                let angleY = (0.000767177693 * (((event.target.value.getUint8(2) << 8) | event.target.value.getUint8(3)) & 0xFFF)) - Math.PI / 2 + errorOffset;
+                player.move(new Vec2(
+                    Math.sin(angleX), Math.sin(angleY)
+                ));
 
             };
             connection.onDisconnect = (e) => console.log("BT device disconnected", e);
@@ -223,12 +232,12 @@ class Entity extends AABB {
     }
 
     update(dT) {
-        if (!this.collidingY)
-            this.velocity.addY(-Environment.G * pixelsPerMeter);
+        /*if (!this.collidingY)
+            this.velocity.addY(-Environment.G * pixelsPerMeter);*/
         this.collidingX = this.collidingY = false;
         let cpy;
         // Check if the next position of the entity is colliding with another
-        for (let i = 0; i < Environment.boundingBoxes.length; i++) {
+        /*for (let i = 0; i < Environment.boundingBoxes.length; i++) {
             let p = Environment.boundingBoxes[i];
             if (this === p)
                 continue;
@@ -261,7 +270,7 @@ class Entity extends AABB {
             // If we're colliding on both axis, stop further checks
             if (this.collidingX && this.collidingY)
                 break;
-        }
+        }*/
 
         // Add velocity to position
         this.position.add(

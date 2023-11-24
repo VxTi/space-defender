@@ -40,6 +40,8 @@ body, html {
     background-color: #b61111;
 }
 
-.game-menu-button + span {
+.game-menu-button > span {
     margin: auto;
+    display: block;
+    position: relative;
 }

@@ -11,7 +11,7 @@
  *  - - - - -
  * BluetoothService.search(filters).then(device => new BluetoothService(device);
  * bluetoothDevice.onConnect = (device) => console.log("Connected to device", device);
- * bluetoothDevice.onReceive = (device, content) => console.log("Received content from device: " + content, device);
+ * bluetoothDevice.onReceive = (event, content) => console.log("Received content from device: " + content, device);
  * bluetoothDevice.connect();
  * - - - - -
  */
@@ -101,7 +101,7 @@ class BluetoothService {
                     this.characteristics.addEventListener('characteristicvaluechanged', (event) => {
                         // Check if we have an onReceive function, if we do, call it.
                         if (this.onReceiveFn) {
-                            this.onReceiveFn(this.characteristics, new TextDecoder().decode(event.target.value));
+                            this.onReceiveFn(event, new TextDecoder().decode(event.target.value));
                         }
                     });
                 })

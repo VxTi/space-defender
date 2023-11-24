@@ -66,7 +66,6 @@ class connectionCallback : public BLEServerCallbacks
 
 void definePinModes()
 {
-
   pinMode(PIN_LED, OUTPUT);
   pinMode(PIN_BUTTON_A, INPUT);
   pinMode(PIN_BUTTON_B, INPUT);
@@ -81,12 +80,10 @@ void definePinModes()
 
 void toggleDebugMode()
 {
-  delay(100);
-  if (digitalRead(PIN_BUTTON_B) && digitalRead(PIN_BUTTON_LEFT))
+  if (digitalRead(PIN_BUTTON_B) && digitalRead(PIN_BUTTON_OPT))
   {
     debugMode = true;
-    Serial.print("Debug mode enabled!");
-
+    Serial.println("Debug mode enabled!");
     digitalWrite(PIN_LED, HIGH);
     delay(100);
     digitalWrite(PIN_LED, LOW);
@@ -132,7 +129,7 @@ void setup()
 {
   Serial.begin(115200);
   definePinModes();
-  // toggleDebugMode();
+  toggleDebugMode();
   analogReadResolution(12);
 
   // Create the BLE Device
@@ -174,10 +171,7 @@ void loop()
     readInput();
     controllerCharacteristic->setValue(controller_data, 4);
     controllerCharacteristic->notify();
-
-    // debugPrint("Message sent:");
-    // debugPrint(String(data));
-
+    debugPrint("Packet sent");
     delay(10); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
   }
   // disconnecting

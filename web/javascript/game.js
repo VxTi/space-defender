@@ -44,7 +44,11 @@ function setup() {
         checkBluetoothConnections();
     })
 
+    // Create a canvas to render onto
     createCanvas(window.innerWidth, window.innerHeight);
+
+    // Whenever the screen resizes, adapt the canvas size with it.
+    document.addEventListener('resize', () => resizeCanvas(window.innerWidth, window.innerHeight));
 
     player = new Entity(5, 5);
 
@@ -107,7 +111,7 @@ function checkBluetoothConnections() {
         .then(device => {
             let connection = new BluetoothService(device);
             connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);
-            connection.onReceive = (event, content) => {
+            connection.onReceive = (event) => {
 
                 /*player.move(new Vec2(
                     -((res >> Input.BUTTON_LEFT_BP) & 1) + ((res >> Input.BUTTON_RIGHT_BP) & 1),
@@ -129,7 +133,13 @@ function checkBluetoothConnections() {
 
 }
 
-
+/*
+ * Class for representing an Axis Aligned Bounding Box (AABB).
+ * An AABB Class contains a few variables, the top left coordinates (left, top)
+ * the bottom right coordinates (bottom, right) and the dimensions (width, height).
+ * These parameters can be changed after initialization with helper functions
+ *
+ * */
 class AABB {
     left;
     top;
@@ -137,7 +147,6 @@ class AABB {
     bottom;
     width;
     height;
-    static collisionDetectionPrecision = 1; // Lower number means higher precision.
 
     // Constructor for defining a bounding box with specified dimensions.
     constructor(x, y, width, height) {
@@ -147,6 +156,20 @@ class AABB {
         this.bottom = y + height;
         this.width = width;
         this.height = height;
+    }
+
+    // Method of setting the width of this AABB
+    // Automatically updates the 'right' variable as well
+    set width(w) {
+        this.width = w;
+        this.right = this.left + w;
+    }
+
+    // Method for setting the height of this AABB
+    // Automatically updates the 'bottom' variable as well
+    set height(h) {
+        this.height = h;
+        this.bottom = this.top + h;
     }
 
     // Returns a copy of this Environment
@@ -227,7 +250,6 @@ class Entity extends AABB {
         /*if (!this.collidingY)
             this.velocity.addY(-Environment.G * pixelsPerMeter);*/
         this.collidingX = this.collidingY = false;
-        let cpy;
         // Check if the next position of the entity is colliding with another
         /*for (let i = 0; i < Environment.boundingBoxes.length; i++) {
             let p = Environment.boundingBoxes[i];

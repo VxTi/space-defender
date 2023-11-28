@@ -32,7 +32,9 @@ clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
 // This function is called before the setup function.
 // This can be used to load images for resources.
 function preload() {
+
     resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
+    resources.set("blockSprite", loadImage('./assets/blocksprite.png'));
     pixelsPerMeter = window.innerWidth / metersInWidth //document.querySelector(".pixel-size").clientWidth / 2;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
@@ -40,6 +42,8 @@ function preload() {
 
 // Setup function for loading in various
 function setup() {
+
+
 
     document.querySelector(".controller-connect")
         .addEventListener("click", () => {
@@ -64,15 +68,6 @@ function setup() {
 // This means it has a 16.6ms interval.
 function draw() {
     background(0);
-    fill(255, 0, 0);
-
-    let sgnX = 0;
-    let sgnY = 0;
-
-    if (keyIsDown(65)) sgnX++;
-    if (keyIsDown(68)) sgnX--;
-    if (keyIsDown(32)) sgnY++;
-    if (keyIsDown(83)) sgnY--;
 
     image(resources.get('entityPlayer'), player.position.x * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
 
@@ -80,8 +75,14 @@ function draw() {
     for (var i = 0; i < Environment.boundingBoxes.length; i++) {
         let other = Environment.boundingBoxes[i];
         let intersects = other.intersects(player);
-        fill(intersects ? 255 : 0, 50, 0);
-        rect(other.left * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter, other.width * pixelsPerMeter, other.height * pixelsPerMeter);
+        if (other instanceof Block) {
+            fill(255, 255, 255);
+            other.blockType.draw(
+                other.left * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
+                other.width * pixelsPerMeter, other.height * pixelsPerMeter);
+        }
+        //fill(intersects ? 255 : 0, 50, 0);
+        //rect(other.left * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter, other.width * pixelsPerMeter, other.height * pixelsPerMeter);
     }
 
     let dT = deltaTime / 1000;
@@ -99,9 +100,11 @@ function loadMap(mapImage) {
 
     let n = window.innerWidth / pixelsPerMeter;
     for (let i = 0; i < n; i++) {
-        Environment.introduce(new AABB(i, 0, 1, 3 + noise(i / 7) * 10 + noise(i / 13) * 7 + noise(i / 16) * 4));
+        let posY = 3 + 3 + noise(i / 7) * 10 + noise(i / 13) * 7 + noise(i / 16) * 4;
+        for (let j = 0; j < posY; j++) {
+            Environment.introduce(new Block(i, j, BlockType.bricks));
+        }
     }
-
 }
 
 
@@ -112,7 +115,7 @@ function checkBluetoothConnections() {
     let bleServiceUUID = '73770700-a4e0-4ff2-bd68-47a5250d5ec2';
     let bleCharacteristicsUUID = '544a3ce0-5ca6-411e-a0c2-17789dc0cec8'
 
-    BluetoothService.search({filters: [{ name: 'ESP32 Controller'}], optionalServices: [bleServiceUUID]})
+    BluetoothService.search({filters: [{ name: 'ESP32 Controller P1'}, { name: 'ESP32 Controller'}], optionalServices: [bleServiceUUID]})
         .then(device => {
             let connection = new BluetoothService(device);
             connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);

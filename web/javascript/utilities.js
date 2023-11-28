@@ -126,74 +126,6 @@ class BluetoothService {
     }
 }
 
-// Quick class for a 2-dimensional vector
-class Vec2 {
-    x;
-    y;
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    copy() { return new Vec2(this.x, this.y); }
-    translateX(x) { this.x = x; return this; }
-    translateY(y) { this.y = y; return this; }
-    translate(x, y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-    add(x, y) {
-        this.x += x;
-        this.y += y;
-        return this;
-    }
-    addX(x) {
-        this.x += x;
-        return this;
-    }
-    addY(y) {
-        this.y += y;
-        return this;
-    }
-
-    mult(x, y) {
-        if (x instanceof Vec2) {
-            this.x *= x.x;
-            this.y *= x.y;
-            return this;
-        } else {
-            this.x *= x;
-            this.y *= y;
-            return this;
-        }
-    }
-
-    multX(x) {
-        this.x *= x;
-        return this;
-    }
-
-    multY(y) {
-        this.y *= y;
-        return this;
-    }
-
-    magnitude() {
-        return Math.sqrt(this.magSq());
-    }
-
-    magSq() {
-        return this.x * this.x + this.y * this.y;
-    }
-
-    normalize() {
-        let mag = this.magnitude();
-        return new Vec2(this.x / mag, this.y / mag);
-    }
-}
-
-
 /*
  * Class for representing an Axis Aligned Bounding Box (AABB).
  * An AABB Class contains a few variables, the top left coordinates (left, top)
@@ -290,18 +222,20 @@ class Resource {
     partHeight;
     horizontal;
     vertical;
+
+
     // Loads an image from the provided location.
     // Is possible to load multiple at the same time by providing a horizontalCount and verticalCount.
     // These numbers represent how many images are present on those two axis.
     // Initialization of this class MUST be done in the 'preload' function, otherwise it will NOT work.
-    constructor(src, horizontalCount = 1, verticalCount = 1) {
-        this.image = loadImage(src);
-        this.width = this.image.width;
-        this.height = this.image.height;
+    constructor(image, horizontalCount = 1, verticalCount = 1) {
+        this.image = image
+        this.width = image.width;
+        this.height = image.height;
         this.horizontal = horizontalCount;
         this.vertical = verticalCount;
-        this.partWidth = this.width / horizontalCount;
-        this.partHeight = this.height / verticalCount;
+        this.partWidth = image.width / horizontalCount;
+        this.partHeight = image.height / verticalCount;
     }
 
     // Renders one of the selected images depending on the provided axis indices.
@@ -323,3 +257,85 @@ class Resource {
     }
 
 }
+
+class BlockType {
+    static bricks;
+}
+
+class Block extends AABB {
+    blockType;
+
+    constructor(x, y, blockType) {
+        super(x, y, 1, 1);
+        this.blockType = blockType;
+    }
+}
+
+// Quick class for a 2-dimensional vector
+class Vec2 {
+    x;
+    y;
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    copy() { return new Vec2(this.x, this.y); }
+    translateX(x) { this.x = x; return this; }
+    translateY(y) { this.y = y; return this; }
+    translate(x, y) {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+    add(x, y) {
+        this.x += x;
+        this.y += y;
+        return this;
+    }
+    addX(x) {
+        this.x += x;
+        return this;
+    }
+    addY(y) {
+        this.y += y;
+        return this;
+    }
+
+    mult(x, y) {
+        if (x instanceof Vec2) {
+            this.x *= x.x;
+            this.y *= x.y;
+            return this;
+        } else {
+            this.x *= x;
+            this.y *= y;
+            return this;
+        }
+    }
+
+    multX(x) {
+        this.x *= x;
+        return this;
+    }
+
+    multY(y) {
+        this.y *= y;
+        return this;
+    }
+
+    magnitude() {
+        return Math.sqrt(this.magSq());
+    }
+
+    magSq() {
+        return this.x * this.x + this.y * this.y;
+    }
+
+    normalize() {
+        let mag = this.magnitude();
+        return new Vec2(this.x / mag, this.y / mag);
+    }
+}
+
+

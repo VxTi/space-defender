@@ -99,11 +99,17 @@ char * selectPlayer(){
     if (digitalRead(PIN_BUTTON_LEFT)){
       playerNumber = 1;
       debugPrint("Player 1 selected");
+      digitalWrite(PIN_LED, HIGH);
+      delay(100);
+      digitalWrite(PIN_LED, LOW);
       break;
     }
     if (digitalRead(PIN_BUTTON_RIGHT)){
       playerNumber = 2;
       debugPrint("Player 2 selected");
+      digitalWrite(PIN_LED, HIGH);
+      delay(100);
+      digitalWrite(PIN_LED, LOW);
       break;
     }
   }

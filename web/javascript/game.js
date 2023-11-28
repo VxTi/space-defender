@@ -112,7 +112,7 @@ function checkBluetoothConnections() {
     let bleServiceUUID = '73770700-a4e0-4ff2-bd68-47a5250d5ec2';
     let bleCharacteristicsUUID = '544a3ce0-5ca6-411e-a0c2-17789dc0cec8'
 
-    BluetoothService.search({filters: [{ name: 'ESP32 Controller'}], optionalServices: [bleServiceUUID]})
+    BluetoothService.search({filters: [{ name: 'ESP32 Controller P1'} , { name: 'ESP Controller P2'}], optionalServices: [bleServiceUUID]})
         .then(device => {
             let connection = new BluetoothService(device);
             connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);

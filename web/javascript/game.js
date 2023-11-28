@@ -1,6 +1,5 @@
 const framerate = 60; // frames per second.
 var pixelsPerMeter;
-const metersInWidth = 70;
 const movementSpeedMetersPerSecond = 10;
 
 // Window dimensions in arbitrary game 'meters'
@@ -34,7 +33,7 @@ clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
 function preload() {
     resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
     resources.set("blockSprite", loadImage("./assets/blocksprite.png"));
-    pixelsPerMeter = window.innerWidth / metersInWidth //document.querySelector(".pixel-size").clientWidth / 2;
+    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * 0.7;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
 }
@@ -185,7 +184,6 @@ class Entity extends AABB {
                 for (let j = 0; j < Math.abs(this.velocity.y); j += collisionPrecision) {
                     if (this.copy().translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(p)) {
                         this.colliding.y = Math.sign(this.velocity.y);
-                        //console.log(`Colliding[y: ${this.position.y}] -> [y: ${this.position.y + j * Math.sign(this.velocity.y)}`)
                         break;
                     }
                 }

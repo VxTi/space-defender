@@ -1,14 +1,3 @@
-/*
-  Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/esp32-web-bluetooth/
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files.
-
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-*/
-
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
@@ -35,22 +24,24 @@
 #define BUTTON_B_BP 5
 #define BUTTON_OPT_BP 6
 
+// Bluetooth name
 #define DEVICE_BT_NAME "ESP32 Controller"
 
-uint8_t *controller_data = (uint8_t *)malloc(4);
+// Bluetooth Low Energy UUIDs
+#define SERVICE_UUID "73770700-a4e0-4ff2-bd68-47a5250d5ec2"
+#define CHARACTERISTIC_UUID "544a3ce0-5ca6-411e-a0c2-17789dc0cec8"
 
-BLEServer *pServer = NULL;
-BLECharacteristic *controllerCharacteristic = NULL;
+// Library settings
+BLEServer *pServer;
+BLECharacteristic *controllerCharacteristic;
+
+// Global variables
+uint8_t *controller_data = (uint8_t *)malloc(4);
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 bool debugMode = false;
 
-// See the following for generating UUIDs:
-// https://www.uuidgenerator.net/
-
-#define SERVICE_UUID "73770700-a4e0-4ff2-bd68-47a5250d5ec2"
-#define CHARACTERISTIC_UUID "544a3ce0-5ca6-411e-a0c2-17789dc0cec8"
-
+// Callback for changing the boolean indicating whether a device is connected
 class connectionCallback : public BLEServerCallbacks
 {
   void onConnect(BLEServer *pServer)
@@ -64,6 +55,7 @@ class connectionCallback : public BLEServerCallbacks
   }
 };
 
+// Set all used pins to their used mode
 void definePinModes()
 {
   pinMode(PIN_LED, OUTPUT);
@@ -78,6 +70,7 @@ void definePinModes()
   pinMode(PIN_JOYSTICK_Y, INPUT);
 }
 
+// Checks if both buttons B and OPT are pressed on startup, if so debug mode will be toggled
 void toggleDebugMode()
 {
   if (digitalRead(PIN_BUTTON_B) && digitalRead(PIN_BUTTON_OPT))
@@ -98,6 +91,7 @@ void toggleDebugMode()
   }
 }
 
+// Checks if debug mode is toggled, and if so sends the input to serial
 void debugPrint(String text)
 {
   if (debugMode)
@@ -106,8 +100,10 @@ void debugPrint(String text)
   }
 }
 
+// Reads all digital pins and builds it into a binary value
 void readInput()
 {
+  // Read all buttons
   controller_data[0] = (uint8_t)((digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
                                  (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
                                  (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
@@ -115,11 +111,13 @@ void readInput()
                                  (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
                                  (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP));
 
+  // Reads the analog value of the joystick
   uint16_t x = analogRead(PIN_JOYSTICK_X);
   uint16_t y = analogRead(PIN_JOYSTICK_Y);
 
   // Serial.printf("x: %.1f, y: %.1f\r\n", (float) (x * 0.0879120879), (float) (y * 0.0879120879));
 
+  // Add the values to the array
   controller_data[1] = (uint8_t)((x >> 4) & 0xFF);
   controller_data[2] = (uint8_t)(((x & 0xF) << 4 | (y >> 8) & 0xF) & 0xFF);
   controller_data[3] = (uint8_t)(y & 0xFF);
@@ -130,14 +128,14 @@ void setup()
   Serial.begin(115200);
   definePinModes();
   toggleDebugMode();
-  analogReadResolution(12);
+  analogReadResolution(12); // For reading from 0 to 4095
 
   // Create the BLE Device
   BLEDevice::init(DEVICE_BT_NAME);
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new connectionCallback());
+  pServer->setCallbacks(new connectionCallback()); // Add the callback for handling connection status
 
   // Create the BLE Service
   BLEService *bleService = pServer->createService(SERVICE_UUID);
@@ -153,7 +151,7 @@ void setup()
   // Start the service
   bleService->start();
 
-  // Start advertising
+  // Start advertising (transmitting)
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->setScanResponse(false);

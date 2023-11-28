@@ -32,7 +32,6 @@ body, html {
 .game-menu-button {
     display: block;
     text-align: center;
-    margin-top: 3px;
     width: 400px;
     height: 30px;
     margin: 10px;
@@ -50,4 +49,19 @@ body, html {
     margin: auto;
     display: block;
     position: relative;
+}
+
+.game-settings-button {
+    display: block;
+    position: relative;
+    float: right;
+    width: 40px;
+    padding: 2px;
+    margin-right: 10px;
+    border-radius: 10px;
+    transition: background-color 300ms ease-in-out;
+}
+
+.game-settings-button:hover {
+    background-color: rgba(80, 80, 80, 20);
 }

@@ -6,9 +6,11 @@ const movementSpeedMetersPerSecond = 10;
 // Window dimensions in arbitrary game 'meters'
 var windowWidthInMeters;
 var windowHeightInMeters;
-var gameActive = false;
 
 var player;
+
+var connectedControllers = [];
+var gameActive = false;
 
 const Input = {
     BUTTON_UP_BP: 0,
@@ -31,7 +33,7 @@ clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
 // This can be used to load images for resources.
 function preload() {
     resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
-    pixelsPerMeter = window.innerWidth / metersInWidth//document.querySelector(".pixel-size").clientWidth / 2;
+    pixelsPerMeter = window.innerWidth / metersInWidth //document.querySelector(".pixel-size").clientWidth / 2;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
 }
@@ -48,9 +50,12 @@ function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
 
     // Whenever the screen resizes, adapt the canvas size with it.
-    document.addEventListener('resize', () => resizeCanvas(window.innerWidth, window.innerHeight));
+    window.addEventListener('resize', () => {
+        resizeCanvas(window.innerWidth, window.innerHeight);
+    });
 
-    player = new Entity(5, 5);
+    // Create an instance of the first player, for when the user decides to play single-player.
+    player = new Entity(5, 50);
 
     loadMap();
 }
@@ -221,8 +226,7 @@ class Entity extends AABB {
 
     position;
     velocity;
-    collidingX;
-    collidingY;
+    colliding;
 
     static DefaultMovementVector = new Vec2(movementSpeedMetersPerSecond, movementSpeedMetersPerSecond * 2);
 
@@ -231,6 +235,7 @@ class Entity extends AABB {
         super(posX, posY, 1, 2);
         this.position = new Vec2(posX, posY);
         this.velocity = new Vec2(0, 0);
+        this.colliding = new Vec2(0, 0);
     }
 
     // Function that allows the entity to move based on the input vector.
@@ -247,49 +252,45 @@ class Entity extends AABB {
     }
 
     update(dT) {
-        /*if (!this.collidingY)
-            this.velocity.addY(-Environment.G * pixelsPerMeter);*/
-        this.collidingX = this.collidingY = false;
+        if (this.colliding.y !== 0)
+            this.velocity.addY(-Environment.G);
+
+        let collisionPrecision = 0.1;
+
+        this.colliding.translate(0, 0);
         // Check if the next position of the entity is colliding with another
-        /*for (let i = 0; i < Environment.boundingBoxes.length; i++) {
+        for (let i = 0; i < Environment.boundingBoxes.length; i++) {
             let p = Environment.boundingBoxes[i];
             if (this === p)
                 continue;
 
-
-            // Check for X collisions
-            if (!this.collidingX) {
-                cpy = this.copy();
-                // Velocity is measured in pixels, so let's check for every n pixels for collision
-                for (let i = 0; i < Math.round(Math.abs(this.velocity.x * dT) / AABB.collisionDetectionPrecision); i++) {
-                    if (cpy.translate(this.position.x + (i * AABB.collisionDetectionPrecision) * Math.sign(this.velocity.x * dT), this.position.y).intersects(p)) {
-                        this.collidingX = true;
+            if (this.colliding.x !== 0) {
+                for (let j = 0; j < Math.abs(this.velocity.x) + collisionPrecision; j += collisionPrecision) {
+                    if (this.copy().translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(p)) {
+                        this.colliding.x = Math.sign(this.velocity.x);
                         break;
                     }
                 }
             }
 
-            // Check for Y collisions
-            if (!this.collidingY) {
-                cpy = this.copy();
-                // Velocity is measured in pixels, so let's check for every n pixels for collision
-                for (let i = 0; i < Math.round(Math.abs(this.velocity.y * dT) / AABB.collisionDetectionPrecision); i++) {
-                    if (cpy.translate(this.position.x, this.position.y + (i * AABB.collisionDetectionPrecision) * Math.sign(this.velocity.y * dT)).intersects(p)) {
-                        this.collidingY = true;
+            if (this.colliding.y !== 0) {
+                for (let j = 0; j < Math.abs(this.velocity.y) + collisionPrecision; j += collisionPrecision) {
+                    if (this.copy().translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(p)) {
+                        this.colliding.y = Math.sign(this.velocity.y);
                         break;
                     }
                 }
             }
 
             // If we're colliding on both axis, stop further checks
-            if (this.collidingX && this.collidingY)
+            if (this.colliding.x !== 0 && this.colliding.y !== 0)
                 break;
-        }*/
+        }
 
         // Add velocity to position
         this.position.add(
-            this.collidingX ? 0 : this.velocity.x * dT,
-            this.collidingY ? 0 : this.velocity.y * dT
+            this.colliding.x !== 0 ? 0 : this.velocity.x * dT,
+            this.colliding.y !== 0 ? 0 : this.velocity.y * dT
         );
 
         if (this.collidingX)

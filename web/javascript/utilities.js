@@ -180,7 +180,11 @@ class Vec2 {
     }
 
     magnitude() {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
+        return Math.sqrt(this.magSq());
+    }
+
+    magSq() {
+        return this.x * this.x + this.y * this.y;
     }
 
     normalize() {

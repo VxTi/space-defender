@@ -293,11 +293,14 @@ class Entity extends AABB {
             this.colliding.y !== 0 ? 0 : this.velocity.y * dT
         );
 
-        if (this.collidingX)
+        if (this.colliding.x !== 0)
             this.velocity.x = 0;
 
-        if (this.collidingY)
-            this.velocity.y = 0;
+        if (this.colliding.y !== 0) {
+            if (this.colliding.y < 0) {
+                this.position.y += 0.1;
+            } else this.velocity.y = 0;
+        }
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);

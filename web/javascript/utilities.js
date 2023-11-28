@@ -192,3 +192,48 @@ class Vec2 {
         return new Vec2(this.x / mag, this.y / mag);
     }
 }
+
+// Class for loading resources into the game.
+// This class allows the user to render animations or just draw regular images.
+class Resource {
+
+    image;
+    width;
+    height;
+    partWidth;
+    partHeight;
+    horizontal;
+    vertical;
+    // Loads an image from the provided location.
+    // Is possible to load multiple at the same time by providing a horizontalCount and verticalCount.
+    // These numbers represent how many images are present on those two axis.
+    // Initialization of this class MUST be done in the 'preload' function, otherwise it will NOT work.
+    constructor(src, horizontalCount = 1, verticalCount = 1) {
+        this.image = loadImage(src);
+        this.width = this.image.width;
+        this.height = this.image.height;
+        this.horizontal = horizontalCount;
+        this.vertical = verticalCount;
+        this.partWidth = this.width / horizontalCount;
+        this.partHeight = this.height / verticalCount;
+    }
+
+    // Renders one of the selected images depending on the provided axis indices.
+    // If one wants to render the whole image, just provide 0, 0 as horizontal and vertical.
+    // Other parameters are fairly straightforward, [x, y] => location of the image, [width, height] => dimensions
+    draw(x, y, width, height, horizontal =  0, vertical = 0) {
+        image(this.image,
+            x, y, width, height, // Canvas coordinates and dimensions
+            this.partWidth * horizontal, this.partHeight * vertical, this.partWidth, this.partHeight // Dimensions of the image
+        );
+    }
+
+    // Function that allows the user to animate different sections of a provided resource.
+    // If a provided resource has multiple horizontal and vertical sections and the user provided these in the
+    // constructor with 'horizontalCount' and 'verticalCount' (h, v) > 0
+    animate(x, y, width, height, animationIndex = 0) {
+        animationIndex %= this.horizontal + this.vertical; // Make sure the animation index is within bounds
+        this.draw(x, y, width, height, animationIndex % this.horizontal, animationIndex / this.vertical);
+    }
+
+}

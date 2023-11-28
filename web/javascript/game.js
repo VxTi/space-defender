@@ -224,9 +224,9 @@ class AABB {
 }
 class Entity extends AABB {
 
-    position;
-    velocity;
-    colliding;
+    position; // position of the entity
+    velocity; // velocity of the entity
+    colliding; // colliding states, containing the direction of collision (x, y)
 
     static DefaultMovementVector = new Vec2(movementSpeedMetersPerSecond, movementSpeedMetersPerSecond * 2);
 
@@ -241,7 +241,7 @@ class Entity extends AABB {
     // Function that allows the entity to move based on the input vector.
     // The provided vector must be normalized, e.g. -1 <= x & y <= 1
     // If this isn't the case, the player will move faster than necessary.
-    move(movementVector) {
+    move(movementVector = new Vec2(0, 0)) {
         if (!(movementVector instanceof Vec2))
             return;
 

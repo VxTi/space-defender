@@ -53,8 +53,7 @@ body, html {
 
 .game-settings-button {
     display: block;
-    position: relative;
-    float: right;
+    position: absolute;
     width: 40px;
     padding: 2px;
     margin-right: 10px;

@@ -91,6 +91,33 @@ void toggleDebugMode()
   }
 }
 
+char * selectPlayer(){
+  int playerNumber = 0;
+  debugPrint("Selecting player");
+  while(!playerNumber){
+    debugPrint("Waiting for input..");
+    if (digitalRead(PIN_BUTTON_LEFT)){
+      playerNumber = 1;
+      debugPrint("Player 1 selected");
+      digitalWrite(PIN_LED, HIGH);
+      delay(100);
+      digitalWrite(PIN_LED, LOW);
+      break;
+    }
+    if (digitalRead(PIN_BUTTON_RIGHT)){
+      playerNumber = 2;
+      debugPrint("Player 2 selected");
+      digitalWrite(PIN_LED, HIGH);
+      delay(100);
+      digitalWrite(PIN_LED, LOW);
+      break;
+    }
+  }
+  char * output = "ESP32 Controller P0";
+  output[strlen(output) - 1] = '0' + playerNumber;
+  return output;
+}
+
 // Checks if debug mode is toggled, and if so sends the input to serial
 void debugPrint(String text)
 {
@@ -131,7 +158,7 @@ void setup()
   analogReadResolution(12); // For reading from 0 to 4095
 
   // Create the BLE Device
-  BLEDevice::init(DEVICE_BT_NAME);
+  BLEDevice::init((std::__cxx11::string)selectPlayer());
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();

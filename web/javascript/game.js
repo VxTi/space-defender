@@ -118,15 +118,11 @@ function checkBluetoothConnections() {
             connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);
             connection.onReceive = (event) => {
 
-                /*player.move(new Vec2(
-                    -((res >> Input.BUTTON_LEFT_BP) & 1) + ((res >> Input.BUTTON_RIGHT_BP) & 1),
-                    (res >> Input.BUTTON_A_BP) & 1));*/
-                let errorOffset = 0.314159265 - 0.237;
-                let angleX = (0.000767177693 * (((event.target.value.getUint8(1) << 4) | (event.target.value.getUint8(2) >> 4)) & 0xFFF)) - Math.PI / 2 + errorOffset;
-                let angleY = (0.000767177693 * (((event.target.value.getUint8(2) << 8) | event.target.value.getUint8(3)) & 0xFFF)) - Math.PI / 2 + errorOffset;
+                let inputCode = event.getUint8(0);
+
                 player.move(new Vec2(
-                    Math.sin(angleX), Math.sin(angleY)
-                ));
+                    -((event.get >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),
+                    (inputCode >> Input.BUTTON_A_BP) & 1));
 
             };
             connection.onDisconnect = (e) => console.log("BT device disconnected", e);

@@ -1,6 +1,6 @@
 const framerate = 60; // frames per second.
 var pixelsPerMeter;
-const metersInWidth = 130;
+const metersInWidth = 70;
 const movementSpeedMetersPerSecond = 10;
 
 // Window dimensions in arbitrary game 'meters'
@@ -33,6 +33,7 @@ clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
 // This can be used to load images for resources.
 function preload() {
     resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
+    resources.set("blockSprite", loadImage("./assets/blocksprite.png"));
     pixelsPerMeter = window.innerWidth / metersInWidth //document.querySelector(".pixel-size").clientWidth / 2;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
@@ -49,13 +50,15 @@ function setup() {
     // Create a canvas to render onto
     createCanvas(window.innerWidth, window.innerHeight);
 
+    BlockType.bricks = new Resource(resources.get("blockSprite"));
+
     // Whenever the screen resizes, adapt the canvas size with it.
     window.addEventListener('resize', () => {
         resizeCanvas(window.innerWidth, window.innerHeight);
     });
 
     // Create an instance of the first player, for when the user decides to play single-player.
-    player = new Entity(5, 50);
+    player = new Entity(5, 10);
 
     loadMap();
 }
@@ -64,25 +67,17 @@ function setup() {
 // This means it has a 16.6ms interval.
 function draw() {
     background(0);
-    fill(255, 0, 0);
-
-    let sgnX = 0;
-    let sgnY = 0;
-
-    if (keyIsDown(65)) sgnX++;
-    if (keyIsDown(68)) sgnX--;
-    if (keyIsDown(32)) sgnY++;
-    if (keyIsDown(83)) sgnY--;
 
     image(resources.get('entityPlayer'), player.position.x * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
 
 
     for (var i = 0; i < Environment.boundingBoxes.length; i++) {
         let other = Environment.boundingBoxes[i];
-        let intersects = other.intersects(player);
-        fill(intersects ? 255 : 0, 50, 0);
-        rect(other.left * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter, other.width * pixelsPerMeter, other.height * pixelsPerMeter);
-    }
+        if (other instanceof Block) {
+            other.blockType.draw(
+                other.left * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
+                other.width * pixelsPerMeter, other.height * pixelsPerMeter);
+        }}
 
     let dT = deltaTime / 1000;
     //player.move(new Vec2(-sgnX, sgnY));
@@ -99,7 +94,10 @@ function loadMap(mapImage) {
 
     let n = window.innerWidth / pixelsPerMeter;
     for (let i = 0; i < n; i++) {
-        Environment.introduce(new AABB(i, 0, 1, 3 + noise(i / 7) * 10 + noise(i / 13) * 7 + noise(i / 16) * 4));
+        let posY = 3 + noise(i / 7) * 3 + noise(i / 13) * 2 + noise(i / 16) * 2;
+        for (let j = 0; j < posY; j++) {
+            Environment.introduce(new Block(i, j, BlockType.bricks));
+        }
     }
 
 }
@@ -164,8 +162,6 @@ class Entity extends AABB {
     }
 
     update(dT) {
-        if (this.colliding.y !== 0)
-            this.velocity.addY(-Environment.G);
 
         let collisionPrecision = 0.1;
 
@@ -176,8 +172,8 @@ class Entity extends AABB {
             if (this === p)
                 continue;
 
-            if (this.colliding.x !== 0) {
-                for (let j = 0; j < Math.abs(this.velocity.x) + collisionPrecision; j += collisionPrecision) {
+            if (this.colliding.x === 0) {
+                for (let j = 0; j < Math.abs(this.velocity.x); j += collisionPrecision) {
                     if (this.copy().translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(p)) {
                         this.colliding.x = Math.sign(this.velocity.x);
                         break;
@@ -185,10 +181,11 @@ class Entity extends AABB {
                 }
             }
 
-            if (this.colliding.y !== 0) {
-                for (let j = 0; j < Math.abs(this.velocity.y) + collisionPrecision; j += collisionPrecision) {
+            if (this.colliding.y === 0) {
+                for (let j = 0; j < Math.abs(this.velocity.y); j += collisionPrecision) {
                     if (this.copy().translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(p)) {
                         this.colliding.y = Math.sign(this.velocity.y);
+                        //console.log(`Colliding[y: ${this.position.y}] -> [y: ${this.position.y + j * Math.sign(this.velocity.y)}`)
                         break;
                     }
                 }
@@ -207,12 +204,14 @@ class Entity extends AABB {
 
         if (this.colliding.x !== 0)
             this.velocity.x = 0;
+        else
+            this.velocity.addY(-Environment.G * dT);
 
         if (this.colliding.y !== 0) {
-            if (this.colliding.y < 0) {
-                this.position.y += 0.1;
-            } else this.velocity.y = 0;
+            this.velocity.y = 0;
         }
+
+        //console.log(`V: ${this.velocity.x}, ${this.velocity.y}`)
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);

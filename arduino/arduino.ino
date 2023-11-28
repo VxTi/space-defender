@@ -2,6 +2,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <UUID.h>
 
 // Port indices for all buttons / LEDs
 #define PIN_BUTTON_UP 3
@@ -28,8 +29,10 @@
 #define DEVICE_BT_NAME "ESP32 Controller"
 
 // Bluetooth Low Energy UUIDs
-#define SERVICE_UUID "73770700-a4e0-4ff2-bd68-47a5250d5ec2"
-#define CHARACTERISTIC_UUID "544a3ce0-5ca6-411e-a0c2-17789dc0cec8"
+//#define SERVICE_UUID "73770700-a4e0-4ff2-bd68-47a5250d5ec2"
+//#define CHARACTERISTIC_UUID "544a3ce0-5ca6-411e-a0c2-17789dc0cec8"
+char * serviceUUID;
+char * characteristicUUID;
 
 // Library settings
 BLEServer *pServer;
@@ -150,6 +153,21 @@ void readInput()
   controller_data[3] = (uint8_t)(y & 0xFF);
 }
 
+void generateUuids(){
+    UUID uuid1;
+    UUID uuid2;
+
+    uuid1.seed(analogRead(14));
+    uuid1.generate();
+    serviceUUID = uuid1.toCharArray();
+
+    delay(1000);
+
+    uuid2.seed(analogRead(14));
+    uuid2.generate();
+    characteristicUUID = uuid2.toCharArray();
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -157,6 +175,13 @@ void setup()
   toggleDebugMode();
   analogReadResolution(12); // For reading from 0 to 4095
 
+  generateUuids();
+  /*debugPrint("Service UUID: " + serviceUUID);
+  debugPrint("Characteristic UUID: " + characteristicUUID);
+  */
+
+  Serial.printf("Service UUID: %s\r\n", serviceUUID);
+  Serial.printf("Characteristic UUID: %s\r\n", characteristicUUID);
   // Create the BLE Device
   BLEDevice::init((std::__cxx11::string)selectPlayer());
 
@@ -165,11 +190,11 @@ void setup()
   pServer->setCallbacks(new connectionCallback()); // Add the callback for handling connection status
 
   // Create the BLE Service
-  BLEService *bleService = pServer->createService(SERVICE_UUID);
+  BLEService *bleService = pServer->createService(serviceUUID);
 
   // Create a BLE Characteristic
   controllerCharacteristic = bleService->createCharacteristic(
-      CHARACTERISTIC_UUID,
+      characteristicUUID,
       BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE);
 
   // Create a BLE Descriptor
@@ -180,7 +205,7 @@ void setup()
 
   // Start advertising (transmitting)
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->addServiceUUID(serviceUUID);
   pAdvertising->setScanResponse(false);
   pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();

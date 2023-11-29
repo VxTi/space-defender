@@ -143,7 +143,7 @@ function checkBluetoothConnections() {
             connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);
             connection.onReceive = (event) => {
 
-                let inputCode = event.getUint8(0);
+                let inputCode = event.target.value.getUint8(0);
 
                 player.move(new Vec2(
                     -((inputCode >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),

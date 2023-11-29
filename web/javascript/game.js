@@ -9,6 +9,9 @@ var windowHeightInMeters;
 const collisionDetectionPrecision = 0.05;
 const collisionDetectionDelta = 0.05;
 
+var environmentPosition = 0;
+const environmentVisibilityMargins = 10; // Visibility in
+
 var player;
 
 var connectedControllers = [];
@@ -30,6 +33,7 @@ const Input = {
 const resources = new Map();
 
 clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
+isWithinBounds = function(x, a, b) { return x >= a && x <= b; }
 
 // This function is called before the setup function.
 // This can be used to load images for resources.
@@ -96,7 +100,6 @@ function draw() {
         }}
 
     let dT = deltaTime / 1000;
-    //player.move(new Vec2(-sgnX, sgnY));
     player.update(dT);
 
 }
@@ -108,7 +111,7 @@ function loadMap(mapImage) {
     /*if (!(mapImage instanceof p5.Image))
         throw new TypeError("Provided argument is not of type p5.Image");*/
 
-    let n = window.innerWidth / pixelsPerMeter;
+    let n = window.innerWidth / pixelsPerMeter * 10;
     for (let i = 0; i < n; i++) {
         let posY = 3 + noise(i / 7) * 3 + noise(i / 13) * 2 + noise(i / 16) * 2;
         for (let j = 0; j < posY; j++) {
@@ -134,7 +137,7 @@ function checkBluetoothConnections() {
     let bleServiceUUID = '73770700-a4e0-4ff2-bd68-47a5250d5ec2';
     let bleCharacteristicsUUID = '544a3ce0-5ca6-411e-a0c2-17789dc0cec8'
 
-    BluetoothService.search({filters: [{ name: 'ESP32 Controller'}], optionalServices: [bleServiceUUID]})
+    BluetoothService.search({acceptAllDevices: true})
         .then(device => {
             let connection = new BluetoothService(device);
             connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);
@@ -163,6 +166,7 @@ class Entity extends AABB {
     colliding; // colliding states, containing the direction of collision (x, y)
 
     static DefaultMovementVector = new Vec2(movementSpeedMetersPerSecond, movementSpeedMetersPerSecond);
+    static collisionDetectionThreshold = 0.001;
 
 
     constructor(posX, posY) {
@@ -203,7 +207,7 @@ class Entity extends AABB {
                 }
             }
 
-            if (this.colliding.y === 0) {
+            if (this.colliding.y === 0 && Math.abs(this.velocity.y) >= Entity.collisionDetectionThreshold) {
                 for (let j = 0; j <= Math.abs(this.velocity.y * dT) + collisionDetectionDelta; j += collisionDetectionPrecision) {
                     if (this.copy().translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(p)) {
                         this.colliding.y = Math.sign(this.velocity.y);
@@ -238,6 +242,9 @@ class Entity extends AABB {
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);
+
+        if (!isWithinBounds(this.position.x, ))
+
         this.position.x = clamp(this.position.x, 0, windowWidthInMeters - this.width);
 
         // Update

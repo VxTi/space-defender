@@ -2,7 +2,6 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-#include <UUID.h>
 
 // Port indices for all buttons / LEDs
 #define PIN_BUTTON_UP    3
@@ -86,8 +85,24 @@ void toggleDebugMode()
 }
 
 char * selectPlayer(){
-  int playerNumber = 0;
-  debugPrint("Selecting player");
+
+  char * result = "ESP32 Controller P1";
+  const uint8_t idx = strlen(result) - 1;
+
+  if (!digitalRead(PIN_BUTTON_OPT)) 
+    return result;
+
+  // Keep reading until the player releases the OPT button.
+  while (digitalRead(PIN_BUTTON_OPT)) {
+    if (digitalRead(PIN_BUTTON_LEFT))
+      result[idx] = '1';
+    else if (digitalRead(PIN_BUTTON_RIGHT))
+      result[idx] = '2';
+  }
+
+  return result;
+
+/*
   while(!playerNumber){
     debugPrint("Waiting for input..");
     if (digitalRead(PIN_BUTTON_LEFT)){
@@ -109,7 +124,7 @@ char * selectPlayer(){
   }
   char * output = "ESP32 Controller P0";
   output[strlen(output) - 1] = '0' + playerNumber;
-  return output;
+  return output;*/
 }
 
 // Checks if debug mode is toggled, and if so sends the input to serial
@@ -132,19 +147,18 @@ uint8_t readInput() {
                    (digitalRead(PIN_BUTTON_DOWN)  << BUTTON_DOWN_BP));
 }
 
-void setup()
-{
+void setup() {
+
   Serial.begin(115200);
   definePinModes();
   toggleDebugMode();
-  analogReadResolution(12); // For reading from 0 to 4095
 
   /*debugPrint("Service UUID: " + serviceUUID);
   debugPrint("Characteristic UUID: " + characteristicUUID);
   */
 
   // Create the BLE Device
-  BLEDevice::init((std::__cxx11::string)selectPlayer());
+  BLEDevice::init((const char *)selectPlayer());
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -174,14 +188,13 @@ void setup()
   debugPrint("Waiting a client connection to notify...");
 }
 
-void loop()
-{
+void loop() {
   // notify changed value
   if (deviceConnected)
   {
-    uint8_t inputData = readInput();
     digitalWrite(PIN_LED, HIGH);
-    controllerCharacteristic->setValue(inputData);
+    uint8_t inputValue = readInput();
+    controllerCharacteristic->setValue(&inputValue, 1);
     controllerCharacteristic->notify();
     debugPrint("Packet sent");
     delay(10); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms

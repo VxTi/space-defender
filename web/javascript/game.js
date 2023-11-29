@@ -137,7 +137,7 @@ function checkBluetoothConnections() {
     let bleServiceUUID = 'a8a5a50f-12c1-4b83-bcd3-71ec79287967';
     let bleCharacteristicsUUID = 'bb4843e0-d2fc-4b26-8fca-b99bd452acaa'
 
-    BluetoothService.search({acceptAllDevices: true})
+    BluetoothService.search({optionalServices: [bleServiceUUID]})
         .then(device => {
             let connection = new BluetoothService(device);
             connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);
@@ -146,7 +146,7 @@ function checkBluetoothConnections() {
                 let inputCode = event.getUint8(0);
 
                 player.move(new Vec2(
-                    -((event.get >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),
+                    -((inputCode >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),
                     (inputCode >> Input.BUTTON_A_BP) & 1));
 
             };

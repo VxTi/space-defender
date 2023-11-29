@@ -20,6 +20,7 @@ const environmentVisibilityMargins = 10;
 var player;
 
 let playerAnimation;
+let moonAnimation;
 
 var connectedControllers = [];
 var gameActive = true;
@@ -45,17 +46,25 @@ isWithinBounds = function(x, a, b) { return x >= a && x <= b; }
 // This function is called before the setup function.
 // This can be used to load images for resources.
 function preload() {
-    resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
+
+    const res = ['playerImage', 'dirt', 'stone', 'grass_block_side',
+                        'deepslate_bricks', 'cracked_deepslate_bricks', 'steve_animations', 'moon_phases'];
+
+    for (let element of res) {
+        resources.set(element, loadImage(`./assets/${element}.png`));
+    }
+
+    /*resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
     resources.set("blockSprite", loadImage("./assets/blocksprite.png"));
     resources.set("dirt", loadImage("./assets/dirt.png"));
     resources.set("stone", loadImage("./assets/stone.png"));
     resources.set("grass", loadImage("./assets/grass_block_side.png"));
     resources.set("deepslate", loadImage("./assets/deepslate_bricks.png"));
     resources.set("deepslate_crack", loadImage("./assets/cracked_deepslate_bricks.png"));
-    resources.set("steve_anim", loadImage("./assets/steve_animations.png"))
+    resources.set("steve_anim", loadImage("./assets/steve_animations.png"))*/
 
     // How many pixels represent a 'meter' ingame. This uses an invisible div element that's one cm large.
-    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * 0.8;
+    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * 0.7;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
 }
@@ -73,14 +82,16 @@ function setup() {
     // Create a canvas to render onto
     createCanvas(window.innerWidth, window.innerHeight);
 
-    BlockType.bricks = new Resource(resources.get("blockSprite"));
+    //BlockType.bricks = new Resource(resources.get("blockSprite"));
     BlockType.stone = new Resource(resources.get("stone"));
     BlockType.dirt = new Resource(resources.get("dirt"));
-    BlockType.grass = new Resource(resources.get("grass"));
-    BlockType.deepslate = new Resource(resources.get("deepslate"));
-    BlockType.deepslate_cracked = new Resource(resources.get("deepslate_crack"));
+    BlockType.grass = new Resource(resources.get("grass_block_side"));
+    BlockType.deepslate = new Resource(resources.get("deepslate_bricks"));
+    BlockType.deepslate_cracked = new Resource(resources.get("cracked_deepslate_bricks"));
 
-    playerAnimation = new Resource(resources.get("steve_anim"), 5, 2);
+    moonAnimation = new Resource(resources.get("moon_phases"), 4, 2);
+
+    playerAnimation = new Resource(resources.get("steve_animations"), 5, 2);
 
     // Whenever the screen resizes, adapt the canvas size with it.
     window.addEventListener('resize', () => {
@@ -113,6 +124,9 @@ function draw() {
         player.velocity.y = verticalSpeed * sgnY;
 
     timePhase += (deltaTime / 1000) * 4; // 3 frames per second.
+
+
+    moonAnimation.animate(100, 10, 30, 30, Math.floor(timePhase));
     /*playerAnimation.animate(
         player.position.x * pixelsPerMeter,  // screen X
         window.height - (player.height + player.position.y) * pixelsPerMeter, // screen Y
@@ -120,7 +134,6 @@ function draw() {
         player.height * pixelsPerMeter,
         Math.floor(timePhase));*/
 
-    image(resources.get('entityPlayer'), (player.position.x ) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
 
 
     for (var i = 0; i < Environment.boundingBoxes.length; i++) {
@@ -129,7 +142,10 @@ function draw() {
             other.blockType.draw(
                 (other.left + screenHorizontalOffset) * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
                 other.width * pixelsPerMeter, other.height * pixelsPerMeter);
-        }}
+        }
+    }
+    image(resources.get('playerImage'), (player.position.x + screenHorizontalOffset) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
+
 
     let dT = deltaTime / 1000;
     player.update(dT);
@@ -229,8 +245,11 @@ class Entity extends AABB {
 
     update(dT) {
 
-        this.colliding.translate(0, 0);
+        // Set it to an unrealistic number, just before testing for collision.
+        // Makes it easier to test whether collision detection has finished, without allocating more memory.
+        this.colliding.translate(Infinity, Infinity);
         this.velocity.addY(-Environment.G * dT);
+
         // Check if the next position of the entity is colliding with another
         for (let i = 0; i < Environment.boundingBoxes.length; i++) {
             let p = Environment.boundingBoxes[i];
@@ -240,38 +259,67 @@ class Entity extends AABB {
             let v = this.velocity.copy; // velocity copy
             let cpy = this.copy; // aabb copy
 
-            // Detection for X axis collision
+
+            // Check in steps whether we're colliding with another object.
+            // This method checks whether the velocity vector on both dimensions collides with an object
+            // If this isn't the case in the first step, halve the velocity vector and try again.
+            // If the next vector after halving doesn't intersect, increase the vector size to 0.5 * (V_half + V_start);
             for (let j = 0; j < Entity.collisionDetectionSteps; j++) {
 
-                // Check if the next movement vector collides. If this is the case, halve the velocity vector.
-                if (cpy.translate(this.position.x + v.x, this.position.y).intersects(p)) {
-                    v.multX(0.5);
-                } else {
-                    // It doesn't intersect at the current step.
-                    // If the step is 0, we can just say it doesn't collide.
-                    if (j === 0)
-                        break;
+                // Check if we're not already colliding on the x-axis
+                if (this.colliding.x === Infinity) {
 
-                    v.x = 0.5 * (this.velocity.x + v.x);
+                    // Check if we're colliding in the next possible X position
+                    if (cpy.translate(this.position.x + v.x * dT, this.position.y).intersects(p)) {
+
+                        if (j === Entity.collisionDetectionSteps - 1) {
+                            this.colliding.x = Math.sign(this.velocity.x);
+                            v.x = 0;
+                        } else {
+                            v.multX(0.5);
+                        }
+                    } else {
+                        // It doesn't intersect at the current step.
+                        // If the step is 0 or Steps-1, we can just say it doesn't collide.
+                        if (j === 0 || j === Entity.collisionDetectionSteps - 1) {
+                            this.colliding.x = 0;
+                            v.x = this.velocity.x;
+                        } else {
+                            // Increase vector size
+                            v.x = 0.5 * (this.velocity.x + v.x);
+                        }
+                    }
                 }
-                // Check if the next movement vector collides. If this is the case, halve the velocity vector.
-                if (cpy.translate(this.position.x, this.position.y + this.velocity.y).intersects(p)) {
-                    v.multY(0.5);
-                } else {
-                    // It doesn't intersect at the current step.
-                    // If the step is 0, we can just say it doesn't collide.
-                    if (j === 0)
-                        break;
 
-                    v.y = 0.5 * (this.velocity.y + v.y);
+                // Check if we're not already colliding
+                if (this.colliding.y === Infinity) {
+
+                    // Check if we're colliding in the next possible Y position
+                    if (cpy.translate(this.position.x, this.position.y + this.velocity.y * dT).intersects(p)) {
+                        // If the last attempt collides, set next y velocity to 0 and stop checking.
+                        if (j === Entity.collisionDetectionSteps - 1) {
+                            this.colliding.y = Math.sign(this.velocity.y);
+                        } else {
+                            v.multY(0.5);
+                        }
+                    } else {
+                        // It doesn't intersect at the current step.
+                        // If the step is 0 or Steps-1, we can just say it doesn't collide.
+                        if (j === 0 || j === Entity.collisionDetectionSteps - 1) {
+                            this.colliding.y = 0;
+                            v.y = this.velocity.y;
+                        } else {
+                            v.y = 0.5 * (this.velocity.y + v.y);
+                        }
+                    }
                 }
             }
 
             this.velocity.translate(v.x, v.y);
 
-           /* if (this.colliding.x === 0) {
+            /*if (this.colliding.x === 0) {
                 for (let j = 0; j <= Math.abs(this.velocity.x * dT) + collisionDetectionDelta; j += collisionDetectionPrecision) {
-                    if (this.copy().translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(p)) {
+                    if (this.copy.translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(p)) {
                         this.colliding.x = Math.sign(this.velocity.x);
                         break;
                     }
@@ -280,7 +328,7 @@ class Entity extends AABB {
 
             if (this.colliding.y === 0 && Math.abs(this.velocity.y) >= Entity.collisionDetectionThreshold) {
                 for (let j = 0; j <= Math.abs(this.velocity.y * dT) + collisionDetectionDelta; j += collisionDetectionPrecision) {
-                    if (this.copy().translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(p)) {
+                    if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(p)) {
                         this.colliding.y = Math.sign(this.velocity.y);
                         break;
                     }
@@ -312,11 +360,11 @@ class Entity extends AABB {
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);
 
-        if (!isWithinBounds(this.position.x, environmentVisibilityMargins + screenHorizontalOffset, windowWidthInMeters - environmentVisibilityMargins + screenHorizontalOffset   )) {
+        if (!isWithinBounds(this.position.x, environmentVisibilityMargins + screenHorizontalOffset, windowWidthInMeters - environmentVisibilityMargins + screenHorizontalOffset)) {
             screenHorizontalOffset = -this.position.x;
         }
 
-        this.position.x = clamp(this.position.x, 0, windowWidthInMeters - this.width);
+        //this.position.x = clamp(this.position.x, 0, windowWidthInMeters - this.width);
 
         // Update
         this.translate(this.position.x, this.position.y);

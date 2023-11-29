@@ -134,8 +134,8 @@ function checkBluetoothConnections() {
     if (!(navigator.bluetooth))
         throw new Error("Bluetooth not supported on this browser!");
 
-    let bleServiceUUID = '73770700-a4e0-4ff2-bd68-47a5250d5ec2';
-    let bleCharacteristicsUUID = '544a3ce0-5ca6-411e-a0c2-17789dc0cec8'
+    let bleServiceUUID = 'a8a5a50f-12c1-4b83-bcd3-71ec79287967';
+    let bleCharacteristicsUUID = 'bb4843e0-d2fc-4b26-8fca-b99bd452acaa'
 
     BluetoothService.search({acceptAllDevices: true})
         .then(device => {

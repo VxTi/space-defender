@@ -89,8 +89,10 @@ char * selectPlayer(){
   char * result = "ESP32 Controller P1";
   const uint8_t idx = strlen(result) - 1;
 
-  if (!digitalRead(PIN_BUTTON_OPT)) 
-    return result;
+  if (!digitalRead(PIN_BUTTON_OPT)) {
+    Serial.printf("Device name: %s\r\n", result);
+      return result;
+  }
 
   // Keep reading until the player releases the OPT button.
   while (digitalRead(PIN_BUTTON_OPT)) {
@@ -99,6 +101,8 @@ char * selectPlayer(){
     else if (digitalRead(PIN_BUTTON_RIGHT))
       result[idx] = '2';
   }
+
+  Serial.printf("Selected device: %s\r\n", result);
 
   return result;
 

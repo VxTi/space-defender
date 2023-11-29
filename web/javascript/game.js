@@ -1,10 +1,13 @@
 const framerate = 60; // frames per second.
 var pixelsPerMeter;
-const movementSpeedMetersPerSecond = 10;
+const movementSpeedMetersPerSecond = 5.5;
 
 // Window dimensions in arbitrary game 'meters'
 var windowWidthInMeters;
 var windowHeightInMeters;
+
+const collisionDetectionPrecision = 0.05;
+const collisionDetectionDelta = 0.05;
 
 var player;
 
@@ -33,7 +36,8 @@ clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
 function preload() {
     resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
     resources.set("blockSprite", loadImage("./assets/blocksprite.png"));
-    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * 0.7;
+
+    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * 0.8;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
 }
@@ -67,6 +71,19 @@ function setup() {
 function draw() {
     background(0);
 
+    let sgnX = 0;
+    let sgnY = 0;
+
+    if (keyIsDown(65)) sgnX--;
+    if (keyIsDown(68)) sgnX++;
+    if (keyIsDown(32)) sgnY++;
+    if (keyIsDown(16)) sgnY--;
+    if (sgnX !== 0 && player.colliding.x === 0)
+        player.velocity.x = movementSpeedMetersPerSecond * sgnX;
+    if (sgnY !== 0 && player.colliding.y === 0)
+        player.velocity.y = movementSpeedMetersPerSecond * sgnY * 2;
+
+
     image(resources.get('entityPlayer'), player.position.x * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
 
 
@@ -96,6 +113,14 @@ function loadMap(mapImage) {
         let posY = 3 + noise(i / 7) * 3 + noise(i / 13) * 2 + noise(i / 16) * 2;
         for (let j = 0; j < posY; j++) {
             Environment.introduce(new Block(i, j, BlockType.bricks));
+        }
+    }
+
+    for (let i = 0; i < 30; i++) {
+        let posY = noise(i / 7) * 10;
+        let posYd = -noise(i / 10) * 10;
+        for (let j = 0; j < posY; j++) {
+            Environment.introduce(new Block(10 + i, 25 + Math.floor(posYd) + j, BlockType.bricks));
         }
     }
 
@@ -137,13 +162,13 @@ class Entity extends AABB {
     velocity; // velocity of the entity
     colliding; // colliding states, containing the direction of collision (x, y)
 
-    static DefaultMovementVector = new Vec2(movementSpeedMetersPerSecond, movementSpeedMetersPerSecond * 2);
+    static DefaultMovementVector = new Vec2(movementSpeedMetersPerSecond, movementSpeedMetersPerSecond);
 
 
     constructor(posX, posY) {
-        super(posX, posY, 1, 2);
-        this.position = new Vec2(posX, posY);
-        this.velocity = new Vec2(0, 0);
+        super(posX, posY, 0.9, 1.8);
+        this.position  = new Vec2(posX, posY);
+        this.velocity  = new Vec2(0, 0);
         this.colliding = new Vec2(0, 0);
     }
 
@@ -162,8 +187,6 @@ class Entity extends AABB {
 
     update(dT) {
 
-        let collisionPrecision = 0.1;
-
         this.colliding.translate(0, 0);
         // Check if the next position of the entity is colliding with another
         for (let i = 0; i < Environment.boundingBoxes.length; i++) {
@@ -172,7 +195,7 @@ class Entity extends AABB {
                 continue;
 
             if (this.colliding.x === 0) {
-                for (let j = 0; j < Math.abs(this.velocity.x); j += collisionPrecision) {
+                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + collisionDetectionDelta; j += collisionDetectionPrecision) {
                     if (this.copy().translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(p)) {
                         this.colliding.x = Math.sign(this.velocity.x);
                         break;
@@ -181,7 +204,7 @@ class Entity extends AABB {
             }
 
             if (this.colliding.y === 0) {
-                for (let j = 0; j < Math.abs(this.velocity.y); j += collisionPrecision) {
+                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + collisionDetectionDelta; j += collisionDetectionPrecision) {
                     if (this.copy().translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(p)) {
                         this.colliding.y = Math.sign(this.velocity.y);
                         break;
@@ -200,14 +223,16 @@ class Entity extends AABB {
             this.colliding.y !== 0 ? 0 : this.velocity.y * dT
         );
 
+        // Check if the x axis is colliding, if so, stop movement
         if (this.colliding.x !== 0)
             this.velocity.x = 0;
         else
-            this.velocity.addY(-Environment.G * dT);
+            this.velocity.x *= 0.9;
 
-        if (this.colliding.y !== 0) {
+        if (this.colliding.y !== 0)
             this.velocity.y = 0;
-        }
+        else
+            this.velocity.addY(-Environment.G);
 
         //console.log(`V: ${this.velocity.x}, ${this.velocity.y}`)
 

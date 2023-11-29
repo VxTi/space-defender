@@ -5,32 +5,32 @@
 #include <UUID.h>
 
 // Port indices for all buttons / LEDs
-#define PIN_BUTTON_UP 3
-#define PIN_BUTTON_LEFT 8
+#define PIN_BUTTON_UP    3
+#define PIN_BUTTON_LEFT  8
 #define PIN_BUTTON_RIGHT 9
 #define PIN_BUTTON_DOWN 46
-#define PIN_BUTTON_A 12
-#define PIN_BUTTON_B 11
-#define PIN_BUTTON_OPT 10
-#define PIN_LED 4
-#define PIN_JOYSTICK_X 13
-#define PIN_JOYSTICK_Y 14
+#define PIN_BUTTON_A    12
+#define PIN_BUTTON_B    11
+#define PIN_BUTTON_OPT  10
+#define PIN_LED          4
 
 // Bit position definitions of all buttons
-#define BUTTON_UP_BP 0
-#define BUTTON_LEFT_BP 1
+#define BUTTON_UP_BP    0
+#define BUTTON_LEFT_BP  1
 #define BUTTON_RIGHT_BP 2
-#define BUTTON_DOWN_BP 3
-#define BUTTON_A_BP 4
-#define BUTTON_B_BP 5
-#define BUTTON_OPT_BP 6
+#define BUTTON_DOWN_BP  3
+#define BUTTON_A_BP     4
+#define BUTTON_B_BP     5
+#define BUTTON_OPT_BP   6
 
-// Bluetooth name
+// UUID's for service and input characteristics
+// These will be read by other devices
+#define UUID_SERVICE_BASE         "a8a5a50f-12c1-4b83-bcd3-71ec79287967"
+#define UUID_CHARACTERISTIC_INPUT "bb4843e0-d2fc-4b26-8fca-b99bd452acaa"
+
+// Name for the Bluetooth device
 #define DEVICE_BT_NAME "ESP32 Controller"
 
-// Bluetooth Low Energy UUIDs
-//#define SERVICE_UUID "73770700-a4e0-4ff2-bd68-47a5250d5ec2"
-//#define CHARACTERISTIC_UUID "544a3ce0-5ca6-411e-a0c2-17789dc0cec8"
 char * serviceUUID;
 char * characteristicUUID;
 
@@ -39,7 +39,6 @@ BLEServer *pServer;
 BLECharacteristic *controllerCharacteristic;
 
 // Global variables
-uint8_t *controller_data = (uint8_t *)malloc(4);
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 bool debugMode = false;
@@ -69,8 +68,6 @@ void definePinModes()
   pinMode(PIN_BUTTON_RIGHT, INPUT);
   pinMode(PIN_BUTTON_DOWN, INPUT);
   pinMode(PIN_BUTTON_OPT, INPUT);
-  pinMode(PIN_JOYSTICK_X, INPUT);
-  pinMode(PIN_JOYSTICK_Y, INPUT);
 }
 
 // Checks if both buttons B and OPT are pressed on startup, if so debug mode will be toggled
@@ -131,26 +128,14 @@ void debugPrint(String text)
 }
 
 // Reads all digital pins and builds it into a binary value
-void readInput()
-{
+uint8_t readInput() {
   // Read all buttons
-  controller_data[0] = (uint8_t)((digitalRead(PIN_BUTTON_A) << BUTTON_A_BP) |
-                                 (digitalRead(PIN_BUTTON_B) << BUTTON_B_BP) |
-                                 (digitalRead(PIN_BUTTON_UP) << BUTTON_UP_BP) |
-                                 (digitalRead(PIN_BUTTON_LEFT) << BUTTON_LEFT_BP) |
-                                 (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
-                                 (digitalRead(PIN_BUTTON_DOWN) << BUTTON_DOWN_BP));
-
-  // Reads the analog value of the joystick
-  uint16_t x = analogRead(PIN_JOYSTICK_X);
-  uint16_t y = analogRead(PIN_JOYSTICK_Y);
-
-  // Serial.printf("x: %.1f, y: %.1f\r\n", (float) (x * 0.0879120879), (float) (y * 0.0879120879));
-
-  // Add the values to the array
-  controller_data[1] = (uint8_t)((x >> 4) & 0xFF);
-  controller_data[2] = (uint8_t)(((x & 0xF) << 4 | (y >> 8) & 0xF) & 0xFF);
-  controller_data[3] = (uint8_t)(y & 0xFF);
+  return (uint8_t)((digitalRead(PIN_BUTTON_A)     << BUTTON_A_BP)     |
+                   (digitalRead(PIN_BUTTON_B)     << BUTTON_B_BP)     |
+                   (digitalRead(PIN_BUTTON_UP)    << BUTTON_UP_BP)    |
+                   (digitalRead(PIN_BUTTON_LEFT)  << BUTTON_LEFT_BP)  |
+                   (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
+                   (digitalRead(PIN_BUTTON_DOWN)  << BUTTON_DOWN_BP));
 }
 
 void generateUuids(){
@@ -207,6 +192,7 @@ void setup()
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->addServiceUUID(serviceUUID);
   pAdvertising->setScanResponse(false);
+  pAdvertising->setMinPreferred(0x06);
   pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
   debugPrint("Waiting a client connection to notify...");

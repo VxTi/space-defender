@@ -28,12 +28,6 @@
 #define UUID_SERVICE_BASE         "a8a5a50f-12c1-4b83-bcd3-71ec79287967"
 #define UUID_CHARACTERISTIC_INPUT "bb4843e0-d2fc-4b26-8fca-b99bd452acaa"
 
-// Name for the Bluetooth device
-#define DEVICE_BT_NAME "ESP32 Controller"
-
-char * serviceUUID;
-char * characteristicUUID;
-
 // Library settings
 BLEServer *pServer;
 BLECharacteristic *controllerCharacteristic;
@@ -138,21 +132,6 @@ uint8_t readInput() {
                    (digitalRead(PIN_BUTTON_DOWN)  << BUTTON_DOWN_BP));
 }
 
-void generateUuids(){
-    UUID uuid1;
-    UUID uuid2;
-
-    uuid1.seed(analogRead(14));
-    uuid1.generate();
-    serviceUUID = uuid1.toCharArray();
-
-    delay(1000);
-
-    uuid2.seed(analogRead(14));
-    uuid2.generate();
-    characteristicUUID = uuid2.toCharArray();
-}
-
 void setup()
 {
   Serial.begin(115200);
@@ -160,13 +139,10 @@ void setup()
   toggleDebugMode();
   analogReadResolution(12); // For reading from 0 to 4095
 
-  generateUuids();
   /*debugPrint("Service UUID: " + serviceUUID);
   debugPrint("Characteristic UUID: " + characteristicUUID);
   */
 
-  Serial.printf("Service UUID: %s\r\n", serviceUUID);
-  Serial.printf("Characteristic UUID: %s\r\n", characteristicUUID);
   // Create the BLE Device
   BLEDevice::init((std::__cxx11::string)selectPlayer());
 
@@ -175,11 +151,11 @@ void setup()
   pServer->setCallbacks(new connectionCallback()); // Add the callback for handling connection status
 
   // Create the BLE Service
-  BLEService *bleService = pServer->createService(serviceUUID);
+  BLEService *bleService = pServer->createService(UUID_SERVICE_BASE);
 
   // Create a BLE Characteristic
   controllerCharacteristic = bleService->createCharacteristic(
-      characteristicUUID,
+      UUID_CHARACTERISTIC_INPUT,
       BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE);
 
   // Create a BLE Descriptor
@@ -190,7 +166,7 @@ void setup()
 
   // Start advertising (transmitting)
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(serviceUUID);
+  pAdvertising->addServiceUUID(UUID_SERVICE_BASE);
   pAdvertising->setScanResponse(false);
   pAdvertising->setMinPreferred(0x06);
   pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
@@ -203,9 +179,9 @@ void loop()
   // notify changed value
   if (deviceConnected)
   {
+    uint8_t inputData = readInput();
     digitalWrite(PIN_LED, HIGH);
-    readInput();
-    controllerCharacteristic->setValue(controller_data, 4);
+    controllerCharacteristic->setValue(inputData);
     controllerCharacteristic->notify();
     debugPrint("Packet sent");
     delay(10); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms

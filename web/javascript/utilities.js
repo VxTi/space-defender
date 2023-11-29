@@ -166,7 +166,7 @@ class AABB {
     }
 
     // Returns a copy of this Environment
-    copy() {
+    get copy() {
         return new AABB(this.left, this.top, this.width, this.height);
     }
 
@@ -260,6 +260,11 @@ class Resource {
 
 class BlockType {
     static bricks;
+    static stone;
+    static dirt;
+    static grass;
+    static deepslate;
+    static deepslate_cracked;
 }
 
 class Block extends AABB {
@@ -280,10 +285,15 @@ class Vec2 {
         this.y = y;
     }
 
-    copy() { return new Vec2(this.x, this.y); }
+    get copy() { return new Vec2(this.x, this.y); }
     translateX(x) { this.x = x; return this; }
     translateY(y) { this.y = y; return this; }
     translate(x, y) {
+        if (x instanceof Vec2) {
+            this.x = x.x;
+            this.y = x.y;
+            return this;
+        }
         this.x = x;
         this.y = y;
         return this;

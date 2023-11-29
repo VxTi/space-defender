@@ -1,6 +1,7 @@
 const framerate = 60; // frames per second.
 var pixelsPerMeter;
-const movementSpeedMetersPerSecond = 5.5;
+const horizontalSpeed = 10; // Speed at which the player moves per second in abstract meters.
+const verticalSpeed = 5.5;
 
 // Window dimensions in arbitrary game 'meters'
 var windowWidthInMeters;
@@ -9,13 +10,19 @@ var windowHeightInMeters;
 const collisionDetectionPrecision = 0.05;
 const collisionDetectionDelta = 0.05;
 
-var environmentPosition = 0;
-const environmentVisibilityMargins = 10; // Visibility in
+// The position of the screen relative to the player
+var screenHorizontalOffset = 0;
+
+// Margins on the side of the screen.
+// If the player moves past these margins, the screen starts moving.
+const environmentVisibilityMargins = 10;
 
 var player;
 
+let playerAnimation;
+
 var connectedControllers = [];
-var gameActive = false;
+var gameActive = true;
 
 const Input = {
     BUTTON_UP_BP: 0,
@@ -40,7 +47,14 @@ isWithinBounds = function(x, a, b) { return x >= a && x <= b; }
 function preload() {
     resources.set("entityPlayer", loadImage("./assets/playerImage.png"));
     resources.set("blockSprite", loadImage("./assets/blocksprite.png"));
+    resources.set("dirt", loadImage("./assets/dirt.png"));
+    resources.set("stone", loadImage("./assets/stone.png"));
+    resources.set("grass", loadImage("./assets/grass_block_side.png"));
+    resources.set("deepslate", loadImage("./assets/deepslate_bricks.png"));
+    resources.set("deepslate_crack", loadImage("./assets/cracked_deepslate_bricks.png"));
+    resources.set("steve_anim", loadImage("./assets/steve_animations.png"))
 
+    // How many pixels represent a 'meter' ingame. This uses an invisible div element that's one cm large.
     pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * 0.8;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
@@ -49,6 +63,8 @@ function preload() {
 // Setup function for loading in various
 function setup() {
 
+    // When pressed on the 'select controller' button,
+    // we attempt to find a bluetooth controler.
     document.querySelector(".controller-connect")
         .addEventListener("click", () => {
         checkBluetoothConnections();
@@ -58,6 +74,13 @@ function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
 
     BlockType.bricks = new Resource(resources.get("blockSprite"));
+    BlockType.stone = new Resource(resources.get("stone"));
+    BlockType.dirt = new Resource(resources.get("dirt"));
+    BlockType.grass = new Resource(resources.get("grass"));
+    BlockType.deepslate = new Resource(resources.get("deepslate"));
+    BlockType.deepslate_cracked = new Resource(resources.get("deepslate_crack"));
+
+    playerAnimation = new Resource(resources.get("steve_anim"), 5, 2);
 
     // Whenever the screen resizes, adapt the canvas size with it.
     window.addEventListener('resize', () => {
@@ -69,6 +92,8 @@ function setup() {
 
     loadMap();
 }
+
+let timePhase = 0;
 
 // Draw function is called every 1/60th a second.
 // This means it has a 16.6ms interval.
@@ -83,19 +108,26 @@ function draw() {
     if (keyIsDown(32)) sgnY++;
     if (keyIsDown(16)) sgnY--;
     if (sgnX !== 0 && player.colliding.x === 0)
-        player.velocity.x = movementSpeedMetersPerSecond * sgnX;
+        player.velocity.x = horizontalSpeed * sgnX;
     if (sgnY !== 0 && player.colliding.y === 0)
-        player.velocity.y = movementSpeedMetersPerSecond * sgnY * 2;
+        player.velocity.y = verticalSpeed * sgnY;
 
+    timePhase += (deltaTime / 1000) * 4; // 3 frames per second.
+    /*playerAnimation.animate(
+        player.position.x * pixelsPerMeter,  // screen X
+        window.height - (player.height + player.position.y) * pixelsPerMeter, // screen Y
+        player.width * pixelsPerMeter,
+        player.height * pixelsPerMeter,
+        Math.floor(timePhase));*/
 
-    image(resources.get('entityPlayer'), player.position.x * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
+    image(resources.get('entityPlayer'), (player.position.x ) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
 
 
     for (var i = 0; i < Environment.boundingBoxes.length; i++) {
         let other = Environment.boundingBoxes[i];
         if (other instanceof Block) {
             other.blockType.draw(
-                other.left * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
+                (other.left + screenHorizontalOffset) * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
                 other.width * pixelsPerMeter, other.height * pixelsPerMeter);
         }}
 
@@ -111,19 +143,24 @@ function loadMap(mapImage) {
     /*if (!(mapImage instanceof p5.Image))
         throw new TypeError("Provided argument is not of type p5.Image");*/
 
+
+    // generate ground (temp)
     let n = window.innerWidth / pixelsPerMeter * 10;
     for (let i = 0; i < n; i++) {
-        let posY = 3 + noise(i / 7) * 3 + noise(i / 13) * 2 + noise(i / 16) * 2;
+        let posY = Math.floor(3 + noise(i / 7) * 5 + noise(i / 13) * 2 + noise(i / 16) * 2);
         for (let j = 0; j < posY; j++) {
-            Environment.introduce(new Block(i, j, BlockType.bricks));
+            let blockType = j === posY - 1 ? BlockType.grass : j >= posY - 3 ? BlockType.dirt : BlockType.stone;
+            Environment.introduce(new Block(i, j, blockType));
         }
     }
 
+    // Generate island (temporarily)
     for (let i = 0; i < 30; i++) {
         let posY = noise(i / 7) * 10;
         let posYd = -noise(i / 10) * 10;
         for (let j = 0; j < posY; j++) {
-            Environment.introduce(new Block(10 + i, 25 + Math.floor(posYd) + j, BlockType.bricks));
+
+            Environment.introduce(new Block(10 + i, 25 + Math.floor(posYd) + j, Math.random() < 0.3 ? BlockType.deepslate_cracked : BlockType.deepslate));
         }
     }
 
@@ -165,8 +202,9 @@ class Entity extends AABB {
     velocity; // velocity of the entity
     colliding; // colliding states, containing the direction of collision (x, y)
 
-    static DefaultMovementVector = new Vec2(movementSpeedMetersPerSecond, movementSpeedMetersPerSecond);
+    static DefaultMovementVector = new Vec2(horizontalSpeed, horizontalSpeed);
     static collisionDetectionThreshold = 0.001;
+    static collisionDetectionSteps = 5;
 
 
     constructor(posX, posY) {
@@ -192,13 +230,46 @@ class Entity extends AABB {
     update(dT) {
 
         this.colliding.translate(0, 0);
+        this.velocity.addY(-Environment.G * dT);
         // Check if the next position of the entity is colliding with another
         for (let i = 0; i < Environment.boundingBoxes.length; i++) {
             let p = Environment.boundingBoxes[i];
             if (this === p)
                 continue;
 
-            if (this.colliding.x === 0) {
+            let v = this.velocity.copy; // velocity copy
+            let cpy = this.copy; // aabb copy
+
+            // Detection for X axis collision
+            for (let j = 0; j < Entity.collisionDetectionSteps; j++) {
+
+                // Check if the next movement vector collides. If this is the case, halve the velocity vector.
+                if (cpy.translate(this.position.x + v.x, this.position.y).intersects(p)) {
+                    v.multX(0.5);
+                } else {
+                    // It doesn't intersect at the current step.
+                    // If the step is 0, we can just say it doesn't collide.
+                    if (j === 0)
+                        break;
+
+                    v.x = 0.5 * (this.velocity.x + v.x);
+                }
+                // Check if the next movement vector collides. If this is the case, halve the velocity vector.
+                if (cpy.translate(this.position.x, this.position.y + this.velocity.y).intersects(p)) {
+                    v.multY(0.5);
+                } else {
+                    // It doesn't intersect at the current step.
+                    // If the step is 0, we can just say it doesn't collide.
+                    if (j === 0)
+                        break;
+
+                    v.y = 0.5 * (this.velocity.y + v.y);
+                }
+            }
+
+            this.velocity.translate(v.x, v.y);
+
+           /* if (this.colliding.x === 0) {
                 for (let j = 0; j <= Math.abs(this.velocity.x * dT) + collisionDetectionDelta; j += collisionDetectionPrecision) {
                     if (this.copy().translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(p)) {
                         this.colliding.x = Math.sign(this.velocity.x);
@@ -218,7 +289,7 @@ class Entity extends AABB {
 
             // If we're colliding on both axis, stop further checks
             if (this.colliding.x !== 0 && this.colliding.y !== 0)
-                break;
+                break;*/
         }
 
         // Add velocity to position
@@ -235,15 +306,15 @@ class Entity extends AABB {
 
         if (this.colliding.y !== 0)
             this.velocity.y = 0;
-        else
-            this.velocity.addY(-Environment.G);
 
         //console.log(`V: ${this.velocity.x}, ${this.velocity.y}`)
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);
 
-        if (!isWithinBounds(this.position.x, ))
+        if (!isWithinBounds(this.position.x, environmentVisibilityMargins + screenHorizontalOffset, windowWidthInMeters - environmentVisibilityMargins + screenHorizontalOffset   )) {
+            screenHorizontalOffset = -this.position.x;
+        }
 
         this.position.x = clamp(this.position.x, 0, windowWidthInMeters - this.width);
 

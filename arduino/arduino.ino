@@ -24,8 +24,8 @@
 
 // UUID's for service and input characteristics
 // These will be read by other devices
-#define UUID_SERVICE_BASE         "a8a5a50f-12c1-4b83-bcd3-71ec79287967"
-#define UUID_CHARACTERISTIC_INPUT "bb4843e0-d2fc-4b26-8fca-b99bd452acaa"
+#define SERVICE_UUID         "a8a5a50f-12c1-4b83-bcd3-71ec79287967"
+#define CHARACTERISTIC_UUID  "bb4843e0-d2fc-4b26-8fca-b99bd452acaa"
 
 // Library settings
 BLEServer *pServer;
@@ -84,51 +84,28 @@ void toggleDebugMode()
   }
 }
 
+// This function changes the displayname of the BLE device to match which playernumber the controller is using (1 or 2)
 char * selectPlayer(){
 
-  char * result = "ESP32 Controller P1";
+  char * result = "ESP32 Controller P1"; // Placeholder / default
   const uint8_t idx = strlen(result) - 1;
 
   if (!digitalRead(PIN_BUTTON_OPT)) {
-    Serial.printf("Device name: %s\r\n", result);
+    Serial.printf("Device name: %s\r\n", result); 
       return result;
   }
 
   // Keep reading until the player releases the OPT button.
   while (digitalRead(PIN_BUTTON_OPT)) {
-    if (digitalRead(PIN_BUTTON_LEFT))
+    if (digitalRead(PIN_BUTTON_LEFT)) // OPT + DPAD Left = player 1
       result[idx] = '1';
-    else if (digitalRead(PIN_BUTTON_RIGHT))
+    else if (digitalRead(PIN_BUTTON_RIGHT)) // OPT + DPAD Right = player 2
       result[idx] = '2';
   }
 
   Serial.printf("Selected device: %s\r\n", result);
 
   return result;
-
-/*
-  while(!playerNumber){
-    debugPrint("Waiting for input..");
-    if (digitalRead(PIN_BUTTON_LEFT)){
-      playerNumber = 1;
-      debugPrint("Player 1 selected");
-      digitalWrite(PIN_LED, HIGH);
-      delay(100);
-      digitalWrite(PIN_LED, LOW);
-      break;
-    }
-    if (digitalRead(PIN_BUTTON_RIGHT)){
-      playerNumber = 2;
-      debugPrint("Player 2 selected");
-      digitalWrite(PIN_LED, HIGH);
-      delay(100);
-      digitalWrite(PIN_LED, LOW);
-      break;
-    }
-  }
-  char * output = "ESP32 Controller P0";
-  output[strlen(output) - 1] = '0' + playerNumber;
-  return output;*/
 }
 
 // Checks if debug mode is toggled, and if so sends the input to serial
@@ -149,31 +126,32 @@ uint8_t readInput() {
                    (digitalRead(PIN_BUTTON_LEFT)  << BUTTON_LEFT_BP)  |
                    (digitalRead(PIN_BUTTON_RIGHT) << BUTTON_RIGHT_BP) |
                    (digitalRead(PIN_BUTTON_DOWN)  << BUTTON_DOWN_BP));
+  // Use bitshift operators to construct an 8bit integer containing controller data
 }
 
 void setup() {
-
+  toggleDebugMode(); // Check if debug mode is activated
+ 
+  if (debugMode){
+  // Only use Serial when debug mode is active
   Serial.begin(115200);
-  definePinModes();
-  toggleDebugMode();
+  }
 
-  /*debugPrint("Service UUID: " + serviceUUID);
-  debugPrint("Characteristic UUID: " + characteristicUUID);
-  */
+  definePinModes(); // Set all pins to their desired mode
 
   // Create the BLE Device
-  BLEDevice::init((const char *)selectPlayer());
+  BLEDevice::init((const char *)selectPlayer()); // calls the selectPlayer function te determine which playerno the controller is using
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new connectionCallback()); // Add the callback for handling connection status
 
   // Create the BLE Service
-  BLEService *bleService = pServer->createService(UUID_SERVICE_BASE);
+  BLEService *bleService = pServer->createService(SERVICE_UUID);
 
   // Create a BLE Characteristic
   controllerCharacteristic = bleService->createCharacteristic(
-      UUID_CHARACTERISTIC_INPUT,
+      CHARACTERISTIC_UUID ,
       BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE);
 
   // Create a BLE Descriptor
@@ -184,10 +162,10 @@ void setup() {
 
   // Start advertising (transmitting)
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(UUID_SERVICE_BASE);
+  pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->setScanResponse(false);
   pAdvertising->setMinPreferred(0x06);
-  pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
+  // pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
   debugPrint("Waiting a client connection to notify...");
 }

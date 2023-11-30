@@ -28,6 +28,7 @@ body, html {
 .game-menu-container {
     width: 100%;
     height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     flex-flow: column nowrap;
     align-items: center;
@@ -39,15 +40,16 @@ body, html {
     text-align: center;
     width: 400px;
     height: 30px;
-    margin: 10px;
-    border-radius: 10px;
+    margin: 5px;
+    border-radius: 3px;
     color: white;
     font-family: minecraft-font, serif;
-    background-color: #17213a;
+    background-color: #606060;
+    cursor: pointer;
 }
 
 .game-menu-button:hover {
-    background-color: #162421;
+    background-color: #505050;
 }
 
 .game-menu-button > span {
@@ -62,10 +64,10 @@ body, html {
     width: 40px;
     padding: 2px;
     margin-right: 10px;
-    border-radius: 10px;
-    transition: background-color 300ms ease-in-out;
+    /*transition: background-color 300ms ease-in-out;*/
 }
 
 .game-settings-button:hover {
-    background-color: rgba(80, 80, 80, 20);
+    filter: brightness(90%);
+    /*background-color: rgba(80, 8 20);*/
 }

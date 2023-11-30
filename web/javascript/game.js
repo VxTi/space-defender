@@ -66,9 +66,25 @@ function setup() {
     // When pressed on the 'select controller' button,
     // we attempt to find a bluetooth controler.
     document.querySelector(".controller-connect")
+        .addEventListener("click", () => checkBluetoothConnections());
+
+    let settingsElem = document.querySelector(".game-settings-button")
+
+    // The settings button, one can pause the game with this
+
+    settingsElem.addEventListener("click", () => {
+        gameActive = false;
+        document.querySelector(".game-menu-container")
+            .style.visibility = 'visible';
+        settingsElem.style.visibility = 'hidden';
+    });
+
+    document.querySelector(".game-resume")
         .addEventListener("click", () => {
-            checkBluetoothConnections();
-        })
+           gameActive = true;
+           settingsElem.style.visibility = 'visible';
+           document.querySelector(".game-menu-container").style.visibility = 'hidden';
+        });
 
     // Create a canvas to render onto
     createCanvas(window.innerWidth, window.innerHeight);

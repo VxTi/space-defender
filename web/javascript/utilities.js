@@ -250,7 +250,7 @@ class Resource {
     // If a provided resource has multiple horizontal and vertical sections and the user provided these in the
     // constructor with 'horizontalCount' and 'verticalCount' (h, v) > 0
     animate(x, y, width, height, animationIndex = 0) {
-        animationIndex %= (this.horizontal + this.vertical); // Make sure the animation index is within bounds
+        animationIndex %= (this.horizontal + this.vertical + 1); // Make sure the animation index is within bounds
         this.draw(x, y, width, height,
             this.partWidth * (animationIndex % this.horizontal),
             this.partHeight * Math.floor(animationIndex / this.horizontal));

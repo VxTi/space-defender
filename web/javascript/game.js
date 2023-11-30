@@ -1,6 +1,6 @@
 var pixelsPerMeter;
-const horizontalSpeed = 15; // Speed at which the player moves per second in abstract meters.
-const verticalSpeed = 5.5;
+const horizontalSpeed = 5.5; // Speed at which the player moves per second in abstract meters.
+const verticalSpeed = 6;
 
 // Window dimensions in arbitrary game 'meters'
 var windowWidthInMeters;
@@ -55,7 +55,7 @@ function preload() {
         resources.set(element, loadImage(`./assets/${element}.${extension}`));
 
     // How many pixels represent a 'meter' ingame. This uses an invisible div element that's one cm large.
-    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * 0.5;
+    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
 }
@@ -126,7 +126,7 @@ function draw() {
     if (keyIsDown(16)) sgnY--;
     if (sgnX !== 0 && player.colliding.x === 0)
         player.velocity.x = horizontalSpeed * sgnX;
-    if (sgnY !== 0 && player.colliding.y === 0)
+    if (sgnY !== 0 && player.colliding.y < 0)
         player.velocity.y = verticalSpeed * sgnY;
 
     timePhase += (deltaTime / 1000);
@@ -155,6 +155,9 @@ function draw() {
     // Render the player
     image(resources.get('playerImage'), (player.position.x + screenHorizontalOffset) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
 
+    if (!gameActive)
+        return;
+
     let dT = deltaTime / 1000;
     player.update(dT);
 
@@ -171,18 +174,18 @@ function loadMap(mapImage) {
     // generate ground (temp)
     let n = 500;
     let interpFactor = 2;
-    let fnY = (x) => Math.floor(3 + noise(x) * 20 + noise(x / 2) * 5 + noise(x / 4) * 2);
+    let fnY = (x) => Math.floor(3 + noise(x) * 10 + noise(x / 2) * 5 + noise(x / 4) * 2);
     for (let x = 0; x < n; x++) {
         let A = fnY(x);
         let B = fnY(x + 1);
 
         for (let i = 0; i < interpFactor; i++) {
-            let posY = A + 0.5 * (B - A);
+            let posY = Math.round(A + 0.5 * (B - A));
 
 
             for (let y = 0; y < posY; y++) {
                 let blockType = y === posY - 1 ? BlockType.grass : y >= posY - 3 ? BlockType.dirt : BlockType.stone;
-                Environment.introduce(new Block(x * interpFactor + i, y, blockType));
+                Environment.introduce(new Block(x, y, blockType));
             }
         }
     }
@@ -236,9 +239,7 @@ class Entity extends AABB {
     colliding; // colliding states, containing the direction of collision (x, y)
 
     static DefaultMovementVector = new Vec2(horizontalSpeed, horizontalSpeed);
-    static collisionDetectionThreshold = 0.1; // Detection threshold in meters
-    static collisionDetectionSteps = 1;
-
+    static collisionThres = 0.1; // Detection threshold in meters
 
     constructor(posX, posY) {
         super(posX, posY, 1.8, 1.8);
@@ -274,78 +275,31 @@ class Entity extends AABB {
         for (let i = 0; i < Environment.boundingBoxes.length; i++) {
             let target = Environment.boundingBoxes[i];
 
-            // Collision detection with self is always gonna be true so let's just skip that shall we...
+            // Collision detection with self is always going to be true so let's just skip that shall we...
             if (target === this)
                 continue;
 
-            let v = this.velocity.copy; // velocity vector copy
-            let copy = this.copy; // aabb copy for translations
-
             // Check if D(self, target) > v * dt (max distance difference in next frame), if so, skip check.
-            /*if (Math.max(this.left, target.left) - Math.min(this.right, target.right) > Math.abs(this.velocity.x * dT) ||
-                Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) > Math.abs(this.velocity.y  * dT))
+            if (Math.max(this.left, target.left) - Math.min(this.right, target.right) > Math.abs(this.velocity.x) &&
+                Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) > Math.abs(this.velocity.y))
                 continue;
-            console.log(`Possible collider: [x: ${target.left}, y: ${target.top}][vx: ${v.x}, vy: ${v.y}]`);*/
-            // Now let's interpolate.
-            // If both collision detections have been performed, x and y will be true and the loop will automatically stop
-            /*for (let step = 0; step < Entity.collisionDetectionSteps && (!colX || !colY); step++) {
 
 
-                // Collision detection for x-axis.
-                if (!colX) {
-                    // Check if the next possible position intersects
-                    if (copy.translateX(this.position.x + v.x * dT).intersects(copy)) {
-
-                        // If we're at the last step, and it's still collided, stop checking.
-                        if (step === Entity.collisionDetectionSteps - 1) {
-                            colX = true;
-                            this.colliding.x = Math.sign(this.velocity.x);
-                            v.x = 0;
-                        } else {
-                            v.x *= 0.5;
-                        }
-                    } else {
-                        v.x = 0.5 * (v.x + this.velocity.x);
-                    }
-                }
-                if (!colY) {
-                    // Check if the next possible position intersects
-                    if (copy.translateY(this.position.y + v.y * dT).intersects(copy)) {
-
-                        // If we're at the last step, and it's still collided, stop checking.
-                        if (step === Entity.collisionDetectionSteps - 1) {
-                            colY = true;
-                            this.colliding.y = Math.sign(this.velocity.y);
-                            v.y = 0;
-                        } else {
-                            v.y *= 0.5;
-                        }
-                    } else {
-
-                        v.y = 0.5 * (v.y + this.velocity.y);
-                    }
-                }
-            }
-
-            console.log(`Collisions: [dx: ${this.colliding.x}, dy: ${this.colliding.y}][x: ${target.left}, y: ${target.top}]`);
-
-
-
-            this.velocity.translate(v.x, v.y);*/
-
-            if (this.colliding.x === 0) {
-                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + 0.05; j += 0.05) {
+            if (this.colliding.x === 0 && Math.abs(this.velocity.x) > Entity.collisionThres) {
+                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThres; j += Entity.collisionThres) {
                     if (this.copy.translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(target)) {
                         this.colliding.x = Math.sign(this.velocity.x);
+                        this.velocity.x = 0;
                         break;
                     }
                 }
             }
 
-            if (this.colliding.y === 0 && Math.abs(this.velocity.y) >= Entity.collisionDetectionThreshold) {
-                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + 0.05; j += 0.05) {
+            if (this.colliding.y === 0 && Math.abs(this.velocity.y) > Entity.collisionThres) {
+                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + Entity.collisionThres; j += Entity.collisionThres) {
                     if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(target)) {
                         this.colliding.y = Math.sign(this.velocity.y);
+                        this.velocity.y = 0;
                         break;
                     }
                 }
@@ -357,19 +311,10 @@ class Entity extends AABB {
         }
 
         // Add velocity to position
-        this.position.add(
-            this.colliding.x !== 0 ? 0 : this.velocity.x * dT,
-            this.colliding.y !== 0 ? 0 : this.velocity.y * dT
-        );
+        this.position.add(this.velocity.x * dT, this.velocity.y * dT);
 
-        // Check if the x axis is colliding, if so, stop movement
-        if (this.colliding.x !== 0)
-            this.velocity.x = 0;
-        else
-            this.velocity.x *= 0.9;
-
-        if (this.colliding.y < 0)
-            this.velocity.y = 0;
+        // Check if the x-axis is colliding, if so, stop movement
+        this.velocity.x *= 0.9;
 
         //console.log(`V: ${this.velocity.x}, ${this.velocity.y}`)
 

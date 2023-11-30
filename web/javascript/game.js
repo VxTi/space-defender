@@ -59,9 +59,9 @@ function preload() {
 
     // All filenames.
     const extension = 'png';
-    const fileNames = ['playerImage', 'dirt', 'stone', 'grass_block_side',
+    const fileNames = ['playerImage', 'dirt', 'stone', 'grass_block',
                         'deepslate_bricks', 'cracked_deepslate_bricks', 'steve_animations',
-                        'moon_phases', 'skyImage'];
+                        'moon_phases', 'skyImage', 'diamond_ore'];
 
     for (let element of fileNames)
         resources.set(element, loadImage(`./assets/${element}.${extension}`));
@@ -107,11 +107,20 @@ function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
 
     // Load all resources
-    BlockType.stone = new Resource(resources.get("stone"));
+    /*BlockType.stone = new Resource(resources.get("stone"));
     BlockType.dirt = new Resource(resources.get("dirt"));
     BlockType.grass = new Resource(resources.get("grass_block_side"));
-    BlockType.deepslate = new Resource(resources.get("deepslate_bricks"));
-    BlockType.deepslate_cracked = new Resource(resources.get("cracked_deepslate_bricks"));
+    BlockType.deepslate_bricks = new Resource(resources.get("deepslate_bricks"));
+    BlockType.cracked_deepslate_bricks = new Resource(resources.get("cracked_deepslate_bricks"));*/
+
+    console.log(BlockType[0])
+    resources.forEach((value, key) => {
+        if (typeof BlockType[key] !== null)  {
+            console.log("Initializing: " + key);
+            BlockType[key] = new Resource(value);
+            console.log(BlockType[key])
+        }
+    })
 
     moonAnimation = new Resource(resources.get("moon_phases"), 4, 2);
 
@@ -149,10 +158,16 @@ function draw() {
     if (sgnY !== 0 && (player.colliding.y < 0 || (allowDoubleJump && player.colliding.x !== 0 && player.velocity.y < 0)))
         player.velocity.y = verticalSpeed * sgnY;
 
-    push(); // Saves current matrix and pushes it on top of the stack
+    // Saves current matrix and pushes it on top of the stack
+    push();
+    // Rotate the matrix (sky)
     rotate(timePhase * 0.005);
+    // translate sky to the middle so it rotates from the middle
     translate(window.innerWidth/2, window.innerHeight/2);
+
+    // Render the stars
     skyBackground.draw(-window.innerWidth/2, -window.innerWidth/2, window.innerWidth, window.innerWidth);
+
     pop(); // Pops the top matrix and goes to the previous one.
 
 
@@ -182,6 +197,7 @@ function draw() {
         window.innerHeight - (player.height + player.position.y) * pixelsPerMeter,
         player.width * pixelsPerMeter * 2,
         player.height * pixelsPerMeter);
+
     // And shortly, the outline of the player (AABB)
     stroke(255, 0, 0);
     fill(0, 0, 0, 0);
@@ -202,7 +218,7 @@ function draw() {
 // Function for loading a map, based on a provided image.
 // This image must be decoded into map elements and then placed
 // into the Environment class's objects
-function loadMap(mapImage) {
+function loadMap() {
     /*if (!(mapImage instanceof p5.Image))
         throw new TypeError("Provided argument is not of type p5.Image");*/
 
@@ -220,7 +236,10 @@ function loadMap(mapImage) {
 
 
             for (let y = 0; y < posY; y++) {
-                let blockType = y === posY - 1 ? BlockType.grass : y >= posY - 3 ? BlockType.dirt : BlockType.stone;
+                let blockType =
+                    y === posY - 1 ? BlockType.grass_block :
+                    y >= posY - 3 ? BlockType.dirt :
+                        Math.random() < 0.015 ? BlockType.diamond_ore : BlockType.stone;
                 Environment.introduce(new Block(x, y, blockType));
             }
         }
@@ -232,7 +251,7 @@ function loadMap(mapImage) {
         let posYd = -noise(i / 10) * 20 * Math.random();
         for (let j = 0; j < posY; j++) {
 
-            Environment.introduce(new Block(10 + i, 25 + Math.floor(posYd) + j, Math.random() < 0.3 ? BlockType.deepslate_cracked : BlockType.deepslate));
+            Environment.introduce(new Block(10 + i, 25 + Math.floor(posYd) + j, Math.random() < 0.3 ? BlockType.cracked_deepslate_bricks : BlockType.deepslate_bricks));
         }
     }
 
@@ -317,13 +336,23 @@ class Entity extends AABB {
 
             // Render the block selection
             if (dSq < blockReach * blockReach) {
-                if (target.intersectsPoint(mouseX / pixelsPerMeter - screenOffsetX, (window.innerHeight - mouseY) / pixelsPerMeter)) {
+                if (target.intersectsPoint(mouseX / pixelsPerMeter - screenOffsetX, (window.innerHeight - mouseY) / pixelsPerMeter - screenOffsetY)) {
                     stroke(255, 0, 0);
                     fill(0, 0, 0, 0);
                     rect((target.left) * pixelsPerMeter, window.innerHeight - target.bottom * pixelsPerMeter, target.width * pixelsPerMeter, target.height * pixelsPerMeter);
 
                 }
             }
+
+            /*if (this.copy.translate(this.position.x + this.velocity.x * dT, this.position.y).intersects(target)) {
+                this.velocity.x *= 0.1;
+                break;
+            }
+
+            if (this.copy.translate(this.position.x, this.position.y + this.velocity.y * dT).intersects(target)) {
+                this.velocity.y *= 0.1;
+                break;
+            }*/
 
             if (dSq > 2)
                 continue;
@@ -357,7 +386,7 @@ class Entity extends AABB {
         this.position.add(this.velocity.x * dT, this.velocity.y * dT);
 
         // Check if the x-axis is colliding, if so, stop movement
-        this.velocity.x *= 0.9;
+        this.velocity.x *= 0.8;
 
         //console.log(`V: ${this.velocity.x}, ${this.velocity.y}`)
 
@@ -383,7 +412,7 @@ class Entity extends AABB {
 }
 
 class Environment {
-    static G = 9.81; // gravitational constant in meters/second
+    static G = 16; // gravitational constant in meters/second
     static boundingBoxes = [];
     static collides(boundingBox) {
         for (let other in this.boundingBoxes) {

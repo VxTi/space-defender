@@ -261,12 +261,12 @@ class Resource {
 }
 
 class BlockType {
-    static bricks;
     static stone;
     static dirt;
-    static grass;
-    static deepslate;
-    static deepslate_cracked;
+    static grass_block;
+    static deepslate_bricks;
+    static cracked_deepslate_bricks;
+    static diamond_ore;
 }
 
 class Block extends AABB {

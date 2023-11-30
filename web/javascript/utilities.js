@@ -238,22 +238,22 @@ class Resource {
         this.partHeight = image.height / verticalCount;
     }
 
-    // Renders one of the selected images depending on the provided axis indices.
-    // If one wants to render the whole image, just provide 0, 0 as horizontal and vertical.
-    // Other parameters are fairly straightforward, [x, y] => location of the image, [width, height] => dimensions
-    draw(x, y, width, height, horizontal =  0, vertical = 0) {
-        image(this.image,
-            x, y, width, height, // Canvas coordinates and dimensions
-            this.partWidth * horizontal, this.partHeight * vertical, this.partWidth, this.partHeight // Dimensions of the image
-        );
+    // Renders a section of the provided image.
+    // If one wants to render the image normally, just provide the first four arguments.
+    // dx = start X, dy = start Y
+    // dw = partial width, dh = partial height
+    draw(x, y, width, height, dx = 0, dy = 0, dw = this.partWidth, dh = this.partHeight) {
+        image(this.image, x, y, width, height, dx, dy, dw, dh);
     }
 
     // Function that allows the user to animate different sections of a provided resource.
     // If a provided resource has multiple horizontal and vertical sections and the user provided these in the
     // constructor with 'horizontalCount' and 'verticalCount' (h, v) > 0
     animate(x, y, width, height, animationIndex = 0) {
-        animationIndex %= this.horizontal + this.vertical; // Make sure the animation index is within bounds
-        this.draw(x, y, width, height, animationIndex % this.horizontal, animationIndex / this.vertical);
+        animationIndex %= (this.horizontal + this.vertical); // Make sure the animation index is within bounds
+        this.draw(x, y, width, height,
+            this.partWidth * (animationIndex % this.horizontal),
+            this.partHeight * Math.floor(animationIndex / this.horizontal));
     }
 
 }

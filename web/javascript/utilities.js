@@ -243,8 +243,8 @@ class Resource {
     // dx = start X, dy = start Y
     // dw = partial width, dh = partial height
     draw(x, y, width, height, dx = 0, dy = 0, dw = this.partWidth, dh = this.partHeight) {
-        if (x + width < 0 || x > window.innerWidth || y + height < 0 || y > window.innerHeight)
-            return;
+        /*if (x + width < 0 || x > window.innerWidth || y + height < 0 || y > window.innerHeight)
+            return;*/
         image(this.image, x, y, width, height, dx, dy, dw, dh);
     }
 

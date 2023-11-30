@@ -7,6 +7,10 @@ const verticalSpeed = 6.5;
 // Margins on the side of the screen, given in game meters
 // If the player moves past these margins, the screen starts moving.
 const screenEdgeMargin = 8;
+// The position of the screen relative to the player
+var screenOffsetX = 0;
+var screenOffsetY = 0;
+
 
 const cmPerBlock = 0.9;
 const blockReach = 3;
@@ -23,8 +27,7 @@ const resources = new Map();
 var windowWidthInMeters;
 var windowHeightInMeters;
 
-// The position of the screen relative to the player
-var screenOffset = 0;
+
 
 // Variable containing all information of the player.
 var player;
@@ -146,17 +149,20 @@ function draw() {
     if (sgnY !== 0 && (player.colliding.y < 0 || (allowDoubleJump && player.colliding.x !== 0 && player.velocity.y < 0)))
         player.velocity.y = verticalSpeed * sgnY;
 
-    timePhase += (deltaTime / 1000);
-
     push(); // Saves current matrix and pushes it on top of the stack
     rotate(timePhase * 0.005);
     translate(window.innerWidth/2, window.innerHeight/2);
     skyBackground.draw(-window.innerWidth/2, -window.innerWidth/2, window.innerWidth, window.innerWidth);
     pop(); // Pops the top matrix and goes to the previous one.
 
-    // Moon rendering!
+
+    // Draw the moon animation in the top right of the screen
     moonAnimation.animate(window.innerWidth - 200, 50, 100, 100, Math.floor(timePhase));
 
+    // Offset the screen by the scrolling position
+    translate(screenOffsetX * pixelsPerMeter, -screenOffsetY * pixelsPerMeter);
+
+    // Render all the bounding boxes in the game
     for (var i = 0; i < Environment.boundingBoxes.length; i++) {
         let other = Environment.boundingBoxes[i];
 
@@ -164,7 +170,7 @@ function draw() {
 
             // Draw the block onto the screen.
             other.blockType.draw(
-                (other.left + screenOffset) * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
+                other.left * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
                 other.width * pixelsPerMeter, other.height * pixelsPerMeter);
         }
     }
@@ -172,13 +178,14 @@ function draw() {
 
     // Render the player
     image(resources.get('playerImage'),
-        (player.position.x + screenOffset - player.width * 0.4) * pixelsPerMeter,
+        (player.position.x - player.width * 0.4) * pixelsPerMeter,
         window.innerHeight - (player.height + player.position.y) * pixelsPerMeter,
         player.width * pixelsPerMeter * 2,
         player.height * pixelsPerMeter);
+    // And shortly, the outline of the player (AABB)
     stroke(255, 0, 0);
     fill(0, 0, 0, 0);
-    rect((player.position.x + screenOffset) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
+    rect((player.position.x) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
 
 
     // If the game isn't active, prevent updates.
@@ -186,6 +193,8 @@ function draw() {
         return;
 
     let dT = deltaTime / 1000;
+
+    timePhase += dT;
     player.update(dT);
 
 }
@@ -218,9 +227,9 @@ function loadMap(mapImage) {
     }
 
     // Generate island (temporarily)
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < n; i++) {
         let posY = noise(i / 7) * 10;
-        let posYd = -noise(i / 10) * 10;
+        let posYd = -noise(i / 10) * 20 * Math.random();
         for (let j = 0; j < posY; j++) {
 
             Environment.introduce(new Block(10 + i, 25 + Math.floor(posYd) + j, Math.random() < 0.3 ? BlockType.deepslate_cracked : BlockType.deepslate));
@@ -306,18 +315,18 @@ class Entity extends AABB {
             let dSq = Math.pow(Math.max(this.left, target.left) - Math.min(this.right, target.right), 2) +
                 Math.pow(Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) > Math.abs(this.velocity.y), 2);
 
+            // Render the block selection
             if (dSq < blockReach * blockReach) {
-                if (target.intersectsPoint(mouseX / pixelsPerMeter - screenOffset, (window.innerHeight - mouseY) / pixelsPerMeter)) {
+                if (target.intersectsPoint(mouseX / pixelsPerMeter - screenOffsetX, (window.innerHeight - mouseY) / pixelsPerMeter)) {
                     stroke(255, 0, 0);
                     fill(0, 0, 0, 0);
-                    rect((target.left + screenOffset) * pixelsPerMeter, window.innerHeight - target.bottom * pixelsPerMeter, target.width * pixelsPerMeter, target.height * pixelsPerMeter);
+                    rect((target.left) * pixelsPerMeter, window.innerHeight - target.bottom * pixelsPerMeter, target.width * pixelsPerMeter, target.height * pixelsPerMeter);
 
                 }
             }
 
             if (dSq > 2)
                 continue;
-
 
             if (this.colliding.x === 0 && Math.abs(this.velocity.x) >= Entity.collisionThres) {
                 for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThres * 2; j += Entity.collisionThres) {
@@ -355,15 +364,20 @@ class Entity extends AABB {
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);
 
-        // The left side of the screen, let it scroll if you come too close
-        if (this.position.x + screenOffset < screenEdgeMargin)
-            screenOffset = -this.position.x + screenEdgeMargin;
-        else if (this.position.x + screenOffset > windowWidthInMeters - screenEdgeMargin)
-            screenOffset = -this.position.x + windowWidthInMeters - screenEdgeMargin;
+        // If you come too close to the corner of the screen horizontally, move the camera accordingly.
+        if (this.position.x + screenOffsetX < screenEdgeMargin)
+            screenOffsetX = -this.position.x + screenEdgeMargin;
+        else if (this.position.x + screenOffsetX > windowWidthInMeters - screenEdgeMargin)
+            screenOffsetX = -this.position.x + windowWidthInMeters - screenEdgeMargin;
 
-        //this.position.x = clamp(this.position.x, 0, windowWidthInMeters - this.width);
+        // Perform the same translation on the Y axis
+        if (this.position.y + screenOffsetY < screenEdgeMargin * 0.5)
+            screenOffsetY = -this.position.y + screenEdgeMargin * 0.5;
+        else if (this.position.y + screenOffsetY > windowHeightInMeters - screenEdgeMargin * 0.5)
+            screenOffsetY = -this.position.y + windowHeightInMeters - screenEdgeMargin * 0.5;
 
-        // Update
+
+        // Update the AABB position
         this.translate(this.position.x, this.position.y);
     }
 }

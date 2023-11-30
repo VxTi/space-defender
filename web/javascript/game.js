@@ -1,4 +1,3 @@
-var pixelsPerMeter;
 
 // Variables defining how fast the player moves per second in game meters.
 const horizontalSpeed = 4.5;
@@ -11,8 +10,9 @@ const screenEdgeMargin = 8;
 var screenOffsetX = 0;
 var screenOffsetY = 0;
 
+var pixelsPerMeter;
 
-const cmPerBlock = 0.9;
+const cmPerBlock = 1.2; // size of each 'meter' on screen.
 const blockReach = 3;
 
 // Whether the player can double jump against walls
@@ -128,7 +128,7 @@ function setup() {
     });
 
     // Create an instance of the first player, for when the user decides to play single-player.
-    player = new Entity(5, 15);
+    player = new Entity(5, 15, 10);
 
     Environment.generate();
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
@@ -197,11 +197,13 @@ function draw() {
         player.width * pixelsPerMeter * 2,
         player.height * pixelsPerMeter);
 
-    let maxHealth = 3;
-    let healthIdx = Math.round(playerHealth * maxHealth * 2) - 1;
-    for (let i = 0; i < maxHealth; i++) {
-        image(resources.get(healthIdx > i * 2 ? "heart" : healthIdx / 2 >= i ? "heart_half" : "heart_background"),
-            player.position.x * pixelsPerMeter + i * 10 - 3, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter - 5, 10, 10);
+    let healthIdx = Math.round(player.health * player.maxHealth * 2) - 1;
+
+    // Rendering of the hearts above the player
+    for (let i = 0; i < player.maxHealth / 2; i++) {
+        image(resources.get(player.health > i * 2 ? "heart" : player.health / 2 >= i ? "heart_half" : "heart_background"),
+            player.position.x * pixelsPerMeter - (player.maxHealth / 4) * pixelsPerMeter * 0.5 + i * pixelsPerMeter * 0.5 ,
+            window.innerHeight - (player.height + player.position.y) * pixelsPerMeter - 5, pixelsPerMeter * 0.5, pixelsPerMeter * 0.5);
     }
 
     // And shortly, the outline of the player (AABB)
@@ -256,15 +258,23 @@ class Entity extends AABB {
     position; // position of the entity
     velocity; // velocity of the entity
     colliding; // colliding states, containing the direction of collision (x, y)
+    fallingDistance; // Distance how long the entity has fallen for.
+    health;
+    maxHealth;
+    isAlive;
 
     static DefaultMovementVector = new Vec2(horizontalSpeed, horizontalSpeed);
     static collisionThres = 0.05; // Detection threshold in meters
 
-    constructor(posX, posY) {
+    constructor(posX, posY, maxHealth) {
         super(posX, posY, 0.9, 1.8);
         this.position  = new Vec2(posX, posY);
         this.velocity  = new Vec2(0, 0);
         this.colliding = new Vec2(0, 0);
+        this.fallingDistance = 0;
+        this.isAlive = true;
+        this.health = maxHealth;
+        this.maxHealth = maxHealth;
     }
 
     // Function that allows the entity to move based on the input vector.
@@ -286,6 +296,7 @@ class Entity extends AABB {
         // Makes it easier to test whether collision detection has finished, without allocating more memory.
         this.colliding.translate(0, 0);
         this.velocity.addY(-Environment.G * dT);
+        this.fallingDistance += dT * Environment.G;
 
         // Check if the next position of the entity is colliding with another
         for (let i = 0; i < Environment.boundingBoxes.length; i++) {
@@ -332,6 +343,8 @@ class Entity extends AABB {
                     if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(target)) {
                         this.colliding.y = Math.sign(this.velocity.y);
                         this.velocity.y = 0;
+                        if (this.fallingDistance > 4)
+                            this.damage(this.fallingDistance * 0.25 - 2);
                         break;
                     }
                 }
@@ -345,10 +358,12 @@ class Entity extends AABB {
         // Add velocity to position
         this.position.add(this.velocity.x * dT, this.velocity.y * dT);
 
-        // Check if the x-axis is colliding, if so, stop movement
-        this.velocity.x *= 0.8;
+        // If we're not falling, reset the falling distance counter.
+        if (this.velocity.y >= 0)
+            this.fallingDistance = 0;
 
-        //console.log(`V: ${this.velocity.x}, ${this.velocity.y}`)
+        // Reduce x axis motion gradually
+        this.velocity.x *= 0.8;
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);
@@ -368,6 +383,11 @@ class Entity extends AABB {
 
         // Update the AABB position
         this.translate(this.position.x, this.position.y);
+    }
+
+    damage(amount) {
+        this.health = Math.max(0, this.health - amount);
+        this.isAlive = this.health !== 0;
     }
 }
 

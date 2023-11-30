@@ -55,7 +55,7 @@ function preload() {
         resources.set(element, loadImage(`./assets/${element}.${extension}`));
 
     // How many pixels represent a 'meter' ingame. This uses an invisible div element that's one cm large.
-    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * 0.7;
+    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * 0.5;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
 }
@@ -106,7 +106,7 @@ function setup() {
     });
 
     // Create an instance of the first player, for when the user decides to play single-player.
-    player = new Entity(5, 10);
+    player = new Entity(5, 25);
 
     loadMap();
 
@@ -142,7 +142,9 @@ function draw() {
 
     for (var i = 0; i < Environment.boundingBoxes.length; i++) {
         let other = Environment.boundingBoxes[i];
+
         if (other instanceof Block) {
+
             other.blockType.draw(
                 (other.left + screenHorizontalOffset) * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
                 other.width * pixelsPerMeter, other.height * pixelsPerMeter);
@@ -167,12 +169,21 @@ function loadMap(mapImage) {
 
 
     // generate ground (temp)
-    let n = window.innerWidth / pixelsPerMeter * 10;
-    for (let i = 0; i < n; i++) {
-        let posY = Math.floor(3 + noise(i / 7) * 5 + noise(i / 13) * 2 + noise(i / 16) * 2);
-        for (let j = 0; j < posY; j++) {
-            let blockType = j === posY - 1 ? BlockType.grass : j >= posY - 3 ? BlockType.dirt : BlockType.stone;
-            Environment.introduce(new Block(i, j, blockType));
+    let n = 500;
+    let interpFactor = 2;
+    let fnY = (x) => Math.floor(3 + noise(x) * 20 + noise(x / 2) * 5 + noise(x / 4) * 2);
+    for (let x = 0; x < n; x++) {
+        let A = fnY(x);
+        let B = fnY(x + 1);
+
+        for (let i = 0; i < interpFactor; i++) {
+            let posY = A + 0.5 * (B - A);
+
+
+            for (let y = 0; y < posY; y++) {
+                let blockType = y === posY - 1 ? BlockType.grass : y >= posY - 3 ? BlockType.dirt : BlockType.stone;
+                Environment.introduce(new Block(x * interpFactor + i, y, blockType));
+            }
         }
     }
 
@@ -271,13 +282,13 @@ class Entity extends AABB {
             let copy = this.copy; // aabb copy for translations
 
             // Check if D(self, target) > v * dt (max distance difference in next frame), if so, skip check.
-            if (Math.max(this.left, target.left) - Math.min(this.right, target.right) > Math.abs(this.velocity.x * dT) ||
+            /*if (Math.max(this.left, target.left) - Math.min(this.right, target.right) > Math.abs(this.velocity.x * dT) ||
                 Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) > Math.abs(this.velocity.y  * dT))
                 continue;
-            console.log(`Possible collider: [x: ${target.left}, y: ${target.top}][vx: ${v.x}, vy: ${v.y}]`);
+            console.log(`Possible collider: [x: ${target.left}, y: ${target.top}][vx: ${v.x}, vy: ${v.y}]`);*/
             // Now let's interpolate.
             // If both collision detections have been performed, x and y will be true and the loop will automatically stop
-            for (let step = 0; step < Entity.collisionDetectionSteps && (!colX || !colY); step++) {
+            /*for (let step = 0; step < Entity.collisionDetectionSteps && (!colX || !colY); step++) {
 
 
                 // Collision detection for x-axis.
@@ -320,11 +331,11 @@ class Entity extends AABB {
 
 
 
-            this.velocity.translate(v.x, v.y);
+            this.velocity.translate(v.x, v.y);*/
 
-            /*if (this.colliding.x === 0) {
-                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + collisionDetectionDelta; j += collisionDetectionPrecision) {
-                    if (this.copy.translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(p)) {
+            if (this.colliding.x === 0) {
+                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + 0.05; j += 0.05) {
+                    if (this.copy.translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(target)) {
                         this.colliding.x = Math.sign(this.velocity.x);
                         break;
                     }
@@ -332,8 +343,8 @@ class Entity extends AABB {
             }
 
             if (this.colliding.y === 0 && Math.abs(this.velocity.y) >= Entity.collisionDetectionThreshold) {
-                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + collisionDetectionDelta; j += collisionDetectionPrecision) {
-                    if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(p)) {
+                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + 0.05; j += 0.05) {
+                    if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(target)) {
                         this.colliding.y = Math.sign(this.velocity.y);
                         break;
                     }
@@ -342,7 +353,7 @@ class Entity extends AABB {
 
             // If we're colliding on both axis, stop further checks
             if (this.colliding.x !== 0 && this.colliding.y !== 0)
-                break;*/
+                break;
         }
 
         // Add velocity to position
@@ -357,7 +368,7 @@ class Entity extends AABB {
         else
             this.velocity.x *= 0.9;
 
-        if (this.colliding.y !== 0)
+        if (this.colliding.y < 0)
             this.velocity.y = 0;
 
         //console.log(`V: ${this.velocity.x}, ${this.velocity.y}`)

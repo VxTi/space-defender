@@ -1,11 +1,15 @@
 ﻿# Gebruiksaanwijzing
+
 ## ESP32 Game Controller
+
 ### Inhoud
+
 - Inhoud
 - Pinout
 - Functies
 
 ### Pinout
+
 De ESP32 controller is gemaakt met een PCB (Printed Circuit Board) en is aangesloten met jumperwires naar een breadboard waar een ESP32 op zit. De PCB ziet er zo uit: ![PCB](https://cdn.discordapp.com/attachments/1152210205300502610/1179433522910478509/20231129_152242.jpg?ex=6579c410&is=65674f10&hm=487d624c67cb26b40d3da9b3e71ae7e3f586247cbe0e219cd58ccf039fe1b08c&)
 
 De kabels zijn als het volgende aangesloten op de ESP32:
@@ -26,7 +30,7 @@ Deze pinouts wordt zo gebruikt omdat het dan makkelijk is om de controller er ui
 
 ### Functies
 
-Met de ESP32 controller kun je de meegeleverde game besturen. 
+Met de ESP32 controller kun je de meegeleverde game besturen.
 
 De controller verbind met de game via Bluetooth Low Energy. Afgekort, BLE werkt anders dan normale Bluetooth. BLE hoeft niet te pairen met een apparaat en gebruikt bij het verbinden met een apparaat enkel de naam van het apparaat. De naam van de controller is altijd ESP Controller P1 als je speler 1 bent, en ESP Controller P2 als je speler 2 bent.
 
@@ -54,4 +58,3 @@ Als je alleen speler 1 bent hoef je deze combinatie niet in te drukken. Wanneer 
 Aangezien de ESP Controller nog een prototype is, hebben wij een debug mode geïmplementeerd om realtime in een seriële monitor uit te lezen wat de controller doet, waarmee hij verbonden is en wat hij verstuurd via BLE. Om debug mode in te schakelen moet je tijdens het opstarten de combinatie OPT + B ingedrukt houden:
 
 ![Debug mode](https://cdn.discordapp.com/attachments/1152210205300502610/1179439972911153242/debugmode.png?ex=6579ca12&is=65675512&hm=f0ca21441e7f216435b438172a0b2cd68d30c3abc39ee56b8fc6eb58ace45919&)
-

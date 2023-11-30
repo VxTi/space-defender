@@ -1,24 +1,37 @@
 var pixelsPerMeter;
-const horizontalSpeed = 5.5; // Speed at which the player moves per second in abstract meters.
-const verticalSpeed = 6;
+
+// Variables defining how fast the player moves per second in game meters.
+const horizontalSpeed = 4.5;
+const verticalSpeed = 6.5;
+
+// Margins on the side of the screen, given in game meters
+// If the player moves past these margins, the screen starts moving.
+const screenEdgeMargin = 8;
+
+const cmPerBlock = 0.9;
+const blockReach = 3;
+
+// Whether the player can double jump against walls
+const allowDoubleJump = true;
+
+// Hashmap containing all the resoucres as images.
+// These resources must be loaded in the preload function.
+// Adding new resources can be done using 'resources.set('key', object)'
+const resources = new Map();
 
 // Window dimensions in arbitrary game 'meters'
 var windowWidthInMeters;
 var windowHeightInMeters;
 
 // The position of the screen relative to the player
-var screenHorizontalOffset = 0;
-
-// Margins on the side of the screen.
-// If the player moves past these margins, the screen starts moving.
-const environmentVisibilityMargins = 10;
+var screenOffset = 0;
 
 // Variable containing all information of the player.
 var player;
 
 let moonAnimation;
 let skyBackground;
-let timePhase = 0;
+let timePhase = 0; // used for timed animations.
 
 var connectedControllers = [];
 var gameActive = true;
@@ -33,16 +46,12 @@ const Input = {
     BUTTON_OPT_BP: 6
 }
 
-// Hashmap containing all the resoucres as images.
-// These resources must be loaded in the preload function.
-// Adding new resources can be done using 'resources.set('key', object)'
-const resources = new Map();
-
 clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
 isWithinBounds = function(x, a, b) { return x >= a && x <= b; }
 
-// This function is called before the setup function.
-// This can be used to load images for resources.
+/** This function is called before the setup function.
+ *  This can be used to load images for resources.
+ */
 function preload() {
 
     // All filenames.
@@ -55,12 +64,16 @@ function preload() {
         resources.set(element, loadImage(`./assets/${element}.${extension}`));
 
     // How many pixels represent a 'meter' ingame. This uses an invisible div element that's one cm large.
-    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth;
+    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * cmPerBlock;
     windowWidthInMeters = window.innerWidth / pixelsPerMeter;
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
 }
 
-// Setup function for loading in various
+/**
+ * Method for setting up variables, after pre-initialization.
+ * Here we can add event listeners, register preloaded images as resource
+ * and create the canvas.
+ */
 function setup() {
 
     // When pressed on the 'select controller' button,
@@ -68,7 +81,8 @@ function setup() {
     document.querySelector(".controller-connect")
         .addEventListener("click", () => checkBluetoothConnections());
 
-    let settingsElem = document.querySelector(".game-settings-button")
+    let settingsElem = document.querySelector(".game-settings-button");
+    pixelDensity(1);
 
     // The settings button, one can pause the game with this
 
@@ -106,9 +120,10 @@ function setup() {
     });
 
     // Create an instance of the first player, for when the user decides to play single-player.
-    player = new Entity(5, 25);
+    player = new Entity(5, 15);
 
     loadMap();
+    noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 
 }
 
@@ -123,10 +138,12 @@ function draw() {
     if (keyIsDown(65)) sgnX--;
     if (keyIsDown(68)) sgnX++;
     if (keyIsDown(32)) sgnY++;
-    if (keyIsDown(16)) sgnY--;
+    if (keyIsDown(16)) sgnX *= 0.5;
+
     if (sgnX !== 0 && player.colliding.x === 0)
         player.velocity.x = horizontalSpeed * sgnX;
-    if (sgnY !== 0 && player.colliding.y < 0)
+    // Only allow the player to jump when either on ground or colliding in a wall (double jump)
+    if (sgnY !== 0 && (player.colliding.y < 0 || (allowDoubleJump && player.colliding.x !== 0 && player.velocity.y < 0)))
         player.velocity.y = verticalSpeed * sgnY;
 
     timePhase += (deltaTime / 1000);
@@ -145,16 +162,26 @@ function draw() {
 
         if (other instanceof Block) {
 
+            // Draw the block onto the screen.
             other.blockType.draw(
-                (other.left + screenHorizontalOffset) * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
+                (other.left + screenOffset) * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
                 other.width * pixelsPerMeter, other.height * pixelsPerMeter);
         }
     }
 
 
     // Render the player
-    image(resources.get('playerImage'), (player.position.x + screenHorizontalOffset) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
+    image(resources.get('playerImage'),
+        (player.position.x + screenOffset - player.width * 0.4) * pixelsPerMeter,
+        window.innerHeight - (player.height + player.position.y) * pixelsPerMeter,
+        player.width * pixelsPerMeter * 2,
+        player.height * pixelsPerMeter);
+    stroke(255, 0, 0);
+    fill(0, 0, 0, 0);
+    rect((player.position.x + screenOffset) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
 
+
+    // If the game isn't active, prevent updates.
     if (!gameActive)
         return;
 
@@ -174,7 +201,7 @@ function loadMap(mapImage) {
     // generate ground (temp)
     let n = 500;
     let interpFactor = 2;
-    let fnY = (x) => Math.floor(3 + noise(x) * 10 + noise(x / 2) * 5 + noise(x / 4) * 2);
+    let fnY = (x) => -4 + Math.floor(3 + noise(x) * 10 + noise(x / 2) * 5 + noise(x / 4) * 2);
     for (let x = 0; x < n; x++) {
         let A = fnY(x);
         let B = fnY(x + 1);
@@ -239,10 +266,10 @@ class Entity extends AABB {
     colliding; // colliding states, containing the direction of collision (x, y)
 
     static DefaultMovementVector = new Vec2(horizontalSpeed, horizontalSpeed);
-    static collisionThres = 0.1; // Detection threshold in meters
+    static collisionThres = 0.05; // Detection threshold in meters
 
     constructor(posX, posY) {
-        super(posX, posY, 1.8, 1.8);
+        super(posX, posY, 0.9, 1.8);
         this.position  = new Vec2(posX, posY);
         this.velocity  = new Vec2(0, 0);
         this.colliding = new Vec2(0, 0);
@@ -268,9 +295,6 @@ class Entity extends AABB {
         this.colliding.translate(0, 0);
         this.velocity.addY(-Environment.G * dT);
 
-        let colX = false;
-        let colY = false;
-
         // Check if the next position of the entity is colliding with another
         for (let i = 0; i < Environment.boundingBoxes.length; i++) {
             let target = Environment.boundingBoxes[i];
@@ -279,14 +303,24 @@ class Entity extends AABB {
             if (target === this)
                 continue;
 
-            // Check if D(self, target) > v * dt (max distance difference in next frame), if so, skip check.
-            if (Math.max(this.left, target.left) - Math.min(this.right, target.right) > Math.abs(this.velocity.x) &&
-                Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) > Math.abs(this.velocity.y))
+            let dSq = Math.pow(Math.max(this.left, target.left) - Math.min(this.right, target.right), 2) +
+                Math.pow(Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) > Math.abs(this.velocity.y), 2);
+
+            if (dSq < blockReach * blockReach) {
+                if (target.intersectsPoint(mouseX / pixelsPerMeter - screenOffset, (window.innerHeight - mouseY) / pixelsPerMeter)) {
+                    stroke(255, 0, 0);
+                    fill(0, 0, 0, 0);
+                    rect((target.left + screenOffset) * pixelsPerMeter, window.innerHeight - target.bottom * pixelsPerMeter, target.width * pixelsPerMeter, target.height * pixelsPerMeter);
+
+                }
+            }
+
+            if (dSq > 2)
                 continue;
 
 
-            if (this.colliding.x === 0 && Math.abs(this.velocity.x) > Entity.collisionThres) {
-                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThres; j += Entity.collisionThres) {
+            if (this.colliding.x === 0 && Math.abs(this.velocity.x) >= Entity.collisionThres) {
+                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThres * 2; j += Entity.collisionThres) {
                     if (this.copy.translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(target)) {
                         this.colliding.x = Math.sign(this.velocity.x);
                         this.velocity.x = 0;
@@ -295,8 +329,8 @@ class Entity extends AABB {
                 }
             }
 
-            if (this.colliding.y === 0 && Math.abs(this.velocity.y) > Entity.collisionThres) {
-                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + Entity.collisionThres; j += Entity.collisionThres) {
+            if (this.colliding.y === 0 && Math.abs(this.velocity.y) >= Entity.collisionThres) {
+                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + Entity.collisionThres * 2; j += Entity.collisionThres) {
                     if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(target)) {
                         this.colliding.y = Math.sign(this.velocity.y);
                         this.velocity.y = 0;
@@ -322,10 +356,10 @@ class Entity extends AABB {
         this.position.y = Math.max(this.position.y, 0);
 
         // The left side of the screen, let it scroll if you come too close
-        if (this.position.x + screenHorizontalOffset < environmentVisibilityMargins)
-            screenHorizontalOffset = -this.position.x + environmentVisibilityMargins;
-        else if (this.position.x + screenHorizontalOffset > windowWidthInMeters - environmentVisibilityMargins)
-            screenHorizontalOffset = -this.position.x + windowWidthInMeters - environmentVisibilityMargins;
+        if (this.position.x + screenOffset < screenEdgeMargin)
+            screenOffset = -this.position.x + screenEdgeMargin;
+        else if (this.position.x + screenOffset > windowWidthInMeters - screenEdgeMargin)
+            screenOffset = -this.position.x + windowWidthInMeters - screenEdgeMargin;
 
         //this.position.x = clamp(this.position.x, 0, windowWidthInMeters - this.width);
 

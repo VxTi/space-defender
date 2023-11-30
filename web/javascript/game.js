@@ -61,7 +61,7 @@ function preload() {
     const extension = 'png';
     const fileNames = ['playerImage', 'dirt', 'stone', 'grass_block',
                         'deepslate_bricks', 'cracked_deepslate_bricks', 'steve_animations',
-                        'moon_phases', 'skyImage', 'diamond_ore'];
+                        'moon_phases', 'skyImage', 'diamond_ore', 'gold_ore'];
 
     for (let element of fileNames)
         resources.set(element, loadImage(`./assets/${element}.${extension}`));
@@ -107,20 +107,9 @@ function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
 
     // Load all resources
-    /*BlockType.stone = new Resource(resources.get("stone"));
-    BlockType.dirt = new Resource(resources.get("dirt"));
-    BlockType.grass = new Resource(resources.get("grass_block_side"));
-    BlockType.deepslate_bricks = new Resource(resources.get("deepslate_bricks"));
-    BlockType.cracked_deepslate_bricks = new Resource(resources.get("cracked_deepslate_bricks"));*/
-
-    console.log(BlockType[0])
     resources.forEach((value, key) => {
-        if (typeof BlockType[key] !== null)  {
-            console.log("Initializing: " + key);
-            BlockType[key] = new Resource(value);
-            console.log(BlockType[key])
-        }
-    })
+        if (typeof BlockType[key] !== null)  BlockType[key] = new Resource(value);
+    });
 
     moonAnimation = new Resource(resources.get("moon_phases"), 4, 2);
 
@@ -134,7 +123,7 @@ function setup() {
     // Create an instance of the first player, for when the user decides to play single-player.
     player = new Entity(5, 15);
 
-    loadMap();
+    Environment.generate();
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 
 }
@@ -155,19 +144,22 @@ function draw() {
     if (sgnX !== 0 && player.colliding.x === 0)
         player.velocity.x = horizontalSpeed * sgnX;
     // Only allow the player to jump when either on ground or colliding in a wall (double jump)
+
     if (sgnY !== 0 && (player.colliding.y < 0 || (allowDoubleJump && player.colliding.x !== 0 && player.velocity.y < 0)))
         player.velocity.y = verticalSpeed * sgnY;
 
     // Saves current matrix and pushes it on top of the stack
     push();
-    // Rotate the matrix (sky)
-    rotate(timePhase * 0.005);
-    // translate sky to the middle so it rotates from the middle
-    translate(window.innerWidth/2, window.innerHeight/2);
+    { // does nothing, just nice.
 
-    // Render the stars
-    skyBackground.draw(-window.innerWidth/2, -window.innerWidth/2, window.innerWidth, window.innerWidth);
+        // Rotate the matrix (sky)
+        rotate(timePhase * 0.005);
+        // translate sky to the middle so it rotates from the middle
+        translate(window.innerWidth / 2, window.innerHeight / 2);
 
+        // Render the stars
+        skyBackground.draw(-window.innerWidth / 2, -window.innerWidth / 2, window.innerWidth, window.innerWidth);
+    }
     pop(); // Pops the top matrix and goes to the previous one.
 
 
@@ -214,49 +206,6 @@ function draw() {
     player.update(dT);
 
 }
-
-// Function for loading a map, based on a provided image.
-// This image must be decoded into map elements and then placed
-// into the Environment class's objects
-function loadMap() {
-    /*if (!(mapImage instanceof p5.Image))
-        throw new TypeError("Provided argument is not of type p5.Image");*/
-
-
-    // generate ground (temp)
-    let n = 500;
-    let interpFactor = 2;
-    let fnY = (x) => -4 + Math.floor(3 + noise(x) * 10 + noise(x / 2) * 5 + noise(x / 4) * 2);
-    for (let x = 0; x < n; x++) {
-        let A = fnY(x);
-        let B = fnY(x + 1);
-
-        for (let i = 0; i < interpFactor; i++) {
-            let posY = Math.round(A + 0.5 * (B - A));
-
-
-            for (let y = 0; y < posY; y++) {
-                let blockType =
-                    y === posY - 1 ? BlockType.grass_block :
-                    y >= posY - 3 ? BlockType.dirt :
-                        Math.random() < 0.015 ? BlockType.diamond_ore : BlockType.stone;
-                Environment.introduce(new Block(x, y, blockType));
-            }
-        }
-    }
-
-    // Generate island (temporarily)
-    for (let i = 0; i < n; i++) {
-        let posY = noise(i / 7) * 10;
-        let posYd = -noise(i / 10) * 20 * Math.random();
-        for (let j = 0; j < posY; j++) {
-
-            Environment.introduce(new Block(10 + i, 25 + Math.floor(posYd) + j, Math.random() < 0.3 ? BlockType.cracked_deepslate_bricks : BlockType.deepslate_bricks));
-        }
-    }
-
-}
-
 
 function checkBluetoothConnections() {
     if (!(navigator.bluetooth))
@@ -344,15 +293,11 @@ class Entity extends AABB {
                 }
             }
 
-            /*if (this.copy.translate(this.position.x + this.velocity.x * dT, this.position.y).intersects(target)) {
-                this.velocity.x *= 0.1;
+            if (this.intersects(target) && this.velocity.magSq === 0) {
+                this.position.x -= 0.1;
+                console.log("Prevented getting stuck")
                 break;
             }
-
-            if (this.copy.translate(this.position.x, this.position.y + this.velocity.y * dT).intersects(target)) {
-                this.velocity.y *= 0.1;
-                break;
-            }*/
 
             if (dSq > 2)
                 continue;
@@ -438,5 +383,45 @@ class Environment {
                 aabb.update(deltaT);
             }
         });
+    }
+
+    static generate() {
+        /*if (!(mapImage instanceof p5.Image))
+            throw new TypeError("Provided argument is not of type p5.Image");*/
+
+
+        // generate ground (temp)
+        let n = 500;
+        let interpFactor = 2;
+        let fnY = (x) => -4 + Math.floor(3 + noise(x) * 10 + noise(x / 2) * 5 + noise(x / 4) * 2);
+        for (let x = 0; x < n; x++) {
+            let A = fnY(x);
+            let B = fnY(x + 1);
+
+            for (let i = 0; i < interpFactor; i++) {
+                let posY = Math.round(A + 0.5 * (B - A));
+
+
+                for (let y = 0; y < posY; y++) {
+                    let blockType =
+                        y === posY - 1 ? BlockType.grass_block :
+                            y >= posY - 3 ? BlockType.dirt :
+                                Math.random() < 0.05 ? BlockType.gold_ore :
+                                Math.random() < 0.015 ? BlockType.diamond_ore : BlockType.stone;
+                    Environment.introduce(new Block(x, y, blockType));
+                }
+            }
+        }
+
+        // Generate island (temporarily)
+        for (let i = 0; i < n; i++) {
+            let posY = noise(i / 7) * 10;
+            let posYd = -noise(i / 10) * 20 * Math.random();
+            for (let j = 0; j < posY; j++) {
+
+                Environment.introduce(new Block(10 + i, 25 + Math.floor(posYd) + j, Math.random() < 0.3 ? BlockType.cracked_deepslate_bricks : BlockType.deepslate_bricks));
+            }
+        }
+
     }
 }

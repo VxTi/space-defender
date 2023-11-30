@@ -267,6 +267,7 @@ class BlockType {
     static deepslate_bricks;
     static cracked_deepslate_bricks;
     static diamond_ore;
+    static gold_ore;
 }
 
 class Block extends AABB {

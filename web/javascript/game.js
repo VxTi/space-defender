@@ -16,7 +16,9 @@ const cmPerBlock = 0.9;
 const blockReach = 3;
 
 // Whether the player can double jump against walls
-const allowDoubleJump = true;
+var allowDoubleJump = true;
+
+var showBoundingBox = false;
 
 // Hashmap containing all the resoucres as images.
 // These resources must be loaded in the preload function.
@@ -27,7 +29,8 @@ const resources = new Map();
 var windowWidthInMeters;
 var windowHeightInMeters;
 
-
+var playerHealth = 0.5;
+var healthIcons;
 
 // Variable containing all information of the player.
 var player;
@@ -61,7 +64,8 @@ function preload() {
     const extension = 'png';
     const fileNames = ['playerImage', 'dirt', 'stone', 'grass_block',
                         'deepslate_bricks', 'cracked_deepslate_bricks', 'steve_animations',
-                        'moon_phases', 'skyImage', 'diamond_ore', 'gold_ore'];
+                        'moon_phases', 'skyImage', 'diamond_ore', 'gold_ore',
+                        'heart', 'heart_half', 'heart_background'];
 
     for (let element of fileNames)
         resources.set(element, loadImage(`./assets/${element}.${extension}`));
@@ -85,7 +89,6 @@ function setup() {
         .addEventListener("click", () => checkBluetoothConnections());
 
     let settingsElem = document.querySelector(".game-settings-button");
-    pixelDensity(1);
 
     // The settings button, one can pause the game with this
 
@@ -112,8 +115,12 @@ function setup() {
     });
 
     moonAnimation = new Resource(resources.get("moon_phases"), 4, 2);
-
     skyBackground = new Resource(resources.get("skyImage"));
+    healthIcons = [
+        new Resource(resources.get("heart")),
+        new Resource(resources.get("heart_half")),
+        new Resource(resources.get("heart_background"))
+    ]
 
     // Whenever the screen resizes, adapt the canvas size with it.
     window.addEventListener('resize', () => {
@@ -190,11 +197,19 @@ function draw() {
         player.width * pixelsPerMeter * 2,
         player.height * pixelsPerMeter);
 
-    // And shortly, the outline of the player (AABB)
-    stroke(255, 0, 0);
-    fill(0, 0, 0, 0);
-    rect((player.position.x) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
+    let maxHealth = 3;
+    let healthIdx = Math.round(playerHealth * maxHealth * 2) - 1;
+    for (let i = 0; i < maxHealth; i++) {
+        image(resources.get(healthIdx > i * 2 ? "heart" : healthIdx / 2 >= i ? "heart_half" : "heart_background"),
+            player.position.x * pixelsPerMeter + i * 10 - 3, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter - 5, 10, 10);
+    }
 
+    // And shortly, the outline of the player (AABB)
+    if (showBoundingBox) {
+        stroke(255, 0, 0);
+        fill(0, 0, 0, 0);
+        rect((player.position.x) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
+    }
 
     // If the game isn't active, prevent updates.
     if (!gameActive)

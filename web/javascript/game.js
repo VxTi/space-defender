@@ -1,41 +1,40 @@
 
+/** Player related variables */
 // Variables defining how fast the player moves per second in game meters.
-const horizontalSpeed = 4.5;
-const verticalSpeed = 6.5;
+const horizontalSpeed = 4.5; // Movement speed horizontally in game meters/s
+const verticalSpeed = 6.5;   // Movement speed vertically in game meters/s
+var allowDoubleJump = true;  // Whether the player can double jump against walls
+var mainPlayer;                       // Variable containing all information of the player.
 
+// Whether to draw outlines around the player(s)
+var showBoundingBox = true;
+
+/** Dimension related variables (sizes) */
+var windowWidthInMeters;            // Size in game meters
+var windowHeightInMeters;
 // Margins on the side of the screen, given in game meters
 // If the player moves past these margins, the screen starts moving.
 const screenEdgeMargin = 8;
-// The position of the screen relative to the player
 var screenOffsetX = 0;
 var screenOffsetY = 0;
-
-// How many on-screen pixels represent an ingame meter
+// How many on-screen pixels represent an in-game meter
 var pixelsPerMeter;
 
 const cmPerBlock = 1.2; // size of each 'meter' on screen.
 const blockReach = 3;
 
-// Whether the player can double jump against walls
-var allowDoubleJump = true;
-
-// Whether to draw outlines around the player(s)
-var showBoundingBox = true;
+/** Terrain related variables */
+const seed = 2; // if null, terrain will generate random
+const terrainHeight = 10;
+const terrainRandomness = 1.0;
 
 // Object containing all loaded images.
 // If one wants to add images to the resources variable, you can do
-// 'resources.something = ...' or 'let a = resources.something'
+// 'resources['something'] = ...' or 'let a = resources.something'
 var resources = {};
 
 // Object containing all moving resources (animations)
 var animations = {}
-
-// Window dimensions in arbitrary game 'meters'
-var windowWidthInMeters;
-var windowHeightInMeters;
-
-// Variable containing all information of the player.
-var mainPlayer;
 
 let timePhase = 0; // used for timed animations.
 
@@ -64,7 +63,7 @@ function preload() {
     // If one wants to add a new resource to the resources array,
     // one must simply add the name in the 'fileNames' array, as long as the file ends
     // with the same extension type as defined below.
-    // If one wants to access the resource afterwards, simply do 'resources['rs name']'
+    // If one wants to access the resource afterward, simply do 'resources['rs name']'
     const extension = 'png';
     const fileNames = ['player_animation', 'dirt', 'stone', 'grass_block',
                         'deepslate_bricks', 'cracked_deepslate_bricks',
@@ -127,6 +126,9 @@ function setup() {
 
     // Create an instance of the first player, for when the user decides to play single-player.
     mainPlayer = new Player(5, 15);
+
+    noiseSeed(seed === null ? Math.floor((1 << 10) * Math.random()) : seed);
+
     Environment.generate();            // generate environment
     Environment.introduce(mainPlayer); // add player to the environment
     Environment.introduce(new Player(10, 15));
@@ -137,6 +139,10 @@ function setup() {
 // Draw function is called every 1/60th a second.
 // This means it has a 16.6ms interval.
 function draw() {
+
+    if (!document.hasFocus())
+        return;
+
     background(0);
 
     let sgnX = 0;
@@ -217,6 +223,7 @@ function checkBluetoothConnections() {
 
 class Entity extends AABB {
 
+    movementSignVect; // The movement
     position; // position of the entity
     velocity; // velocity of the entity
     colliding; // colliding states, containing the direction of collision (x, y)
@@ -277,6 +284,10 @@ class Entity extends AABB {
             if (typeof(this['onCollisionCheck']) === 'function' && !this['onCollisionCheck'](target))
                 continue;
 
+            /**
+             * SECTION: X AXIS COLLISION DETECTION
+             **/
+
             // perform calculations for x-axis collision detection
             if (this.colliding.x === 0 && Math.abs(this.velocity.x) >= Entity.collisionThres) {
                 for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThres * 2; j += Entity.collisionThres) {
@@ -289,6 +300,10 @@ class Entity extends AABB {
                     }
                 }
             }
+
+            /**
+             * SECTION: Y AXIS COLLISION DETECTION
+             **/
 
             // Perform calculations for y-axis collision detection
             if (this.colliding.y === 0 && Math.abs(this.velocity.y) >= Entity.collisionThres) {
@@ -317,6 +332,12 @@ class Entity extends AABB {
         // If we're falling, add fall distance
         if (this.velocity.y < 0)
             this.fallingDistance -= this.velocity.y * dT;
+
+        if (this.colliding.x || this.colliding.y)
+
+        /**
+         *  SECTION: FALL DAMAGE
+         **/
 
         // Check if we've fallen down
         if (this.colliding.y < 0) {
@@ -355,6 +376,13 @@ class Entity extends AABB {
     }
 }
 
+/**
+ * Class representing the abstraction of the player.
+ * The player is an extension of the Entity class,
+ * therefore one doesn't need to add special functionality to it.
+ * One can overwrite certain functions in the entity class to make
+ * edits to the player's behaviour / rendering.
+ */
 class Player extends Entity {
 
     static playerHealth = 20;
@@ -364,7 +392,7 @@ class Player extends Entity {
 
     // Updates player-related variables, such as screen position
     update(dT) {
-        super.update(dT);
+        super.update(dT);a
         if (this !== mainPlayer)
             return;
         // If you come too close to the corner of the screen horizontally, move the camera accordingly.
@@ -402,16 +430,22 @@ class Player extends Entity {
             target.velocity.x += this.velocity.x * 0.5;
     }
 
-    // Rendering player related thingies
+    /**
+     * Function for rendering all player-related elements.
+     * This currently includes:
+     * - Rendering the character's animation     (when moving)
+     * - Rendering the healthbar avove the player (if enabled)
+     * - Rendering the hitbox of the player       (if enabled)
+     */
     draw(dt) {
-        super.draw(dt);
 
-        // Render the player image
         push();
         {
             // Translate draw location to player's screen position
             translate((this.position.x) * pixelsPerMeter,
                 window.innerHeight - (this.height + this.position.y) * pixelsPerMeter);
+
+            // Render the player image (animate when walking)
             animations['playerAnimation'].animate(
                 -10, 0, // since we translated, the player's screen pos is at 0, 0 in the current matrix.
                 this.width * pixelsPerMeter * 2,
@@ -437,6 +471,13 @@ class Player extends Entity {
 
 }
 
+/**
+ * Class used for environmental cases
+ * Main functions of this class are
+ * - Initializing all elements in the world
+ * - Updating the states of all these elements
+ * - Rendering them onto the screen
+ **/
 class Environment {
     static G = 16; // gravitational constant in meters/second
     static boundingBoxes = [];
@@ -458,13 +499,25 @@ class Environment {
         this.entities.forEach(object => object.update(deltaT));
     }
 
-    // Method for procedurally generating terrain
+    static regenerate() {
+        Environment.boundingBoxes = [];
+        Environment.boundingBoxes.push(Environment.entities);
+        Environment.generate();
+    }
+
+    /**
+     *  Method for generating terrain
+     *  This terrain generation uses perlin-noise for
+     *  pseudo-random terrain. This differs every time the
+     *  user refreshes the website, or calls 'Environment.regenerate()'
+     **/
     static generate() {
 
         // generate ground (temp)
         let n = 500;
         let interpFactor = 2;
         let fnY = (x) => -4 + Math.floor(3 + noise(x) * 10 + noise(x / 2) * 5 + noise(x / 4) * 2);
+
         for (let x = 0; x < n; x++) {
             let A = fnY(x);
             let B = fnY(x + 1);
@@ -480,7 +533,7 @@ class Environment {
                                 Math.random() < 0.050 ? BlockType.coal_ore :
                                 Math.random() < 0.025 ? BlockType.gold_ore :
                                 Math.random() < 0.015 ? BlockType.diamond_ore : BlockType.stone;
-                    Environment.introduce(new Block(x, y, blockType));
+                    Environment.introduce(new Block(x * interpFactor + i, y, blockType));
                 }
             }
         }

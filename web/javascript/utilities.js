@@ -33,7 +33,6 @@ class BluetoothService {
             return new Promise(null);
 
         return await navigator.bluetooth.requestDevice(filters || {acceptAllDevices: 'true'})
-
     }
 
     constructor(device) {
@@ -346,7 +345,7 @@ class Vec2 {
         return this.x * this.x + this.y * this.y;
     }
 
-    normalize() {
+    get normalize() {
         let mag = this.magnitude();
         return new Vec2(this.x / mag, this.y / mag);
     }

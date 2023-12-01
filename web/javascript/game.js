@@ -285,6 +285,8 @@ class Entity extends AABB {
                 for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThres * 2; j += Entity.collisionThres) {
                     if (this.copy.translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(target)) {
                         this.colliding.x = Math.sign(this.velocity.x);
+                        if (typeof(this['onCollisionX']) === 'function')
+                            this['onCollisionX'](target);
                         this.velocity.x = 0;
                         break;
                     }
@@ -297,6 +299,10 @@ class Entity extends AABB {
                     if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(target)) {
 
                         this.colliding.y = Math.sign(this.velocity.y);
+
+                        if (typeof(this['onCollisionY']) === 'function')
+                            this['onCollisionY'](target);
+
                         this.velocity.y = 0;
                         break;
                     }
@@ -393,6 +399,12 @@ class Player extends Entity {
         return dSq < 2;
     }
 
+    // For when one actually collides
+    onCollisionX(target) {
+        if (target instanceof Entity)
+            target.velocity.x += this.velocity.x * 0.5;
+    }
+
     // Rendering player related thingies
     draw(dt) {
         super.draw(dt);
@@ -407,7 +419,7 @@ class Player extends Entity {
         // Rendering of the hearts above the player
         for (let i = 1, w = pixelsPerMeter * 0.4; i <= this.maxHealth / 2; i++) {
             image(resources[i * 2 <= this.health ? "heart" : i <= this.health / 2 ? "heart_half" : "heart_background"],
-                this.position.x * pixelsPerMeter - (this.maxHealth / 4) * w + i * w ,
+                this.position.x * pixelsPerMeter - (this.maxHealth / 4) * w + i * (w - 2) ,
                 window.innerHeight - (this.height + this.position.y) * pixelsPerMeter, w, w);
         }
         // And shortly, the outline of the player (AABB)

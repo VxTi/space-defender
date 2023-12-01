@@ -1,12 +1,8 @@
 ﻿# Gebruiksaanwijzing
 
-## ESP32 Game Controller
+---
 
-### Inhoud
-
-- Inhoud
-- Pinout
-- Functies
+## `ESP32 Game Controller`
 
 ### Pinout
 
@@ -15,18 +11,20 @@ De ESP32 controller is gemaakt met een PCB (Printed Circuit Board) en is aangesl
 De kabels zijn als het volgende aangesloten op de ESP32:
 
 - (PIN) -> (ESP Header)
-- B5 -> 8
-- B4 -> 3
-- B6 -> 46
-- B7 -> 9
-- B1 -> 10
-- B2 -> 11
-- B3 -> 12
-- GND -> GND
-- 3.3V -> 3V3
-- L1 -> 4
+- B5 &rarr; 8
+- B4 &rarr; 3
+- B6 &rarr; 46
+- B7 &rarr; 9
+- B1 &rarr; 10
+- B2 &rarr; 11
+- B3 &rarr; 12
+- GND &rarr; GND
+- 3.3V &rarr; 3V3
+- L1 &rarr; 4
 
 Deze pinouts wordt zo gebruikt omdat het dan makkelijk is om de controller er uit te pluggen als we deze opbergen. Het uiteindelijke idee is om de controller zo te ontwikkelen dat alles gesoldeerd zit en je geen jumperwires meer hoeft te gebruiken. De controller is momenteel nog een prototype.
+
+---
 
 ### Functies
 

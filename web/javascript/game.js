@@ -182,8 +182,8 @@ function draw() {
     let dT = deltaTime / 1000;
 
     timePhase += dT;
-    Environment.draw(dT);
     Environment.update(dT);
+    Environment.draw(dT);
 
 }
 
@@ -327,7 +327,7 @@ class Entity extends AABB {
             }
         }
 
-        // Reduce x-axis motion gradually
+        // Reduce x-axis motion gradually (if there is any)
         this.velocity.x *= 0.8;
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.

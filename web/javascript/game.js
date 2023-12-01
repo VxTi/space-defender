@@ -25,6 +25,9 @@ var showBoundingBox = false;
 // 'resources.something = ...' or 'let a = resources.something'
 var resources = {};
 
+// Object containing all moving resources (animations)
+var animations = {}
+
 // Window dimensions in arbitrary game 'meters'
 var windowWidthInMeters;
 var windowHeightInMeters;
@@ -34,8 +37,6 @@ var playerHealth = 0.5;
 // Variable containing all information of the player.
 var mainPlayer;
 
-let moonAnimation;
-let skyBackground;
 let timePhase = 0; // used for timed animations.
 
 var connectedControllers = [];
@@ -61,7 +62,7 @@ function preload() {
 
     // All filenames.
     const extension = 'png';
-    const fileNames = ['playerImage', 'dirt', 'stone', 'grass_block',
+    const fileNames = ['playerAnimation', 'dirt', 'stone', 'grass_block',
                         'deepslate_bricks', 'cracked_deepslate_bricks', 'steve_animations',
                         'moon_phases', 'skyImage', 'diamond_ore', 'gold_ore',
                         'heart', 'heart_half', 'heart_background'];
@@ -112,19 +113,21 @@ function setup() {
     // Load all resources
     for (const [key, value] of Object.entries(resources)){
         if (typeof BlockType[key] !== null)  BlockType[key] = new Resource(value);
-    };
+    }
 
-    moonAnimation = new Resource(resources["moon_phases"], 4, 2);
-    skyBackground = new Resource(resources["skyImage"]);
+    animations['moonAnimation'] = new Resource(resources['moon_phases'], 4, 2);
+    animations['skyBackground'] = new Resource(resources['skyImage']);
+    animations['playerAnimation'] = new Resource(resources['playerAnimation'], 4, 1);
+
 
     // Whenever the screen resizes, adapt the canvas size with it.
     window.addEventListener('resize', () => resizeCanvas(window.innerWidth, window.innerHeight));
 
     // Create an instance of the first player, for when the user decides to play single-player.
     mainPlayer = new Player(5, 15);
+    Environment.generate();            // generate environment
     Environment.introduce(mainPlayer); // add player to the environment
     Environment.introduce(new Player(10, 15));
-    Environment.generate();            // generate environment
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 
 }
@@ -159,29 +162,16 @@ function draw() {
         translate(window.innerWidth / 2, window.innerHeight / 2);
 
         // Render the stars
-        skyBackground.draw(-window.innerWidth / 2, -window.innerWidth / 2, window.innerWidth, window.innerWidth);
+        animations['skyBackground'].draw(-window.innerWidth / 2, -window.innerWidth / 2, window.innerWidth, window.innerWidth);
     }
     pop(); // Pops the top matrix and goes to the previous one.
 
 
     // Draw the moon animation in the top right of the screen
-    moonAnimation.animate(window.innerWidth - 200, 50, 100, 100, Math.floor(timePhase));
+    animations['moonAnimation'].animate(window.innerWidth - 200, 50, 100, 100, Math.floor(timePhase));
 
     // Offset the screen by the scrolling position
     translate(screenOffsetX * pixelsPerMeter, -screenOffsetY * pixelsPerMeter);
-
-    // Render all the bounding boxes in the game
-    for (var i = 0; i < Environment.boundingBoxes.length; i++) {
-        let other = Environment.boundingBoxes[i];
-
-        if (other instanceof Block) {
-
-            // Draw the block onto the screen.
-            other.blockType.draw(
-                other.left * pixelsPerMeter, window.innerHeight - (other.top + other.height) * pixelsPerMeter,
-                other.width * pixelsPerMeter, other.height * pixelsPerMeter);
-        }
-    }
 
     // If the game isn't active, prevent updates.
     if (!gameActive)
@@ -410,11 +400,12 @@ class Player extends Entity {
         super.draw(dt);
 
         // Render the player image
-        image(resources['playerImage'],
+        animations['playerAnimation'].animate(
             (this.position.x - this.width * 0.4) * pixelsPerMeter,
             window.innerHeight - (this.height + this.position.y) * pixelsPerMeter,
             this.width * pixelsPerMeter * 2,
-            this.height * pixelsPerMeter);
+            this.height * pixelsPerMeter,
+            Math.abs(this.velocity.x) > horizontalSpeed * 0.5 ? Math.floor(timePhase * 4) % 4 : 0);
 
         // Rendering of the hearts above the player
         for (let i = 1, w = pixelsPerMeter * 0.4; i <= this.maxHealth / 2; i++) {

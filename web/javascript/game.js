@@ -206,8 +206,6 @@ function checkBluetoothConnections() {
 
                 let inputCode = event.target.value.getUint8(0);
 
-                console.log(`Received input:[${inputCode + '0'}]`);
-
                 player.movementSignVect.translate(
                     -((inputCode >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),
                     (inputCode >> Input.BUTTON_A_BP) & 1);
@@ -296,6 +294,8 @@ class Entity extends AABB {
     update(dT) {
 
         this.isAlive = this.health !== 0;
+
+        console.log(this.movementSignVect);
 
         this.velocity.add(
             this.colliding.x === 0 ? this.movementSignVect.x * horizontalSpeed * 0.25 : 0,

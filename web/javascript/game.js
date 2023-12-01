@@ -225,7 +225,7 @@ class Entity extends AABB {
     maxHealth;
     isAlive;
 
-    static regenerationInterval = 10; // how many seconds need to pass for one heart to regenerate
+    static regenerationInterval = 5; // how many seconds need to pass for one heart to regenerate
 
     static collisionThres = 0.05; // Detection threshold in meters
 

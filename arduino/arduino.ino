@@ -36,6 +36,8 @@ bool deviceConnected = false;
 bool oldDeviceConnected = false;
 bool debugMode = false;
 
+bool useBluetooth = false; // False = Serial communication, True = BLE communication.
+
 // Callback for changing the boolean indicating whether a device is connected
 class connectionCallback : public BLEServerCallbacks
 {
@@ -108,15 +110,6 @@ char * selectPlayer(){
   return result;
 }
 
-// Checks if debug mode is toggled, and if so sends the input to serial
-void debugPrint(String text)
-{
-  if (debugMode)
-  {
-    Serial.println(text);
-  }
-}
-
 // Reads all digital pins and builds it into a binary value
 uint8_t readInput() {
   // Read all buttons
@@ -129,17 +122,9 @@ uint8_t readInput() {
   // Use bitshift operators to construct an 8bit integer containing controller data
 }
 
-void setup() {
-  toggleDebugMode(); // Check if debug mode is activated
- 
-  if (debugMode){
-  // Only use Serial when debug mode is active
-  Serial.begin(115200);
-  }
 
-  definePinModes(); // Set all pins to their desired mode
-
-  // Create the BLE Device
+void startBle(){
+    // Create the BLE Device
   BLEDevice::init((const char *)selectPlayer()); // calls the selectPlayer function te determine which playerno the controller is using
 
   // Create the BLE Server
@@ -151,7 +136,7 @@ void setup() {
 
   // Create a BLE Characteristic
   controllerCharacteristic = bleService->createCharacteristic(
-      CHARACTERISTIC_UUID ,
+      CHARACTERISTIC_UUID,
       BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE);
 
   // Create a BLE Descriptor
@@ -167,28 +152,25 @@ void setup() {
   pAdvertising->setMinPreferred(0x06);
   // pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
-  debugPrint("Waiting a client connection to notify...");
 }
 
-void loop() {
-  // notify changed value
+
+void bleLoop(){
+    // notify changed value
   if (deviceConnected)
   {
     digitalWrite(PIN_LED, HIGH);
     uint8_t inputValue = readInput();
     controllerCharacteristic->setValue(&inputValue, 1);
     controllerCharacteristic->notify();
-    debugPrint("Packet sent");
     delay(10); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
   }
   // disconnecting
   if (!deviceConnected && oldDeviceConnected)
   {
     digitalWrite(PIN_LED, LOW);
-    debugPrint("Device disconnected.");
     delay(500);                  // give the bluetooth stack the chance to get things ready
     pServer->startAdvertising(); // restart advertising
-    debugPrint("Start advertising");
     oldDeviceConnected = deviceConnected;
   }
   // connecting
@@ -196,9 +178,25 @@ void loop() {
   {
     // do stuff here on connecting
     oldDeviceConnected = deviceConnected;
-    debugPrint("Device Connected");
     digitalWrite(PIN_LED, HIGH);
     delay(100);
     digitalWrite(PIN_LED, LOW);
   }
+}
+
+void serialLoop(){
+  if (!deviceConnected){
+    Serial.printf("%c", (char)readInput());
+  }
+}
+
+void setup() {
+  definePinModes(); // Set all pins to their desired mode
+  Serial.begin(115200);
+  startBle();
+}
+
+void loop() {
+  serialLoop();
+  bleLoop();
 }

@@ -85,7 +85,6 @@ function preload() {
  * and create the canvas.
  */
 function setup() {
-
     // When pressed on the 'select controller' button,
     // we attempt to find a bluetooth controler.
     document.querySelector(".controller-connect")
@@ -198,7 +197,7 @@ function checkBluetoothConnections() {
         throw new Error("Bluetooth not supported on this browser!");
 
     let bleServiceUUID = 'a8a5a50f-12c1-4b83-bcd3-71ec79287967';
-    let bleCharacteristicsUUID = 'bb4843e0-d2fc-4b26-8fca-b99bd452acaa'
+    let bleCharacteristicsUUID = 'bb4843e0-d2fc-4b26-8fca-b99bd452acaa';
 
     BluetoothService.search({filters: [{namePrefix: "ESP32 Controller"}], optionalServices: [bleServiceUUID]})
         .then(device => {
@@ -219,6 +218,38 @@ function checkBluetoothConnections() {
             connection.connect();
         })
         .catch(err => console.error("An error occurred whilst attempting to connect to Bluetooth device", err));
+}
+
+async function connectSerial() {
+    try {
+        port = await navigator.serial.requestPort(); // Open the port
+        await port.open({ baudRate: 115200 });
+        readLoop(); // Start the infinite read loop.
+    } catch (error) {
+        console.log(`Serial connection error: ${error}`);
+    }
+}
+
+async function readLoop() {
+    while (true) {
+        while (port.readable) {
+            const reader = port.readable.getReader();
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        console.log("Readloop canceled.");
+                        break;
+                    }
+                    console.log(`Value red: ${value}`)
+                }
+            } catch (error) {
+                console.log(`Serial read error: ${error}`);
+            } finally {
+                reader.releaseLock();
+            }
+        }
+    }
 }
 
 class Entity extends AABB {
@@ -392,7 +423,7 @@ class Player extends Entity {
 
     // Updates player-related variables, such as screen position
     update(dT) {
-        super.update(dT);a
+        super.update(dT);
         if (this !== mainPlayer)
             return;
         // If you come too close to the corner of the screen horizontally, move the camera accordingly.

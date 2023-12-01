@@ -268,6 +268,7 @@ class BlockType {
     static cracked_deepslate_bricks;
     static diamond_ore;
     static gold_ore;
+    static coal_ore;
 }
 
 class Block extends AABB {
@@ -338,10 +339,10 @@ class Vec2 {
     }
 
     magnitude() {
-        return Math.sqrt(this.magSq());
+        return Math.sqrt(this.magSq);
     }
 
-    magSq() {
+    get magSq() {
         return this.x * this.x + this.y * this.y;
     }
 

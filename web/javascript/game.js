@@ -10,6 +10,7 @@ const screenEdgeMargin = 8;
 var screenOffsetX = 0;
 var screenOffsetY = 0;
 
+// How many on-screen pixels represent an ingame meter
 var pixelsPerMeter;
 
 const cmPerBlock = 1.2; // size of each 'meter' on screen.
@@ -18,7 +19,8 @@ const blockReach = 3;
 // Whether the player can double jump against walls
 var allowDoubleJump = true;
 
-var showBoundingBox = false;
+// Whether to draw outlines around the player(s)
+var showBoundingBox = true;
 
 // Object containing all loaded images.
 // If one wants to add images to the resources variable, you can do
@@ -31,8 +33,6 @@ var animations = {}
 // Window dimensions in arbitrary game 'meters'
 var windowWidthInMeters;
 var windowHeightInMeters;
-
-var playerHealth = 0.5;
 
 // Variable containing all information of the player.
 var mainPlayer;
@@ -61,10 +61,14 @@ isWithinBounds = function(x, a, b) { return x >= a && x <= b; }
 function preload() {
 
     // All filenames.
+    // If one wants to add a new resource to the resources array,
+    // one must simply add the name in the 'fileNames' array, as long as the file ends
+    // with the same extension type as defined below.
+    // If one wants to access the resource afterwards, simply do 'resources['rs name']'
     const extension = 'png';
-    const fileNames = ['playerAnimation', 'dirt', 'stone', 'grass_block',
-                        'deepslate_bricks', 'cracked_deepslate_bricks', 'steve_animations',
-                        'moon_phases', 'skyImage', 'diamond_ore', 'gold_ore',
+    const fileNames = ['player_animation', 'dirt', 'stone', 'grass_block',
+                        'deepslate_bricks', 'cracked_deepslate_bricks',
+                        'moon_phases', 'skyImage', 'diamond_ore', 'gold_ore', 'coal_ore',
                         'heart', 'heart_half', 'heart_background'];
 
     for (let element of fileNames)
@@ -109,15 +113,13 @@ function setup() {
     // Create a canvas to render onto
     createCanvas(window.innerWidth, window.innerHeight);
 
-
-    // Load all resources
-    for (const [key, value] of Object.entries(resources)){
+    // Load all block resources
+    for (const [key, value] of Object.entries(resources))
         if (typeof BlockType[key] !== null)  BlockType[key] = new Resource(value);
-    }
 
     animations['moonAnimation'] = new Resource(resources['moon_phases'], 4, 2);
     animations['skyBackground'] = new Resource(resources['skyImage']);
-    animations['playerAnimation'] = new Resource(resources['playerAnimation'], 4, 1);
+    animations['playerAnimation'] = new Resource(resources['player_animation'], 4, 1);
 
 
     // Whenever the screen resizes, adapt the canvas size with it.
@@ -180,8 +182,8 @@ function draw() {
     let dT = deltaTime / 1000;
 
     timePhase += dT;
-    Environment.update(dT);
     Environment.draw(dT);
+    Environment.update(dT);
 
 }
 
@@ -223,6 +225,8 @@ class Entity extends AABB {
     maxHealth;
     isAlive;
 
+    static regenerationInterval = 10; // how many seconds need to pass for one heart to regenerate
+
     static collisionThres = 0.05; // Detection threshold in meters
 
     constructor(posX, posY, maxHealth) {
@@ -255,6 +259,9 @@ class Entity extends AABB {
         // Makes it easier to test whether collision detection has finished, without allocating more memory.
         this.colliding.translate(0, 0);
         this.velocity.addY(-Environment.G * dT);
+
+        // Natural regeneration, every ten seconds
+        this.health = Math.min(this.health + dT / Entity.regenerationInterval, this.maxHealth);
 
         // Check if the next position of the entity is colliding with another
         for (let i = 0; i < Environment.boundingBoxes.length; i++) {
@@ -380,8 +387,8 @@ class Player extends Entity {
         // Render the block selection
         if (dSq < blockReach * blockReach) {
             if (target.intersectsPoint(mouseX / pixelsPerMeter - screenOffsetX, (window.innerHeight - mouseY) / pixelsPerMeter - screenOffsetY)) {
-                stroke(255, 0, 0);
-                fill(0, 0, 0, 0);
+                stroke(255, 255, 255); // outline rect color red
+                fill(0, 0, 0, 0); // don't draw the rest of the rect
                 rect((target.left) * pixelsPerMeter, window.innerHeight - target.bottom * pixelsPerMeter, target.width * pixelsPerMeter, target.height * pixelsPerMeter);
 
             }
@@ -400,25 +407,32 @@ class Player extends Entity {
         super.draw(dt);
 
         // Render the player image
-        animations['playerAnimation'].animate(
-            (this.position.x - this.width * 0.4) * pixelsPerMeter,
-            window.innerHeight - (this.height + this.position.y) * pixelsPerMeter,
-            this.width * pixelsPerMeter * 2,
-            this.height * pixelsPerMeter,
-            Math.abs(this.velocity.x) > horizontalSpeed * 0.5 ? Math.floor(timePhase * 4) % 4 : 0);
+        push();
+        {
+            // Translate draw location to player's screen position
+            translate((this.position.x) * pixelsPerMeter,
+                window.innerHeight - (this.height + this.position.y) * pixelsPerMeter);
+            animations['playerAnimation'].animate(
+                -10, 0, // since we translated, the player's screen pos is at 0, 0 in the current matrix.
+                this.width * pixelsPerMeter * 2,
+                this.height * pixelsPerMeter,
+                Math.abs(this.velocity.x) > horizontalSpeed * 0.5 ?
+                    Math.floor(timePhase * 5) % 4 : 0);
 
-        // Rendering of the hearts above the player
-        for (let i = 1, w = pixelsPerMeter * 0.4; i <= this.maxHealth / 2; i++) {
-            image(resources[i * 2 <= this.health ? "heart" : i <= this.health / 2 ? "heart_half" : "heart_background"],
-                this.position.x * pixelsPerMeter - (this.maxHealth / 4) * w + i * (w - 2) ,
-                window.innerHeight - (this.height + this.position.y) * pixelsPerMeter, w, w);
+            // Rendering of the hearts above the player
+            for (let i = 1, w = pixelsPerMeter * 0.4; i <= this.maxHealth / 2; i++) {
+                image(resources[this.health >= i * 2 ? "heart" : Math.round(this.health )=== i * 2 ? "heart_half" : "heart_background"],
+                    - (this.maxHealth / 4) * w + (i + 1) * (w - 2),
+                    -10, w, w);
+            }
+            // And shortly, the outline of the player (AABB)
+            if (showBoundingBox) {
+                stroke(255, 0, 0);
+                fill(0, 0, 0, 0);
+                rect(0, 0, this.width * pixelsPerMeter, this.height * pixelsPerMeter);
+            }
         }
-        // And shortly, the outline of the player (AABB)
-        if (showBoundingBox) {
-            stroke(255, 0, 0);
-            fill(0, 0, 0, 0);
-            rect((mainPlayer.position.x) * pixelsPerMeter, window.innerHeight - (mainPlayer.height + mainPlayer.position.y) * pixelsPerMeter, mainPlayer.width * pixelsPerMeter, mainPlayer.height * pixelsPerMeter);
-        }
+        pop();
     }
 
 }
@@ -463,7 +477,8 @@ class Environment {
                     let blockType =
                         y === posY - 1 ? BlockType.grass_block :
                             y >= posY - 3 ? BlockType.dirt :
-                                Math.random() < 0.05 ? BlockType.gold_ore :
+                                Math.random() < 0.050 ? BlockType.coal_ore :
+                                Math.random() < 0.025 ? BlockType.gold_ore :
                                 Math.random() < 0.015 ? BlockType.diamond_ore : BlockType.stone;
                     Environment.introduce(new Block(x, y, blockType));
                 }

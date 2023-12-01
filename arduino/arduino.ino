@@ -197,6 +197,6 @@ void setup() {
 }
 
 void loop() {
-  serialLoop();
+  // serialLoop();
   bleLoop();
 }

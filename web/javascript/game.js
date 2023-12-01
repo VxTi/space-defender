@@ -295,7 +295,7 @@ class Entity extends AABB {
 
         this.isAlive = this.health !== 0;
 
-        console.log(this.movementSignVect);
+      //  console.log(this.movementSignVect);
 
         this.velocity.add(
             this.colliding.x === 0 ? this.movementSignVect.x * horizontalSpeed * 0.25 : 0,

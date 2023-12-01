@@ -223,6 +223,38 @@ function checkBluetoothConnections() {
         .catch(err => console.error("An error occurred whilst attempting to connect to Bluetooth device", err));
 }
 
+async function connectSerial() {
+    try {
+        port = await navigator.serial.requestPort(); // Open the port
+        await port.open({ baudRate: 115200 });
+        readLoop(); // Start the infinite read loop.
+    } catch (error) {
+        console.log(`Serial connection error: ${error}`);
+    }
+}
+
+async function readLoop() {
+    while (true) {
+        while (port.readable) {
+            const reader = port.readable.getReader();
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        console.log("Readloop canceled.");
+                        break;
+                    }
+                    console.log(`Value red: ${value}`)
+                }
+            } catch (error) {
+                console.log(`Serial read error: ${error}`);
+            } finally {
+                reader.releaseLock();
+            }
+        }
+    }
+}
+
 class Entity extends AABB {
 
     movementSignVect; // The movement

@@ -1,8 +1,8 @@
 
 /** Player related variables */
 // Variables defining how fast the player moves per second in game meters.
-const horizontalSpeed = 3.5; // Movement speed horizontally in game meters/s
-const verticalSpeed = 6.5;   // Movement speed vertically in game meters/s
+var horizontalSpeed = 3.5; // Movement speed horizontally in game meters/s
+var verticalSpeed = 6.5;   // Movement speed vertically in game meters/s
 var allowDoubleJump = true;  // Whether the player can double jump against walls
 var player;                       // Variable containing all information of the player.
 
@@ -90,8 +90,11 @@ function setup() {
 
     // When pressed on the 'select controller' button,
     // we attempt to find a bluetooth controler.
-    document.querySelector(".controller-connect")
+    let elControllerConnect = document.querySelector(".controller-connect");
+    elControllerConnect
         .addEventListener("click", () => checkBluetoothConnections());
+    elControllerConnect
+        .addEventListener("touchend", () => checkBluetoothConnections());
 
     let settingsElem = document.querySelector(".game-settings-button");
 
@@ -377,10 +380,9 @@ class Entity extends AABB {
         this.position.add(this.velocity.x * dT, this.velocity.y * dT);
 
         // If we're falling, add fall distance
-        if (this.velocity.y < 0)
+        if (this.velocity.y < 0 && this.colliding.y !== -1)
             this.fallingDistance -= this.velocity.y * dT;
 
-        if (this.colliding.x || this.colliding.y)
 
         /**
          *  SECTION: FALL DAMAGE
@@ -389,8 +391,8 @@ class Entity extends AABB {
         // Check if we've fallen down
         if (this.colliding.y < 0) {
             // If fallen from a large enough area, induce fall damage
-            if (this.fallingDistance >= 4)  {
-                this.damage(this.fallingDistance * 0.3);
+            if (this.fallingDistance > verticalSpeed + 5)  {
+                this.damage(this.fallingDistance * 0.2 );
                 this.fallingDistance = 0;
             }
         }

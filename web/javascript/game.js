@@ -7,7 +7,7 @@ var allowDoubleJump = true;  // Whether the player can double jump against walls
 var player;                       // Variable containing all information of the player.
 
 // Whether to draw outlines around the player(s)
-var showBoundingBox = true;
+var showBoundingBox = false;
 
 /** Dimension related variables (sizes) */
 var windowWidthInMeters;            // Size in game meters
@@ -158,13 +158,6 @@ function draw() {
 
     player.movementSignVect.translate(sgnX, sgnY);
 
-    /*if (sgnX !== 0 && player.colliding.x === 0)
-        player.movementSignVect.x = sgnX;
-    // Only allow the player to jump when either on ground or colliding in a wall (double jump)
-
-    if (sgnY !== 0 && (player.colliding.y < 0 || (allowDoubleJump && player.colliding.x !== 0 && player.velocity.y < 0)))
-        player.movementSignVect.y = sgnY;*/
-
     // Saves current matrix and pushes it on top of the stack
     push();
     { // does nothing, just nice.
@@ -303,10 +296,10 @@ class Entity extends AABB {
         this.isAlive = this.health !== 0;
 
         this.velocity.add(
-            this.colliding.x === 0 ? this.movementSignVect.x * horizontalSpeed * 0.5 : 0,
+            this.colliding.x === 0 ? this.movementSignVect.x * horizontalSpeed * 0.25 : 0,
             this.colliding.y < 0 || (allowDoubleJump && player.colliding.x !== 0 && player.velocity.y < 0)
                 ? this.movementSignVect.y * verticalSpeed : 0);
-        this.movementSignVect.translate(0, 0);
+        //this.movementSignVect.translate(0, 0);
 
         // Set it to an unrealistic number, just before testing for collision.
         // Makes it easier to test whether collision detection has finished, without allocating more memory.

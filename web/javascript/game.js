@@ -20,20 +20,19 @@ var allowDoubleJump = true;
 
 var showBoundingBox = false;
 
-// Hashmap containing all the resoucres as images.
-// These resources must be loaded in the preload function.
-// Adding new resources can be done using 'resources.set('key', object)'
-const resources = new Map();
+// Object containing all loaded images.
+// If one wants to add images to the resources variable, you can do
+// 'resources.something = ...' or 'let a = resources.something'
+var resources = {};
 
 // Window dimensions in arbitrary game 'meters'
 var windowWidthInMeters;
 var windowHeightInMeters;
 
 var playerHealth = 0.5;
-var healthIcons;
 
 // Variable containing all information of the player.
-var player;
+var mainPlayer;
 
 let moonAnimation;
 let skyBackground;
@@ -68,7 +67,7 @@ function preload() {
                         'heart', 'heart_half', 'heart_background'];
 
     for (let element of fileNames)
-        resources.set(element, loadImage(`./assets/${element}.${extension}`));
+        resources[element] = loadImage(`./assets/${element}.${extension}`);
 
     // How many pixels represent a 'meter' ingame. This uses an invisible div element that's one cm large.
     pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * cmPerBlock;
@@ -109,28 +108,23 @@ function setup() {
     // Create a canvas to render onto
     createCanvas(window.innerWidth, window.innerHeight);
 
-    // Load all resources
-    resources.forEach((value, key) => {
-        if (typeof BlockType[key] !== null)  BlockType[key] = new Resource(value);
-    });
 
-    moonAnimation = new Resource(resources.get("moon_phases"), 4, 2);
-    skyBackground = new Resource(resources.get("skyImage"));
-    healthIcons = [
-        new Resource(resources.get("heart")),
-        new Resource(resources.get("heart_half")),
-        new Resource(resources.get("heart_background"))
-    ]
+    // Load all resources
+    for (const [key, value] of Object.entries(resources)){
+        if (typeof BlockType[key] !== null)  BlockType[key] = new Resource(value);
+    };
+
+    moonAnimation = new Resource(resources["moon_phases"], 4, 2);
+    skyBackground = new Resource(resources["skyImage"]);
 
     // Whenever the screen resizes, adapt the canvas size with it.
-    window.addEventListener('resize', () => {
-        resizeCanvas(window.innerWidth, window.innerHeight);
-    });
+    window.addEventListener('resize', () => resizeCanvas(window.innerWidth, window.innerHeight));
 
     // Create an instance of the first player, for when the user decides to play single-player.
-    player = new Entity(5, 15, 10);
-
-    Environment.generate();
+    mainPlayer = new Player(5, 15);
+    Environment.introduce(mainPlayer); // add player to the environment
+    Environment.introduce(new Player(10, 15));
+    Environment.generate();            // generate environment
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 
 }
@@ -143,17 +137,17 @@ function draw() {
     let sgnX = 0;
     let sgnY = 0;
 
-    if (keyIsDown(65)) sgnX--;
-    if (keyIsDown(68)) sgnX++;
-    if (keyIsDown(32)) sgnY++;
-    if (keyIsDown(16)) sgnX *= 0.5;
+    if (keyIsDown(65)) sgnX--;      // left (A)
+    if (keyIsDown(68)) sgnX++;      //right (D)
+    if (keyIsDown(32)) sgnY++;      // jump (space)
+    if (keyIsDown(16)) sgnX *= 0.5; // sneak (shift)
 
-    if (sgnX !== 0 && player.colliding.x === 0)
-        player.velocity.x = horizontalSpeed * sgnX;
+    if (sgnX !== 0 && mainPlayer.colliding.x === 0)
+        mainPlayer.velocity.x = horizontalSpeed * sgnX;
     // Only allow the player to jump when either on ground or colliding in a wall (double jump)
 
-    if (sgnY !== 0 && (player.colliding.y < 0 || (allowDoubleJump && player.colliding.x !== 0 && player.velocity.y < 0)))
-        player.velocity.y = verticalSpeed * sgnY;
+    if (sgnY !== 0 && (mainPlayer.colliding.y < 0 || (allowDoubleJump && mainPlayer.colliding.x !== 0 && mainPlayer.velocity.y < 0)))
+        mainPlayer.velocity.y = verticalSpeed * sgnY;
 
     // Saves current matrix and pushes it on top of the stack
     push();
@@ -189,30 +183,6 @@ function draw() {
         }
     }
 
-
-    // Render the player
-    image(resources.get('playerImage'),
-        (player.position.x - player.width * 0.4) * pixelsPerMeter,
-        window.innerHeight - (player.height + player.position.y) * pixelsPerMeter,
-        player.width * pixelsPerMeter * 2,
-        player.height * pixelsPerMeter);
-
-    let healthIdx = Math.round(player.health * player.maxHealth * 2) - 1;
-
-    // Rendering of the hearts above the player
-    for (let i = 0; i < player.maxHealth / 2; i++) {
-        image(resources.get(player.health > i * 2 ? "heart" : player.health / 2 >= i ? "heart_half" : "heart_background"),
-            player.position.x * pixelsPerMeter - (player.maxHealth / 4) * pixelsPerMeter * 0.5 + i * pixelsPerMeter * 0.5 ,
-            window.innerHeight - (player.height + player.position.y) * pixelsPerMeter - 5, pixelsPerMeter * 0.5, pixelsPerMeter * 0.5);
-    }
-
-    // And shortly, the outline of the player (AABB)
-    if (showBoundingBox) {
-        stroke(255, 0, 0);
-        fill(0, 0, 0, 0);
-        rect((player.position.x) * pixelsPerMeter, window.innerHeight - (player.height + player.position.y) * pixelsPerMeter, player.width * pixelsPerMeter, player.height * pixelsPerMeter);
-    }
-
     // If the game isn't active, prevent updates.
     if (!gameActive)
         return;
@@ -220,7 +190,8 @@ function draw() {
     let dT = deltaTime / 1000;
 
     timePhase += dT;
-    player.update(dT);
+    Environment.update(dT);
+    Environment.draw(dT);
 
 }
 
@@ -239,7 +210,7 @@ function checkBluetoothConnections() {
 
                 let inputCode = event.target.value.getUint8(0);
 
-                player.move(new Vec2(
+                mainPlayer.move(new Vec2(
                     -((inputCode >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),
                     (inputCode >> Input.BUTTON_A_BP) & 1));
 
@@ -250,7 +221,6 @@ function checkBluetoothConnections() {
             connection.connect();
         })
         .catch(err => console.error("An error occurred whilst attempting to connect to Bluetooth device", err));
-
 }
 
 class Entity extends AABB {
@@ -263,7 +233,6 @@ class Entity extends AABB {
     maxHealth;
     isAlive;
 
-    static DefaultMovementVector = new Vec2(horizontalSpeed, horizontalSpeed);
     static collisionThres = 0.05; // Detection threshold in meters
 
     constructor(posX, posY, maxHealth) {
@@ -285,8 +254,8 @@ class Entity extends AABB {
             return;
 
         this.velocity.translate(
-            movementVector.x * Entity.DefaultMovementVector.x,
-            movementVector.y * Entity.DefaultMovementVector.y
+            movementVector.x * horizontalSpeed,
+            movementVector.y * verticalSpeed
         );
     }
 
@@ -296,7 +265,6 @@ class Entity extends AABB {
         // Makes it easier to test whether collision detection has finished, without allocating more memory.
         this.colliding.translate(0, 0);
         this.velocity.addY(-Environment.G * dT);
-        this.fallingDistance += dT * Environment.G;
 
         // Check if the next position of the entity is colliding with another
         for (let i = 0; i < Environment.boundingBoxes.length; i++) {
@@ -306,28 +274,13 @@ class Entity extends AABB {
             if (target === this)
                 continue;
 
-            let dSq = Math.pow(Math.max(this.left, target.left) - Math.min(this.right, target.right), 2) +
-                Math.pow(Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) > Math.abs(this.velocity.y), 2);
-
-            // Render the block selection
-            if (dSq < blockReach * blockReach) {
-                if (target.intersectsPoint(mouseX / pixelsPerMeter - screenOffsetX, (window.innerHeight - mouseY) / pixelsPerMeter - screenOffsetY)) {
-                    stroke(255, 0, 0);
-                    fill(0, 0, 0, 0);
-                    rect((target.left) * pixelsPerMeter, window.innerHeight - target.bottom * pixelsPerMeter, target.width * pixelsPerMeter, target.height * pixelsPerMeter);
-
-                }
-            }
-
-            if (this.intersects(target) && this.velocity.magSq === 0) {
-                this.position.x -= 0.1;
-                console.log("Prevented getting stuck")
-                break;
-            }
-
-            if (dSq > 2)
+            // If another class extends this class and defines the function 'onCollisionCheck',
+            // this then calls the function with the current target as parameter.
+            // If this function returns false, collision detection should skip this target
+            if (typeof(this['onCollisionCheck']) === 'function' && !this['onCollisionCheck'](target))
                 continue;
 
+            // perform calculations for x-axis collision detection
             if (this.colliding.x === 0 && Math.abs(this.velocity.x) >= Entity.collisionThres) {
                 for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThres * 2; j += Entity.collisionThres) {
                     if (this.copy.translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(target)) {
@@ -338,13 +291,13 @@ class Entity extends AABB {
                 }
             }
 
+            // Perform calculations for y-axis collision detection
             if (this.colliding.y === 0 && Math.abs(this.velocity.y) >= Entity.collisionThres) {
                 for (let j = 0; j <= Math.abs(this.velocity.y * dT) + Entity.collisionThres * 2; j += Entity.collisionThres) {
                     if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(target)) {
+
                         this.colliding.y = Math.sign(this.velocity.y);
                         this.velocity.y = 0;
-                        if (this.fallingDistance > 4)
-                            this.damage(this.fallingDistance * 0.25 - 2);
                         break;
                     }
                 }
@@ -358,72 +311,138 @@ class Entity extends AABB {
         // Add velocity to position
         this.position.add(this.velocity.x * dT, this.velocity.y * dT);
 
-        // If we're not falling, reset the falling distance counter.
-        if (this.velocity.y >= 0)
-            this.fallingDistance = 0;
+        // If we're falling, add fall distance
+        if (this.velocity.y < 0)
+            this.fallingDistance -= this.velocity.y * dT;
 
-        // Reduce x axis motion gradually
+        // Check if we've fallen down
+        if (this.colliding.y < 0) {
+            // If fallen from a large enough area, induce fall damage
+            if (this.fallingDistance >= 4)  {
+                this.damage(this.fallingDistance * 0.3);
+                this.fallingDistance = 0;
+            }
+        }
+
+        // Reduce x-axis motion gradually
         this.velocity.x *= 0.8;
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
         this.position.y = Math.max(this.position.y, 0);
 
-        // If you come too close to the corner of the screen horizontally, move the camera accordingly.
-        if (this.position.x + screenOffsetX < screenEdgeMargin)
-            screenOffsetX = -this.position.x + screenEdgeMargin;
-        else if (this.position.x + screenOffsetX > windowWidthInMeters - screenEdgeMargin)
-            screenOffsetX = -this.position.x + windowWidthInMeters - screenEdgeMargin;
-
-        // Perform the same translation on the Y axis
-        if (this.position.y + screenOffsetY < screenEdgeMargin * 0.5)
-            screenOffsetY = -this.position.y + screenEdgeMargin * 0.5;
-        else if (this.position.y + screenOffsetY > windowHeightInMeters - screenEdgeMargin * 0.5)
-            screenOffsetY = -this.position.y + windowHeightInMeters - screenEdgeMargin * 0.5;
-
-
         // Update the AABB position
         this.translate(this.position.x, this.position.y);
     }
 
+    /**
+     * Method for inducing damage to the entity.
+     * @param amount How many hearts of damage to induce
+     */
     damage(amount) {
         this.health = Math.max(0, this.health - amount);
         this.isAlive = this.health !== 0;
     }
+
+    /**
+     * Method for rendering the entity onto the screen
+     * @param dt difference in time from last rendering.
+     */
+    draw(dt) {
+
+    }
+}
+
+class Player extends Entity {
+
+    static playerHealth = 20;
+    constructor(x, y) {
+        super(x, y, Player.playerHealth);
+    }
+
+    // Updates player-related variables, such as screen position
+    update(dT) {
+        super.update(dT);
+        if (this !== mainPlayer)
+            return;
+        // If you come too close to the corner of the screen horizontally, move the camera accordingly.
+        if (this.position.x + screenOffsetX < screenEdgeMargin) // left side of the screen
+            screenOffsetX = -this.position.x + screenEdgeMargin;
+        else if (this.position.x + screenOffsetX > windowWidthInMeters - screenEdgeMargin) // right side
+            screenOffsetX = -this.position.x + windowWidthInMeters - screenEdgeMargin;
+
+        // Perform the same translation on the Y axis
+        if (this.position.y + screenOffsetY < screenEdgeMargin * 0.5) // bottom side of the screen
+            screenOffsetY = -this.position.y + screenEdgeMargin * 0.5;
+        else if (this.position.y + screenOffsetY > windowHeightInMeters - screenEdgeMargin * 0.5) // top side
+            screenOffsetY = -this.position.y + windowHeightInMeters - screenEdgeMargin * 0.5;
+    }
+
+    onCollisionCheck(target) {
+        let dSq = Math.pow(Math.max(this.left, target.left) - Math.min(this.right, target.right), 2) +
+            Math.pow(Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) > Math.abs(this.velocity.y), 2);
+
+        // Render the block selection
+        if (dSq < blockReach * blockReach) {
+            if (target.intersectsPoint(mouseX / pixelsPerMeter - screenOffsetX, (window.innerHeight - mouseY) / pixelsPerMeter - screenOffsetY)) {
+                stroke(255, 0, 0);
+                fill(0, 0, 0, 0);
+                rect((target.left) * pixelsPerMeter, window.innerHeight - target.bottom * pixelsPerMeter, target.width * pixelsPerMeter, target.height * pixelsPerMeter);
+
+            }
+        }
+        return dSq < 2;
+    }
+
+    // Rendering player related thingies
+    draw(dt) {
+        super.draw(dt);
+
+        // Render the player image
+        image(resources['playerImage'],
+            (this.position.x - this.width * 0.4) * pixelsPerMeter,
+            window.innerHeight - (this.height + this.position.y) * pixelsPerMeter,
+            this.width * pixelsPerMeter * 2,
+            this.height * pixelsPerMeter);
+
+        // Rendering of the hearts above the player
+        for (let i = 1, w = pixelsPerMeter * 0.4; i <= this.maxHealth / 2; i++) {
+            image(resources[i * 2 <= this.health ? "heart" : i <= this.health / 2 ? "heart_half" : "heart_background"],
+                this.position.x * pixelsPerMeter - (this.maxHealth / 4) * w + i * w ,
+                window.innerHeight - (this.height + this.position.y) * pixelsPerMeter, w, w);
+        }
+        // And shortly, the outline of the player (AABB)
+        if (showBoundingBox) {
+            stroke(255, 0, 0);
+            fill(0, 0, 0, 0);
+            rect((mainPlayer.position.x) * pixelsPerMeter, window.innerHeight - (mainPlayer.height + mainPlayer.position.y) * pixelsPerMeter, mainPlayer.width * pixelsPerMeter, mainPlayer.height * pixelsPerMeter);
+        }
+    }
+
 }
 
 class Environment {
     static G = 16; // gravitational constant in meters/second
     static boundingBoxes = [];
-    static collides(boundingBox) {
-        for (let other in this.boundingBoxes) {
-            if (boundingBox.collides(other))
-                return true;
-        }
-        return false;
-    }
+    static entities = [];
+
 
     // Method for introducing a new AABB into the world
     static introduce(aabb) {
         if (!(aabb instanceof AABB))
             return;
 
+        if (aabb instanceof Entity)
+            this.entities.push(aabb);
         this.boundingBoxes.push(aabb);
     }
 
-    // Method for updating all entities in the boundingBoxes array.
-    // Skips non-entities
+    // Method for updating all entities in the entities array
     static update(deltaT) {
-        this.boundingBoxes.forEach(aabb => {
-            if (aabb instanceof Entity) {
-                aabb.update(deltaT);
-            }
-        });
+        this.entities.forEach(object => object.update(deltaT));
     }
 
+    // Method for procedurally generating terrain
     static generate() {
-        /*if (!(mapImage instanceof p5.Image))
-            throw new TypeError("Provided argument is not of type p5.Image");*/
-
 
         // generate ground (temp)
         let n = 500;
@@ -453,10 +472,23 @@ class Environment {
             let posY = noise(i / 7) * 10;
             let posYd = -noise(i / 10) * 20 * Math.random();
             for (let j = 0; j < posY; j++) {
-
                 Environment.introduce(new Block(10 + i, 25 + Math.floor(posYd) + j, Math.random() < 0.3 ? BlockType.cracked_deepslate_bricks : BlockType.deepslate_bricks));
             }
         }
 
+    }
+
+    // Method for drawing all objects in the world.
+    // This includes entities and blocks (currently)
+    static draw(dT) {
+        this.boundingBoxes.forEach(element => {
+            if (element instanceof Block) {
+                element.blockType.draw(
+                    element.left * pixelsPerMeter, window.innerHeight - (element.top + element.height) * pixelsPerMeter,
+                    element.width * pixelsPerMeter, element.height * pixelsPerMeter);
+            } else if (element instanceof Entity) {
+                element.draw(dT);
+            }
+        });
     }
 }

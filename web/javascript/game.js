@@ -4,7 +4,7 @@
 const horizontalSpeed = 3.5; // Movement speed horizontally in game meters/s
 const verticalSpeed = 6.5;   // Movement speed vertically in game meters/s
 var allowDoubleJump = true;  // Whether the player can double jump against walls
-var mainPlayer;                       // Variable containing all information of the player.
+var player;                       // Variable containing all information of the player.
 
 // Whether to draw outlines around the player(s)
 var showBoundingBox = true;
@@ -127,12 +127,12 @@ function setup() {
     window.addEventListener('resize', () => resizeCanvas(window.innerWidth, window.innerHeight));
 
     // Create an instance of the first player, for when the user decides to play single-player.
-    mainPlayer = new Player(5, 15);
+    player = new Player(5, 15);
 
     noiseSeed(seed === null ? Math.floor((1 << 10) * Math.random()) : seed);
 
     Environment.generate();            // generate environment
-    Environment.introduce(mainPlayer); // add player to the environment
+    Environment.introduce(player); // add player to the environment
     Environment.introduce(new Player(10, 15));
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 
@@ -155,12 +155,15 @@ function draw() {
     if (keyIsDown(32)) sgnY++;      // jump (space)
     if (keyIsDown(16)) sgnX *= 0.5; // sneak (shift)
 
-    if (sgnX !== 0 && mainPlayer.colliding.x === 0)
-        mainPlayer.movementSignVect.x = sgnX;
+
+    player.movementSignVect.translate(sgnX, sgnY);
+
+    /*if (sgnX !== 0 && player.colliding.x === 0)
+        player.movementSignVect.x = sgnX;
     // Only allow the player to jump when either on ground or colliding in a wall (double jump)
 
-    if (sgnY !== 0 && (mainPlayer.colliding.y < 0 || (allowDoubleJump && mainPlayer.colliding.x !== 0 && mainPlayer.velocity.y < 0)))
-        mainPlayer.movementSignVect.y = sgnY;
+    if (sgnY !== 0 && (player.colliding.y < 0 || (allowDoubleJump && player.colliding.x !== 0 && player.velocity.y < 0)))
+        player.movementSignVect.y = sgnY;*/
 
     // Saves current matrix and pushes it on top of the stack
     push();
@@ -210,7 +213,7 @@ function checkBluetoothConnections() {
 
                 let inputCode = event.target.value.getUint8(0);
 
-                mainPlayer.movementSignVect.translate(
+                player.movementSignVect.translate(
                     -((inputCode >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),
                     (inputCode >> Input.BUTTON_A_BP) & 1);
 
@@ -299,7 +302,10 @@ class Entity extends AABB {
 
         this.isAlive = this.health !== 0;
 
-        this.velocity.add(this.movementSignVect.x * horizontalSpeed / 2, this.movementSignVect.y * verticalSpeed);
+        this.velocity.add(
+            this.colliding.x === 0 ? this.movementSignVect.x * horizontalSpeed * 0.5 : 0,
+            this.colliding.y < 0 || (allowDoubleJump && player.colliding.x !== 0 && player.velocity.y < 0)
+                ? this.movementSignVect.y * verticalSpeed : 0);
         this.movementSignVect.translate(0, 0);
 
         // Set it to an unrealistic number, just before testing for collision.
@@ -432,7 +438,7 @@ class Player extends Entity {
     // Updates player-related variables, such as screen position
     update(dT) {
         super.update(dT);
-        if (this !== mainPlayer)
+        if (this !== player)
             return;
         // If you come too close to the corner of the screen horizontally, move the camera accordingly.
         if (this.position.x + screenOffsetX < screenEdgeMargin) // left side of the screen

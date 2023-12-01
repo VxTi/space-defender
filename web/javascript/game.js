@@ -1,7 +1,7 @@
 
 /** Player related variables */
 // Variables defining how fast the player moves per second in game meters.
-const horizontalSpeed = 4.5; // Movement speed horizontally in game meters/s
+const horizontalSpeed = 3.5; // Movement speed horizontally in game meters/s
 const verticalSpeed = 6.5;   // Movement speed vertically in game meters/s
 var allowDoubleJump = true;  // Whether the player can double jump against walls
 var mainPlayer;                       // Variable containing all information of the player.
@@ -86,6 +86,8 @@ function preload() {
  */
 function setup() {
 
+    frameRate(120);
+
     // When pressed on the 'select controller' button,
     // we attempt to find a bluetooth controler.
     document.querySelector(".controller-connect")
@@ -154,11 +156,11 @@ function draw() {
     if (keyIsDown(16)) sgnX *= 0.5; // sneak (shift)
 
     if (sgnX !== 0 && mainPlayer.colliding.x === 0)
-        mainPlayer.velocity.x = horizontalSpeed * sgnX;
+        mainPlayer.movementSignVect.x = sgnX;
     // Only allow the player to jump when either on ground or colliding in a wall (double jump)
 
     if (sgnY !== 0 && (mainPlayer.colliding.y < 0 || (allowDoubleJump && mainPlayer.colliding.x !== 0 && mainPlayer.velocity.y < 0)))
-        mainPlayer.velocity.y = verticalSpeed * sgnY;
+        mainPlayer.movementSignVect.y = sgnY;
 
     // Saves current matrix and pushes it on top of the stack
     push();
@@ -208,9 +210,9 @@ function checkBluetoothConnections() {
 
                 let inputCode = event.target.value.getUint8(0);
 
-                mainPlayer.move(new Vec2(
+                mainPlayer.movementSignVect.translate(
                     -((inputCode >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),
-                    (inputCode >> Input.BUTTON_A_BP) & 1));
+                    (inputCode >> Input.BUTTON_A_BP) & 1);
 
             };
             connection.onDisconnect = (e) => console.log("BT device disconnected", e);
@@ -228,7 +230,7 @@ class Entity extends AABB {
     velocity; // velocity of the entity
     colliding; // colliding states, containing the direction of collision (x, y)
     fallingDistance; // Distance how long the entity has fallen for.
-    health;
+    health;          // Health of the entity
     maxHealth;
     isAlive;
 
@@ -238,6 +240,7 @@ class Entity extends AABB {
 
     constructor(posX, posY, maxHealth) {
         super(posX, posY, 0.9, 1.8);
+        this.movementSignVect = new Vec2(0, 0);
         this.position  = new Vec2(posX, posY);
         this.velocity  = new Vec2(0, 0);
         this.colliding = new Vec2(0, 0);
@@ -261,6 +264,11 @@ class Entity extends AABB {
     }
 
     update(dT) {
+
+        this.isAlive = this.health !== 0;
+
+        this.velocity.add(this.movementSignVect.x * horizontalSpeed / 2, this.movementSignVect.y * verticalSpeed);
+        this.movementSignVect.translate(0, 0);
 
         // Set it to an unrealistic number, just before testing for collision.
         // Makes it easier to test whether collision detection has finished, without allocating more memory.
@@ -364,7 +372,6 @@ class Entity extends AABB {
      */
     damage(amount) {
         this.health = Math.max(0, this.health - amount);
-        this.isAlive = this.health !== 0;
     }
 
     /**
@@ -392,7 +399,7 @@ class Player extends Entity {
 
     // Updates player-related variables, such as screen position
     update(dT) {
-        super.update(dT);a
+        super.update(dT);
         if (this !== mainPlayer)
             return;
         // If you come too close to the corner of the screen horizontally, move the camera accordingly.
@@ -409,19 +416,8 @@ class Player extends Entity {
     }
 
     onCollisionCheck(target) {
-        let dSq = Math.pow(Math.max(this.left, target.left) - Math.min(this.right, target.right), 2) +
-            Math.pow(Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) > Math.abs(this.velocity.y), 2);
-
-        // Render the block selection
-        if (dSq < blockReach * blockReach) {
-            if (target.intersectsPoint(mouseX / pixelsPerMeter - screenOffsetX, (window.innerHeight - mouseY) / pixelsPerMeter - screenOffsetY)) {
-                stroke(255, 255, 255); // outline rect color red
-                fill(0, 0, 0, 0); // don't draw the rest of the rect
-                rect((target.left) * pixelsPerMeter, window.innerHeight - target.bottom * pixelsPerMeter, target.width * pixelsPerMeter, target.height * pixelsPerMeter);
-
-            }
-        }
-        return dSq < 2;
+        return Math.max(this.left, target.left) - Math.min(this.right, target.right) <= 4 &&
+               Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) <= 4;
     }
 
     // For when one actually collides

@@ -38,7 +38,7 @@ var animations = {}
 
 let timePhase = 0; // used for timed animations.
 
-var connectedControllers = [];
+var controllerConnected = false;
 var gameActive = true;
 
 const Input = {
@@ -147,16 +147,18 @@ function draw() {
 
     background(0);
 
-    let sgnX = 0;
-    let sgnY = 0;
+    if (!controllerConnected) {
+        let sgnX = 0;
+        let sgnY = 0;
 
-    if (keyIsDown(65)) sgnX--;      // left (A)
-    if (keyIsDown(68)) sgnX++;      //right (D)
-    if (keyIsDown(32)) sgnY++;      // jump (space)
-    if (keyIsDown(16)) sgnX *= 0.5; // sneak (shift)
+        if (keyIsDown(65)) sgnX--;      // left (A)
+        if (keyIsDown(68)) sgnX++;      //right (D)
+        if (keyIsDown(32)) sgnY++;      // jump (space)
+        if (keyIsDown(16)) sgnX *= 0.5; // sneak (shift)
 
 
-    player.movementSignVect.translate(sgnX, sgnY);
+        player.movementSignVect.translate(sgnX, sgnY);
+    }
 
     // Saves current matrix and pushes it on top of the stack
     push();
@@ -201,7 +203,10 @@ function checkBluetoothConnections() {
     BluetoothService.search({filters: [{namePrefix: "ESP32 Controller"}], optionalServices: [bleServiceUUID]})
         .then(device => {
             let connection = new BluetoothService(device);
-            connection.onConnect = (device) => console.log(`Connected with Bluetooth device '${device.name}'`);
+            connection.onConnect = (device) => {
+                console.log(`Connected with Bluetooth device '${device.name}'`);
+                controllerConnected = true;
+            }
             connection.onReceive = (event) => {
 
                 let inputCode = event.target.value.getUint8(0);
@@ -211,7 +216,10 @@ function checkBluetoothConnections() {
                     (inputCode >> Input.BUTTON_A_BP) & 1);
 
             };
-            connection.onDisconnect = (e) => console.log("BT device disconnected", e);
+            connection.onDisconnect = (e) => {
+                console.log("BT device disconnected", e);
+                controllerConnected = false;
+            }
             connection.primaryCharacteristicUuid = bleCharacteristicsUUID;
             connection.primaryServiceId = bleServiceUUID;
             connection.connect();
@@ -294,8 +302,6 @@ class Entity extends AABB {
     update(dT) {
 
         this.isAlive = this.health !== 0;
-
-      //  console.log(this.movementSignVect);
 
         this.velocity.add(
             this.colliding.x === 0 ? this.movementSignVect.x * horizontalSpeed * 0.25 : 0,

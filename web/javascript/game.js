@@ -206,6 +206,8 @@ function checkBluetoothConnections() {
 
                 let inputCode = event.target.value.getUint8(0);
 
+                console.log(`Received input:[${inputCode + '0'}]`);
+
                 player.movementSignVect.translate(
                     -((inputCode >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),
                     (inputCode >> Input.BUTTON_A_BP) & 1);

@@ -12,9 +12,7 @@ var showBoundingBox = false;
 /** Dimension related variables (sizes) */
 var windowWidthInMeters;            // Size in game meters
 var windowHeightInMeters;
-// Margins on the side of the screen, given in game meters
-// If the player moves past these margins, the screen starts moving.
-const screenEdgeMargin = 8;
+var screenEdgeMargin = 5; // If the player gets close to the edge of the screen (in game meters), the screen moves.
 var screenOffsetX = 0;
 var screenOffsetY = 0;
 // How many on-screen pixels represent an in-game meter

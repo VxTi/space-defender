@@ -20,3 +20,4 @@ app.use(cors({
 let server = app.listen(port, `0.0.0.0`, () => {
     console.log(`Server has started on port ${server.address().address}:${port}`);
 });
+

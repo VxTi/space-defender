@@ -1,7 +1,10 @@
 class EntityWizard extends Entity {
 
     strength;
-    #target = null;
+    target = null;
+    fireballCooldown = 0;
+
+    static fireballDelay = 3;
     static wizardHealth = 30;
     static maxReachableDistance = 20;
     static damageReach = 3;
@@ -56,7 +59,15 @@ class EntityWizard extends Entity {
             else if (Math.pow(this.target.position.x - this.position.x, 2) +
                     Math.pow(this.target.position.y - this.position.y, 2) <= Math.pow(EntityWizard.damageReach, 2)) {
 
-                this.target.damage(this.strength * 0.5);
+                // Entity is close enough to do damage
+                this.target.damage(this.strength * 0.5, 'entityWizardAttack');
+            } else {
+                // We'll have to start playing with fire...
+                if (this.fireballCooldown-- <= 0) {
+                    Environment.introduce(new EntityWizardFireball(this.position.x, this.position.y, this.target, 1, 5));
+                    this.fireballCooldown = EntityWizard.fireballDelay;
+                }
+
             }
         }
 
@@ -65,4 +76,51 @@ class EntityWizard extends Entity {
                 this.target = e;
         });
     }
+}
+
+class EntityWizardFireball extends Entity {
+
+    target;
+    lifetime;
+    strength;
+
+    static damageRadius = 1;
+
+    constructor(x, y, target, strength, lifetime) {
+        super(x, y, 0, 1.69, 1, 1);
+        this.target = target;
+        this.strength = strength;
+        this.lifetime = lifetime;
+    }
+
+    update(dT) {
+        super.update(dT);
+        this.lifetime -= dT;
+        if (this.lifetime <= 0)
+            this.shouldDespawn = true;
+
+        this.direction.translate(
+            Math.sign(this.target.position.x - this.position.x), Math.sign(Math.abs(this.target.position.y - this.position.y)));
+
+
+        if (Math.pow(this.target.position.x - this.position.x, 2) +
+            Math.pow(this.target.position.y - this.position.y, 2) <= Math.pow(EntityWizardFireball.damageRadius, 2)) {
+            this.target.damage(this.strength, 'entityFireballAttack');
+            this.shouldDespawn = true;
+            this.lifetime = 0;
+        }
+
+    }
+
+    draw(dT) {
+        push();
+        translate((this.position.x) * pixelsPerMeter,
+            window.innerHeight - (this.height + this.position.y) * pixelsPerMeter);
+        image(resources['fireball'],
+            -10, 0, // since we translated, the player's screen pos is at 0, 0 in the current matrix.
+            this.width * pixelsPerMeter,
+            this.height * pixelsPerMeter);
+        pop();
+    }
+
 }

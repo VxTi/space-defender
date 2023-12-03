@@ -1,11 +1,12 @@
 
 /** Player related variables */
 // Variables defining how fast the player moves per second in game meters.
-var horizontalSpeed = 5.5; // Movement speed horizontally in game meters/s
+var horizontalSpeed = 3.5; // Movement speed horizontally in game meters/s
 var verticalSpeed = 6.5;   // Movement speed vertically in game meters/s
 var allowDoubleJump = true;  // Whether the player can double jump against walls
 var player;                       // Variable containing all information of the player.
 
+const entityTick = 1000; // How many milliseconds delay between every entity update
 // Whether to draw outlines around the player(s)
 var showBoundingBox = false;
 
@@ -65,7 +66,7 @@ function preload() {
     const fileNames = ['player_animation_wielding', 'dirt', 'stone', 'grass_block',
                         'deepslate_bricks', 'cracked_deepslate_bricks',
                         'moon_phases', 'skyImage', 'diamond_ore', 'gold_ore', 'coal_ore',
-                        'heart', 'heart_half', 'heart_background', 'wizard'];
+                        'heart', 'heart_half', 'heart_background', 'wizard', 'fireball'];
 
     for (let element of fileNames)
         resources[element] = loadImage(`./assets/${element}.${extension}`);
@@ -133,16 +134,17 @@ function setup() {
 
     Environment.generate();            // generate environment
     Environment.introduce(player); // add player to the environment
-    Environment.introduce(new EntityWizard(10, terrainHeight + 5, 5));
+    //Environment.introduce(new EntityWizard(10, terrainHeight + 5, 5));
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 
+    // Add periodic updates for entities
+    // For example, hostile entity damage, only once per second.
     setInterval(() => {
         Environment.entities.forEach(e => {
             if (typeof e['onPeriodicUpdate'] === 'function')
                 e['onPeriodicUpdate']();
-        })
-    }, 1000);
-
+        });
+    }, entityTick);
 }
 
 // Draw function is called every 1/60th a second.
@@ -268,6 +270,7 @@ class Entity extends AABB {
     isAlive;         // Liveliness of the entity
     onGround;        // Whether the entity is on ground or not
     againstWall;     // Whether the entity is colliding with a wall
+    shouldDespawn = false;
 
     #movementSpeed;
 
@@ -392,7 +395,7 @@ class Entity extends AABB {
         if (this.onGround) {
             // If fallen from a large enough area, induce fall damage
             if (this.fallingDistance > verticalSpeed * 0.7)  {
-                this.damage(this.fallingDistance * 0.3 );
+                this.damage(this.fallingDistance * 0.3);
             }
             this.fallingDistance = 0;
         } else {
@@ -413,10 +416,12 @@ class Entity extends AABB {
 
     /**
      * Method for inducing damage to the entity.
+     * @param source
      * @param amount How many hearts of damage to induce
      */
-    damage(amount) {
+    damage(amount, source = 'unknown') {
         this.health = Math.max(0, this.health - amount);
+        console.log(`Damage received [${this}], ${amount}hp from ${source}`);
     }
 
     /**
@@ -496,11 +501,12 @@ class Player extends Entity {
                 Math.abs(this.velocity.x) > horizontalSpeed * 0.5 ?
                     Math.floor(timePhase * 5) % 4 : 0);
 
-            // Rendering of the hearts above the player
-            for (let i = 1, w = pixelsPerMeter * 0.4; i <= this.maxHealth / 2; i++) {
-                image(resources[this.health >= i * 2 ? "heart" : Math.round(this.health )=== i * 2 ? "heart_half" : "heart_background"],
-                    - (this.maxHealth / 4) * w + (i + 1) * (w - 2),
-                    -10, w, w);
+            for (let i = 0, w = pixelsPerMeter * 0.4; i < this.maxHealth / 2; i++) {
+                image(
+                    resources[this.health >= i * 2 ? "heart" :
+                        Math.round(this.health) === i * 2 ? "heart_half" : "heart_background"],
+                    -(Math.floor((i) / 10)) * w + ((i) % 10) * (w - 2),
+                    -10 - Math.floor(i / 10) * w, w, w);
             }
             // And shortly, the outline of the player (AABB)
             if (showBoundingBox) {
@@ -596,5 +602,14 @@ class Environment {
                 element.draw(dT);
             }
         });
+    }
+
+    static remove(aabb) {
+        for (let i = 0, l = Environment.boundingBoxes.length; i < l; i++) {
+            if (Environment.boundingBoxes[i] === aabb || Environment.boundingBoxes[i] === aabb.__proto__) {
+                Environment.boundingBoxes.splice(i, 1);
+                return;
+            }
+        }
     }
 }

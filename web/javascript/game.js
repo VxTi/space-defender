@@ -1,7 +1,7 @@
 
 /** Player related variables */
 // Variables defining how fast the player moves per second in game meters.
-var horizontalSpeed = 3.5; // Movement speed horizontally in game meters/s
+var horizontalSpeed = 5.5; // Movement speed horizontally in game meters/s
 var verticalSpeed = 6.5;   // Movement speed vertically in game meters/s
 var allowDoubleJump = true;  // Whether the player can double jump against walls
 var player;                       // Variable containing all information of the player.
@@ -18,13 +18,12 @@ var screenOffsetY = 0;
 // How many on-screen pixels represent an in-game meter
 var pixelsPerMeter;
 
-const cmPerBlock = 1.2; // size of each 'meter' on screen.
-const blockReach = 3;
+const cmPerBlock = 1; // size of each 'meter' on screen.
 
 /** Terrain related variables */
-const seed = 2; // if null, terrain will generate random
-const terrainHeight = 10;
-const terrainRandomness = 1.0;
+const seed = null; // if null, terrain will generate random
+const terrainHeight = 25;
+const terrainRandomness = 0.2; // Higher number makes the terrain more erratic
 
 // Object containing all loaded images.
 // If one wants to add images to the resources variable, you can do
@@ -63,10 +62,10 @@ function preload() {
     // with the same extension type as defined below.
     // If one wants to access the resource afterward, simply do 'resources['rs name']'
     const extension = 'png';
-    const fileNames = ['player_animation', 'dirt', 'stone', 'grass_block',
+    const fileNames = ['player_animation_wielding', 'dirt', 'stone', 'grass_block',
                         'deepslate_bricks', 'cracked_deepslate_bricks',
                         'moon_phases', 'skyImage', 'diamond_ore', 'gold_ore', 'coal_ore',
-                        'heart', 'heart_half', 'heart_background'];
+                        'heart', 'heart_half', 'heart_background', 'wizard'];
 
     for (let element of fileNames)
         resources[element] = loadImage(`./assets/${element}.${extension}`);
@@ -121,26 +120,33 @@ function setup() {
 
     animations['moonAnimation'] = new Resource(resources['moon_phases'], 4, 2);
     animations['skyBackground'] = new Resource(resources['skyImage']);
-    animations['playerAnimation'] = new Resource(resources['player_animation'], 4, 1);
+    animations['playerAnimation'] = new Resource(resources['player_animation_wielding'], 4, 1);
 
 
     // Whenever the screen resizes, adapt the canvas size with it.
     window.addEventListener('resize', () => resizeCanvas(window.innerWidth, window.innerHeight));
 
     // Create an instance of the first player, for when the user decides to play single-player.
-    player = new Player(5, 15);
+    player = new Player(5, terrainHeight + 5);
 
     noiseSeed(seed === null ? Math.floor((1 << 10) * Math.random()) : seed);
 
     Environment.generate();            // generate environment
     Environment.introduce(player); // add player to the environment
-    Environment.introduce(new Player(10, 15));
+    Environment.introduce(new EntityWizard(10, terrainHeight + 5, 5));
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
+
+    setInterval(() => {
+        Environment.entities.forEach(e => {
+            if (typeof e['onPeriodicUpdate'] === 'function')
+                e['onPeriodicUpdate']();
+        })
+    }, 1000);
 
 }
 
 // Draw function is called every 1/60th a second.
-// This means it has a 16.6ms interval.
+// This means it waits 16.6ms before getting called again.
 function draw() {
 
     if (!document.hasFocus())
@@ -148,18 +154,8 @@ function draw() {
 
     background(0);
 
-    if (!controllerConnected) {
-        let sgnX = 0;
-        let sgnY = 0;
-
-        if (keyIsDown(65)) sgnX--;      // left (A)
-        if (keyIsDown(68)) sgnX++;      //right (D)
-        if (keyIsDown(32)) sgnY++;      // jump (space)
-        if (keyIsDown(16)) sgnX *= 0.5; // sneak (shift)
-
-
-        player.movementSignVect.translate(sgnX, sgnY);
-    }
+    // Filthy javascript coding ...
+    player.direction.translate((-keyIsDown(65) + keyIsDown(68)) * (1 - 0.5 * keyIsDown(16)), keyIsDown(32) * 1);
 
     // Saves current matrix and pushes it on top of the stack
     push();
@@ -212,7 +208,7 @@ function checkBluetoothConnections() {
 
                 let inputCode = event.target.value.getUint8(0);
 
-                player.movementSignVect.translate(
+                player.direction.translate(
                     -((inputCode >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),
                     (inputCode >> Input.BUTTON_A_BP) & 1);
 
@@ -262,22 +258,27 @@ async function readLoop() {
 
 class Entity extends AABB {
 
-    movementSignVect; // The movement
-    position; // position of the entity
-    velocity; // velocity of the entity
-    colliding; // colliding states, containing the direction of collision (x, y)
+    direction;       // The vector pointing to the direction in which the entity is going
+    position;        // position of the entity
+    velocity;        // velocity of the entity
+    colliding;       // colliding states, containing the direction of collision (x, y)
     fallingDistance; // Distance how long the entity has fallen for.
     health;          // Health of the entity
-    maxHealth;
-    isAlive;
+    maxHealth;       // Max health of the entity
+    isAlive;         // Liveliness of the entity
+    onGround;        // Whether the entity is on ground or not
+    againstWall;     // Whether the entity is colliding with a wall
+
+    #movementSpeed;
 
     static regenerationInterval = 5; // how many seconds need to pass for one heart to regenerate
 
-    static collisionThres = 0.05; // Detection threshold in meters
+    static collisionThreshold = 0.05; // Detection threshold in meters
 
-    constructor(posX, posY, maxHealth) {
-        super(posX, posY, 0.9, 1.8);
-        this.movementSignVect = new Vec2(0, 0);
+    constructor(posX, posY, maxHealth, width, height, movementSpeed) {
+        super(posX, posY, width, height);
+        this.#movementSpeed = movementSpeed;
+        this.direction = new Vec2(0, 0);
         this.position  = new Vec2(posX, posY);
         this.velocity  = new Vec2(0, 0);
         this.colliding = new Vec2(0, 0);
@@ -285,6 +286,7 @@ class Entity extends AABB {
         this.isAlive = true;
         this.health = maxHealth;
         this.maxHealth = maxHealth;
+        this.onGround = false;
     }
 
     // Function that allows the entity to move based on the input vector.
@@ -295,25 +297,22 @@ class Entity extends AABB {
             return;
 
         this.velocity.translate(
-            movementVector.x * horizontalSpeed,
-            movementVector.y * verticalSpeed
+            movementVector.x * horizontalSpeed * this.#movementSpeed,
+            movementVector.y * verticalSpeed * this.#movementSpeed
         );
     }
 
     update(dT) {
 
-        this.isAlive = this.health !== 0;
-
         this.velocity.add(
-            this.colliding.x === 0 ? this.movementSignVect.x * horizontalSpeed * 0.25 : 0,
-            this.colliding.y < 0 || (allowDoubleJump && player.colliding.x !== 0 && player.velocity.y < 0)
-                ? this.movementSignVect.y * verticalSpeed : 0);
-        //this.movementSignVect.translate(0, 0);
+            !this.againstWall ? this.direction.x * horizontalSpeed * 0.25 * this.#movementSpeed : 0,
+            this.onGround || (allowDoubleJump && this.againstWall && this.velocity.y < 0)
+                ? this.direction.y * verticalSpeed * this.#movementSpeed : 0);
+        //this.direction.translate(0, 0);
 
         // Set it to an unrealistic number, just before testing for collision.
         // Makes it easier to test whether collision detection has finished, without allocating more memory.
         this.colliding.translate(0, 0);
-        this.velocity.addY(-Environment.G * dT);
 
         // Natural regeneration, every ten seconds
         this.health = Math.min(this.health + dT / Entity.regenerationInterval, this.maxHealth);
@@ -323,7 +322,7 @@ class Entity extends AABB {
             let target = Environment.boundingBoxes[i];
 
             // Collision detection with self is always going to be true so let's just skip that shall we...
-            if (target === this)
+            if (!(target instanceof Block))
                 continue;
 
             // If another class extends this class and defines the function 'onCollisionCheck',
@@ -337,8 +336,8 @@ class Entity extends AABB {
              **/
 
             // perform calculations for x-axis collision detection
-            if (this.colliding.x === 0 && Math.abs(this.velocity.x) >= Entity.collisionThres) {
-                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThres * 2; j += Entity.collisionThres) {
+            if (this.colliding.x === 0 && Math.abs(this.velocity.x) >= Entity.collisionThreshold) {
+                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThreshold * 2; j += Entity.collisionThreshold) {
                     if (this.copy.translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(target)) {
                         this.colliding.x = Math.sign(this.velocity.x);
                         if (typeof(this['onCollisionX']) === 'function')
@@ -354,8 +353,8 @@ class Entity extends AABB {
              **/
 
             // Perform calculations for y-axis collision detection
-            if (this.colliding.y === 0 && Math.abs(this.velocity.y) >= Entity.collisionThres) {
-                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + Entity.collisionThres * 2; j += Entity.collisionThres) {
+            if (this.colliding.y === 0 && Math.abs(this.velocity.y) >= Entity.collisionThreshold) {
+                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + Entity.collisionThreshold * 2; j += Entity.collisionThreshold) {
                     if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(target)) {
 
                         this.colliding.y = Math.sign(this.velocity.y);
@@ -377,23 +376,30 @@ class Entity extends AABB {
         // Add velocity to position
         this.position.add(this.velocity.x * dT, this.velocity.y * dT);
 
-        // If we're falling, add fall distance
-        if (this.velocity.y < 0 && this.colliding.y !== -1)
-            this.fallingDistance -= this.velocity.y * dT;
+        this.isAlive = this.health !== 0;
+        this.onGround = this.colliding.y < 0;
+        this.againstWall = this.colliding.x !== 0;
 
+        // If we're falling, add fall distance
+        if (this.velocity.y < 0 && !this.onGround)
+            this.fallingDistance += Math.abs(this.velocity.y * dT);
 
         /**
          *  SECTION: FALL DAMAGE
          **/
 
         // Check if we've fallen down
-        if (this.colliding.y < 0) {
+        if (this.onGround) {
             // If fallen from a large enough area, induce fall damage
-            if (this.fallingDistance > verticalSpeed + 5)  {
-                this.damage(this.fallingDistance * 0.2 );
-                this.fallingDistance = 0;
+            if (this.fallingDistance > verticalSpeed * 0.7)  {
+                this.damage(this.fallingDistance * 0.3 );
             }
+            this.fallingDistance = 0;
+        } else {
+            this.velocity.addY(-Environment.G * dT);
         }
+
+
 
         // Reduce x-axis motion gradually (if there is any)
         this.velocity.x *= 0.8;
@@ -433,7 +439,7 @@ class Player extends Entity {
 
     static playerHealth = 20;
     constructor(x, y) {
-        super(x, y, Player.playerHealth);
+        super(x, y, Player.playerHealth, 0.9, 1.8, 1);
     }
 
     // Updates player-related variables, such as screen position
@@ -448,10 +454,10 @@ class Player extends Entity {
             screenOffsetX = -this.position.x + windowWidthInMeters - screenEdgeMargin;
 
         // Perform the same translation on the Y axis
-        if (this.position.y + screenOffsetY < screenEdgeMargin * 0.5) // bottom side of the screen
-            screenOffsetY = -this.position.y + screenEdgeMargin * 0.5;
-        else if (this.position.y + screenOffsetY > windowHeightInMeters - screenEdgeMargin * 0.5) // top side
-            screenOffsetY = -this.position.y + windowHeightInMeters - screenEdgeMargin * 0.5;
+        if (this.position.y + screenOffsetY < screenEdgeMargin) // bottom side of the screen
+            screenOffsetY = -this.position.y + screenEdgeMargin;
+        else if (this.position.y + screenOffsetY > windowHeightInMeters - screenEdgeMargin) // top side
+            screenOffsetY = -this.position.y + windowHeightInMeters - screenEdgeMargin;
     }
 
     onCollisionCheck(target) {
@@ -461,6 +467,8 @@ class Player extends Entity {
 
     // For when one actually collides
     onCollisionX(target) {
+
+        // Allow entities to push one another by exchanging velocities
         if (target instanceof Entity)
             target.velocity.x += this.velocity.x * 0.5;
     }
@@ -469,7 +477,7 @@ class Player extends Entity {
      * Function for rendering all player-related elements.
      * This currently includes:
      * - Rendering the character's animation     (when moving)
-     * - Rendering the healthbar avove the player (if enabled)
+     * - Rendering the healthbar above the player (if enabled)
      * - Rendering the hitbox of the player       (if enabled)
      */
     draw(dt) {
@@ -524,8 +532,9 @@ class Environment {
         if (!(aabb instanceof AABB))
             return;
 
-        if (aabb instanceof Entity)
+        if (aabb instanceof Entity) {
             this.entities.push(aabb);
+        }
         this.boundingBoxes.push(aabb);
     }
 
@@ -550,44 +559,35 @@ class Environment {
 
         // generate ground (temp)
         let n = 500;
-        let interpFactor = 2;
-        let fnY = (x) => -4 + Math.floor(3 + noise(x) * 10 + noise(x / 2) * 5 + noise(x / 4) * 2);
+        let fnY = (x) => noise(x) * 0.75 + noise(x / 2) * 0.25 + noise(x / 4) * 0.25;
 
         for (let x = 0; x < n; x++) {
-            let A = fnY(x);
-            let B = fnY(x + 1);
+            let posY = Math.floor(fnY(x * terrainRandomness) * terrainHeight);
+            for (let y = 0; y < posY; y++) {
 
-            for (let i = 0; i < interpFactor; i++) {
-                let posY = Math.round(A + 0.5 * (B - A));
-
-
-                for (let y = 0; y < posY; y++) {
-                    let blockType =
-                        y === posY - 1 ? BlockType.grass_block :
-                            y >= posY - 3 ? BlockType.dirt :
-                                Math.random() < 0.050 ? BlockType.coal_ore :
+                let blockType =
+                    y === posY - 1 ? BlockType.grass_block :
+                        y >= posY - 3 ? BlockType.dirt :
+                            Math.random() < 0.050 ? BlockType.coal_ore :
                                 Math.random() < 0.025 ? BlockType.gold_ore :
-                                Math.random() < 0.015 ? BlockType.diamond_ore : BlockType.stone;
-                    Environment.introduce(new Block(x * interpFactor + i, y, blockType));
-                }
+                                    Math.random() < 0.015 ? BlockType.diamond_ore : BlockType.stone;
+                Environment.introduce(new Block(x, y, blockType));
             }
         }
-
-        // Generate island (temporarily)
-        for (let i = 0; i < n; i++) {
-            let posY = noise(i / 7) * 10;
-            let posYd = -noise(i / 10) * 20 * Math.random();
-            for (let j = 0; j < posY; j++) {
-                Environment.introduce(new Block(10 + i, 25 + Math.floor(posYd) + j, Math.random() < 0.3 ? BlockType.cracked_deepslate_bricks : BlockType.deepslate_bricks));
-            }
-        }
-
     }
 
     // Method for drawing all objects in the world.
     // This includes entities and blocks (currently)
     static draw(dT) {
         this.boundingBoxes.forEach(element => {
+
+            // Check whether the object is on-screen. If not, we skip rendering.
+            if ((element.right + screenOffsetX) * pixelsPerMeter < 0 ||
+                (element.left + screenOffsetX) * pixelsPerMeter > window.innerWidth ||
+                (element.bottom + screenOffsetY) < 0 ||
+                (element.top + screenOffsetY) > window.innerHeight)
+                return;
+
             if (element instanceof Block) {
                 element.blockType.draw(
                     element.left * pixelsPerMeter, window.innerHeight - (element.top + element.height) * pixelsPerMeter,

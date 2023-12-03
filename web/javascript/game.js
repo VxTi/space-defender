@@ -135,6 +135,7 @@ function setup() {
     Environment.generate();            // generate environment
     Environment.introduce(player); // add player to the environment
     //Environment.introduce(new EntityWizard(10, terrainHeight + 5, 5));
+    Environment.introduce(new EntityWizard(10, 30, 4));
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 
     // Add periodic updates for entities

@@ -7,7 +7,7 @@ const port = 8080;
 
 const express = require('express');
 const { uuid } = require('uuidv5');
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const app = express();
 const cors = require('cors');
 
@@ -24,15 +24,17 @@ let server = app.listen(port, `0.0.0.0`, () => {
 });
 var con = mysql.createConnection({
   host: "oege.ie.hva.nl",
-  user: "koopenj",
+  user: "koopenj@oege.ie.hva.nl",
   password: "pSmwQExG/1rux.",
-  database: "zkoopenj"
+  database: "zkoopenj",
+  port: "3306",
+
 });
 
 con.connect(function(err) {
   if (err) throw err;
   console.log("Connected!");
-  con.query("CREATE DATABASE mydb", function (err, result) {
+  con.query("INSERT INTO highscores (score) VALUES (10000)", function (err, result) {
     if (err) throw err;
     console.log("Database created");
   });

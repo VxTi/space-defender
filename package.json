@@ -2,11 +2,12 @@
   "name": "riiqaazaaxaa71",
   "version": "1.0.0",
   "dependencies": {
+    "@hboictcloud/api": "^1.0.1",
     "cors": "^2.8.5",
     "expres": "^0.0.5",
     "express": "^4.18.2",
     "mysql": "^2.18.1",
-    "uuidv5": "^1.0.0",
-    "@hboictcloud/api": "^1.0.1"
+    "mysql2": "^3.6.5",
+    "uuidv5": "^1.0.0"
   }
 }

@@ -17,6 +17,13 @@ body, html {
     display: block;
 }
 
+.settings-screen {
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    display: block;
+}
+
 .pixel-size {
     visibility: hidden;
     display: block;

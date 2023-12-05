@@ -7,6 +7,7 @@ const port = 8080;
 
 const express = require('express');
 const { uuid } = require('uuidv5');
+const mysql = require('mysql');
 const app = express();
 const cors = require('cors');
 

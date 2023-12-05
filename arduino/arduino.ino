@@ -247,7 +247,7 @@ void bluetoothTask(void*) {
     advertising->addServiceUUID(hid->batteryService()->getUUID());
     advertising->start();
 
-    Serial.println("Bluetooth device is ready to be coonnected");
+    Serial.println("Bluetooth device is ready to be connected");
     delay(portMAX_DELAY);
 };
 

@@ -1,2 +1,3 @@
 .vscode/
 buildlogs
+/node_modules/

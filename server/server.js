@@ -22,3 +22,17 @@ let server = app.listen(port, `0.0.0.0`, () => {
     console.log(`Server has started on port ${server.address().address}:${port}`);
 });
 
+var con = mysql.createConnection({
+    host: "localhost",
+    user: "",
+    password: "yourpassword"
+  });
+  
+  con.connect(function(err) {
+    if (err) throw err;
+    console.log("Connected!");
+    con.query("CREATE DATABASE mydb", function (err, result) {
+      if (err) throw err;
+      console.log("Database created");
+    });
+  });

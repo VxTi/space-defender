@@ -24,7 +24,7 @@ let server = app.listen(port, `0.0.0.0`, () => {
 });
 var con = mysql.createConnection({
   host: "oege.ie.hva.nl",
-  user: "koopenj@oege.ie.hva.nl",
+  user: "koopenj",
   password: "pSmwQExG/1rux.",
   database: "zkoopenj",
   port: "3306",

@@ -16,6 +16,7 @@
 #define PIN_BUTTON_B    11
 #define PIN_BUTTON_OPT  10
 #define PIN_LED          4
+#define PIN_BATTERY     13
 
 #define BUTTON_UP_KEY       ((uint8_t) 'w')
 #define BUTTON_LEFT_KEY     ((uint8_t) 'a')
@@ -50,6 +51,7 @@ void configurePins()
   pinMode(PIN_BUTTON_RIGHT, INPUT);
   pinMode(PIN_BUTTON_DOWN, INPUT);
   pinMode(PIN_BUTTON_OPT, INPUT);
+  pinMode(PIN_BATTERY, INPUT);
 }
 
 // Checks if both buttons B and OPT are pressed on startup, if so debug mode will be toggled
@@ -101,6 +103,7 @@ void loop() {
       }
       write(buffer);
       delay(25);
+      readBatteryLevel();
     }
 }
 
@@ -207,6 +210,12 @@ class BleKeyboardCallbacks : public BLEServerCallbacks {
     }
 };
 
+void readBatteryLevel(){
+    int batteryLevel = analogRead(PIN_BATTERY);
+    float batteryPercentage = (batteryLevel / 4095.0) * 100.0;
+    batteryLevel = round(batteryPercentage);
+    hid->setBatteryLevel((uint8_t)batteryLevel);
+}
 
 void bluetoothTask(void*) {
 
@@ -237,7 +246,7 @@ void bluetoothTask(void*) {
     hid->startServices();
 
     // set battery level to 100%
-    hid->setBatteryLevel(100);
+    readBatteryLevel();
 
     // advertise the services
     BLEAdvertising* advertising = server->getAdvertising();

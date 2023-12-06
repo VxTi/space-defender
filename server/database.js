@@ -35,7 +35,7 @@ app.get('/', function (req, res) {
       // You can use it in your code as needed
       // For example, let's store it in a variable and log it
       const retrievedData = records;
-      console.log(retrievedData);
+      console.log(`Retrieved data: ${retrievedData}`);
 
       // Close the database connection
       connection.end();

@@ -60,6 +60,7 @@ class EntityWizard extends Entity {
                     Math.pow(this.target.position.y - this.position.y, 2) <= Math.pow(EntityWizard.damageReach, 2)) {
 
                 // Entity is close enough to do damage
+                // NOTE: bad practice omditzo te doen. Ik zou een global damage controler maken die dit doet voor je.
                 this.target.damage(this.strength * 0.5, 'entityWizardAttack');
             } else {
                 // We'll have to start playing with fire...
@@ -71,6 +72,7 @@ class EntityWizard extends Entity {
             }
         }
 
+        // NOTE: if statement of dit nodig is. Dit maakt onPeriodicUpdate O(#entitys) tijds complex.
         Environment.entities.forEach(e => {
             if (this.#isTargetValid(e) && this.target == null) // Select the target if the entity hasn't focused yet
                 this.target = e;

@@ -152,6 +152,7 @@ function setup() {
 // This means it waits 16.6ms before getting called again.
 function draw() {
 
+    // NOTE: Dit is heelgoed!!! - Nick Burgmijer, Student UVA 
     if (!document.hasFocus())
         return;
 
@@ -547,6 +548,7 @@ class Environment {
 
     // Method for updating all entities in the entities array
     static update(deltaT) {
+        // kijk naar een ECS.
         this.entities.forEach(object => object.update(deltaT));
     }
 

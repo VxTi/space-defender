@@ -2,10 +2,12 @@ const express = require('express');
 const app = express();
 const mysql = require("mysql2/promise");
 const bodyParser = require('body-parser');
+const cors = require('cors');
 
 // Parse JSON and URL-encoded data
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 
 // Config your database credential
 const pool = mysql.createPool({

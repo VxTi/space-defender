@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <label for="textInput">Enter Text:</label>
+    <input type="text" id="textInput" name="textInput">
+    <button id="submitButton">Submit</button>
+
+    <script defer>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('submitButton').addEventListener('click', async () => {
+                const inputValue = document.getElementById('textInput').value;
+
+                // Your API endpoint URL
+                const apiUrl = 'http://localhost:8080/api/post';
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json', // Set the appropriate content type
+                        },
+                        body: JSON.stringify({ message: inputValue }), // Sending the string as JSON
+                    });
+
+                    if (response.ok) {
+                        console.log('String sent successfully');
+                        // Optionally, do something with the response if needed
+                    } else {
+                        console.error('Error sending string to the API');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

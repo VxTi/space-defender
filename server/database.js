@@ -1,54 +1,49 @@
 const express = require('express');
 const app = express();
-const mssql = require("mysql2/promise");
+const mysql = require("mysql2/promise");
 
 // Config your database credential
-const config = {
+const pool = mysql.createPool({
   user: 'koopenj',
   password: 'pSmwQExG/1rux.',
   host: 'oege.ie.hva.nl',
   port: 3306,
   database: 'zkoopenj',
   insecureAuth: false,
-  ssl: { rejectUnauthorized: false }
-};
-
-// Connect to your database
-const connection = mssql.createConnection(config).then(async (conn) => {
-  await conn.connect();
-  return conn;
-}).catch((err) => {
-  if (err) {
-    console.error('Error connecting to database:', err);
-    return;
-  }
-})
+  ssl: { rejectUnauthorized: false },
+  connectionLimit: 10 // Set your desired connection limit
+});
 
 // Get request
 app.get('/', async (req, res) => {
+  try {
+    // Get a connection from the pool
+    const conn = await pool.getConnection();
 
-  // Query to the database and get the records
+    // Query the database and get the records
+    const [rows] = await conn.query('SELECT * FROM `highscores` WHERE tom = 1');
 
-  const conn = await connection
+    // Release the connection back to the pool
+    conn.release();
 
-  conn.execute()
+    // Here, 'rows' contains the data retrieved from the database
+    // You can use it in your code as needed
+    // For example, let's log it
+    console.log(`Raw data retrieved: ${rows}`);
+    console.log(`Retrieved data: ${JSON.stringify(rows)}`);
 
-  const records = await conn.query('SELECT * FROM `highscores` WHERE tom = 1');
-
-  // Here, 'records' contains the data retrieved from the database
-  // You can use it in your code as needed
-  // For example, let's store it in a variable and log it
-  const retrievedData = records[0];
-  console.log(`Retrieved data: ${JSON.stringify(retrievedData)}`);
-
-  // Close the database connection
-  // connection.end();
-
-  // Send a success response
-  res.send('Data retrieved from the database and stored in a variable. Check the server console for the data.');
-
+    // Send a success response
+    res.send('Data retrieved from the database. Check the server console for the data.');
+  } catch (error) {
+    console.error('Error retrieving data:', error);
+    res.status(500).send('Error retrieving data from the database'); // HTTP Code 500, internal server error
+  }
 });
 
-app.listen(8000, function () {
-  console.log('Server is listening at port 5000...');
+app.listen(8080, () => {
+  console.log('Server is listening at port 8080...');
 });
+
+
+// TODO:
+// Functies maken om sql queries te maken.

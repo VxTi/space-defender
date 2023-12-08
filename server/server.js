@@ -10,6 +10,7 @@ const { uuid } = require('uuidv5');
 const mssql = require("mysql");
 const app = express();
 const cors = require('cors');
+import { getData } from './database';
 
 app.use(express.static('../web/'));
 app.use(express.json());

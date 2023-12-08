@@ -24,17 +24,18 @@
 #define BUTTON_DOWN_KEY     ((uint8_t) 's')
 #define BUTTON_A_KEY        ((uint8_t) ' ')
 #define BUTTON_B_KEY        ((uint8_t) 'r')
+#define BUTTON_OPT_KEY      ((uint8_t) 'ESC')
 
 #define DEVICE_NAME "Game Controller"
 
-#define BUTTON_COUNT 6
+#define BUTTON_COUNT 7
 
 char * buffer = (char *) malloc(BUTTON_COUNT * sizeof(char));
 
 const uint8_t pinData[BUTTON_COUNT][2] = {
             {PIN_BUTTON_UP, BUTTON_UP_KEY}, {PIN_BUTTON_LEFT, BUTTON_LEFT_KEY},
             {PIN_BUTTON_RIGHT, BUTTON_RIGHT_KEY}, {PIN_BUTTON_DOWN, BUTTON_DOWN_KEY},
-            {PIN_BUTTON_A, BUTTON_A_KEY}, {PIN_BUTTON_B, BUTTON_B_KEY}
+            {PIN_BUTTON_A, BUTTON_A_KEY}, {PIN_BUTTON_B, BUTTON_B_KEY}, {PIN_BUTTON_OPT, BUTTON_OPT_KEY}
 };
 
 bool useBluetooth = false; // False = Serial communication, True = BLE communication.
@@ -112,7 +113,7 @@ void loop() {
 struct InputReport {
     uint8_t modifiers;	     // bitmask: CTRL = 1, SHIFT = 2, ALT = 4
     uint8_t reserved;        // must be 0
-    uint8_t pressedKeys[6];  // up to six concurrenlty pressed keys
+    uint8_t pressedKeys[7];  // up to seven concurrenlty pressed keys
 };
 
 // Message (report) received when an LED's state changed
@@ -210,11 +211,12 @@ class BleKeyboardCallbacks : public BLEServerCallbacks {
     }
 };
 
+// Function for reading battery level via the selected PIN
 void readBatteryLevel(){
     int batteryLevel = analogRead(PIN_BATTERY);
-    float batteryPercentage = (batteryLevel / 4095.0) * 100.0;
+    float batteryPercentage = (batteryLevel / 4095.0) * 100.0; // From 0-4095 to 0-100%
     batteryLevel = round(batteryPercentage);
-    hid->setBatteryLevel((uint8_t)batteryLevel);
+    hid->setBatteryLevel((uint8_t)batteryLevel); // Set option to battery level
 }
 
 void bluetoothTask(void*) {

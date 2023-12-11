@@ -36,18 +36,10 @@ var animations = {}
 
 let timePhase = 0; // used for timed animations.
 
-var controllerConnected = false;
-var gameActive = true;
+var gameActive = false;
 
-const Input = {
-    BUTTON_UP_BP: 0,
-    BUTTON_LEFT_BP: 1,
-    BUTTON_RIGHT_BP: 2,
-    BUTTON_DOWN_BP: 3,
-    BUTTON_A_BP: 4,
-    BUTTON_B_BP: 5,
-    BUTTON_OPT_BP: 6
-}
+const Difficulties = ['Easy', 'Normal', 'Hard'];
+let difficulty = 0;
 
 clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
 isWithinBounds = function(x, a, b) { return x >= a && x <= b; }
@@ -64,8 +56,7 @@ function preload() {
     // If one wants to access the resource afterward, simply do 'resources['rs name']'
     const extension = 'png';
     const fileNames = ['player_animation_wielding', 'dirt', 'stone', 'grass_block',
-                        'deepslate_bricks', 'cracked_deepslate_bricks',
-                        'moon_phases', 'skyImage', 'diamond_ore', 'gold_ore', 'coal_ore',
+                        'deepslate_bricks', 'cracked_deepslate_bricks', 'moon_phases', 'skyImage',
                         'heart', 'heart_half', 'heart_background', 'wizard', 'fireball'];
 
     for (let element of fileNames)
@@ -77,40 +68,13 @@ function preload() {
     windowHeightInMeters = window.innerHeight / pixelsPerMeter;
 }
 
+
 /**
  * Method for setting up variables, after pre-initialization.
  * Here we can add event listeners, register preloaded images as resource
  * and create the canvas.
  */
 function setup() {
-
-    frameRate(120);
-
-    // When pressed on the 'select controller' button,
-    // we attempt to find a bluetooth controler.
-    let elControllerConnect = document.querySelector(".controller-connect");
-    elControllerConnect
-        .addEventListener("click", () => checkBluetoothConnections());
-    elControllerConnect
-        .addEventListener("touchend", () => checkBluetoothConnections());
-
-    let settingsElem = document.querySelector(".game-settings-button");
-
-    // The settings button, one can pause the game with this
-
-    settingsElem.addEventListener("click", () => {
-        gameActive = false;
-        document.querySelector(".game-menu-container")
-            .style.visibility = 'visible';
-        settingsElem.style.visibility = 'hidden';
-    });
-
-    document.querySelector(".game-resume")
-        .addEventListener("click", () => {
-           gameActive = true;
-           settingsElem.style.visibility = 'visible';
-           document.querySelector(".game-menu-container").style.visibility = 'hidden';
-        });
 
     // Create a canvas to render onto
     createCanvas(window.innerWidth, window.innerHeight);
@@ -141,6 +105,8 @@ function setup() {
     // Add periodic updates for entities
     // For example, hostile entity damage, only once per second.
     setInterval(() => {
+        if (!gameActive)
+            return;
         Environment.entities.forEach(e => {
             if (typeof e['onPeriodicUpdate'] === 'function')
                 e['onPeriodicUpdate']();
@@ -192,40 +158,6 @@ function draw() {
     Environment.update(dT);
     Environment.draw(dT);
 
-}
-
-function checkBluetoothConnections() {
-    if (!(navigator.bluetooth))
-        throw new Error("Bluetooth not supported on this browser!");
-
-    let bleServiceUUID = 'a8a5a50f-12c1-4b83-bcd3-71ec79287967';
-    let bleCharacteristicsUUID = 'bb4843e0-d2fc-4b26-8fca-b99bd452acaa'
-
-    BluetoothService.search({filters: [{namePrefix: "ESP32 Controller"}], optionalServices: [bleServiceUUID]})
-        .then(device => {
-            let connection = new BluetoothService(device);
-            connection.onConnect = (device) => {
-                console.log(`Connected with Bluetooth device '${device.name}'`);
-                controllerConnected = true;
-            }
-            connection.onReceive = (event) => {
-
-                let inputCode = event.target.value.getUint8(0);
-
-                player.direction.translate(
-                    -((inputCode >> Input.BUTTON_LEFT_BP) & 1) + ((inputCode >> Input.BUTTON_RIGHT_BP) & 1),
-                    (inputCode >> Input.BUTTON_A_BP) & 1);
-
-            };
-            connection.onDisconnect = (e) => {
-                console.log("BT device disconnected", e);
-                controllerConnected = false;
-            }
-            connection.primaryCharacteristicUuid = bleCharacteristicsUUID;
-            connection.primaryServiceId = bleServiceUUID;
-            connection.connect();
-        })
-        .catch(err => console.error("An error occurred whilst attempting to connect to Bluetooth device", err));
 }
 
 async function connectSerial() {

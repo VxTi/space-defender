@@ -8,25 +8,30 @@
 <body>
     <div class="overlay">
 
-        <div class="startup-screen">
-
-        </div>
-        <div class="settings-screen">
+        <div class="menu settings">
+            <!-- Settings icon -->
             <img class="game-settings-button" src="assets/settings_icon.png" alt="Settings"/>
 
+            <!-- Start screen -->
+            <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15">
+                <div class="bg">
+                    <div class="frame-title">Menu</div>
+                    <div class="menu-button bt-difficulty">
+                        <span style="float: left; width: 50%; margin: auto">Difficulty</span>
+                        <span class="difficulty-title" style="float: right; width: 50%; margin: auto">Easy</span>
+                    </div>
+                    <div class="menu-button bt-leaderboards">Leaderboards</div>
+                    <div class="menu-button bt-play">Play</div>
+                </div>
+            </div>
+
             <div class="game-menu-container" style="visibility: hidden">
-                <div class="game-menu-button">
-                    <span>Settings</span>
+
+                <div class="menu-button">
+                    Settings
                 </div>
-                <div class="game-menu-button controller-connect">
-                    <span>Connect Controller</span>
-                </div>
-                <div class="game-menu-button">
-                    <span>Statistics</span>
-                </div>
-                <div class="game-menu-button game-resume">
-                    <span>Resume</span>
-                </div>
+                <div class="menu-button">Statistics</div>
+                <div class="menu-button game-resume">Resume</div>
             </div>
         </div>
     </div>

@@ -54,10 +54,7 @@ class Environment {
 
                 let blockType =
                     y === posY - 1 ? BlockType.grass_block :
-                        y >= posY - 3 ? BlockType.dirt :
-                            Math.random() < 0.050 ? BlockType.coal_ore :
-                                Math.random() < 0.025 ? BlockType.gold_ore :
-                                    Math.random() < 0.015 ? BlockType.diamond_ore : BlockType.stone;
+                        y >= posY - 3 ? BlockType.dirt : BlockType.stone;
                 Environment.introduce(new Block(x, y, blockType));
             }
         }

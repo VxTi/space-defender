@@ -7,9 +7,9 @@
  */
 class Player extends Entity {
 
-    static playerHealth = 20;
+    static #playerHealth = 20;
     constructor(x, y) {
-        super(x, y, Player.playerHealth, 0.9, 1.8, 1);
+        super(x, y, Player.#playerHealth, 0.9, 1.8, 1);
     }
 
     // Updates player-related variables, such as screen position

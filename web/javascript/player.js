@@ -30,18 +30,6 @@ class Player extends Entity {
             screenOffsetY = -this.position.y + windowHeightInMeters - screenEdgeMargin;
     }
 
-    onCollisionCheck(target) {
-        return Math.max(this.left, target.left) - Math.min(this.right, target.right) <= 4 &&
-            Math.max(this.bottom, target.bottom) - Math.min(this.top, target.top) <= 4;
-    }
-
-    // For when one actually collides
-    onCollisionX(target) {
-
-        // Allow entities to push one another by exchanging velocities
-        if (target instanceof Entity)
-            target.velocity.x += this.velocity.x * 0.5;
-    }
 
     /**
      * Function for rendering all player-related elements.
@@ -66,13 +54,7 @@ class Player extends Entity {
                 Math.abs(this.velocity.x) > horizontalSpeed * 0.5 ?
                     Math.floor(timePhase * 5) % 4 : 0);
 
-            for (let i = 0, w = pixelsPerMeter * 0.4; i < this.maxHealth / 2; i++) {
-                image(
-                    resources[this.health >= i * 2 ? "heart" :
-                        Math.round(this.health) === i * 2 ? "heart_half" : "heart_background"],
-                    -(Math.floor((i) / 10)) * w + ((i) % 10) * (w - 2),
-                    -10 - Math.floor(i / 10) * w, w, w);
-            }
+            drawHealthBar(this.position.x, this.position.y + this.height, this.health, this.maxHealth);
             // And shortly, the outline of the player (AABB)
             if (showBoundingBox) {
                 stroke(255, 0, 0);

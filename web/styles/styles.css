@@ -71,6 +71,11 @@ body, html {
     background-color: rgba(0, 0, 0, 0.5);
 }
 
+.menu-page {
+    position: absolute;
+    visibility: hidden;
+}
+
 .menu-button {
     user-select: none;
     display: block;

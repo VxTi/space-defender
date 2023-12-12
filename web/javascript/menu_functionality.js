@@ -6,55 +6,45 @@ const serverAddress = "http://localhost:8080/api/get";
     document.onkeydown = (event) => {
         if (event.key === 'Escape') {
             gameActive = !gameActive;
-            showWindow(gameActive ? null : 'menu-pause');
+            showMenu(gameActive ? null : 'menu-pause');
         }
     }
 
-    let btDifficulty = document.querySelector(".bt-difficulty");
-    let btPlay = document.querySelector(".bt-play");
-    let btSettings = document.querySelector(".game-settings-button");
-    let btLeaderboards = document.querySelector(".bt-leaderboards");
-    let settingsMenu = document.querySelector('.settings');
+    const elements = [
+        'game-settings-button', 'main-difficulty', 'main-play', 'main-leaderboards',
+        'pause-main-menu', 'pause-settings', 'pause-resume', 'pause-statistics'
+    ];
+    let element = {};
+    for (let e of elements)
+        element[e] = document.querySelector(`.${e}`);
 
-    btDifficulty.onclick = () => {
+    element['game-settings-button'].onclick = () => showMenu('menu-pause');
+
+    // pause screen
+    element['pause-main-menu'].onclick = () => showMenu('menu-start');
+    element['pause-settings'].onclick = () => console.log('showing settings menu');
+    element['pause-statistics'].onclick = () => console.log('showing statistics');
+    element['pause-resume'].onclick = () => showMenu();
+
+    // main screen
+    element['main-leaderboards'].onclick = () => retrieveLeaderboards().then(r => console.log(r));
+    element['main-play'].onclick = () => showMenu();
+    element['main-difficulty'].onclick = () => {
         let textElement = document.querySelector(".difficulty-title");
         textElement.innerText =
             Difficulties[difficulty = (difficulty + 1) % Difficulties.length]; // Rotate around all texts.
         textElement.style.color = `hsl(${(1 - (difficulty + 1) / Difficulties.length) * 130}, 100%, 50%)`;
     };
 
-    btPlay.onclick = () => {
-        showWindow()
-        settingsMenu.style.visibility = 'hidden';
-        gameActive = true;
-        btSettings.style.visibility = 'visible';
-    };
-
-    // The settings button, one can pause the game with this
-
-    btSettings.onclick = () => {
-        gameActive = false;
-        settingsMenu
-            .style.visibility = 'visible';
-        btSettings.style.visibility = 'hidden';
-    };
-
-    document.querySelector(".game-resume")
-        .onclick = () => {
-            gameActive = true;
-            btSettings.style.visibility = 'visible';
-            settingsMenu.style.visibility = 'hidden';
-        };
-
-    btLeaderboards.onclick = () => retrieveLeaderboards().then(r => console.log(r));
-
+    showMenu("menu-start");
 
 })();
 
-function showWindow(element) {
+function showMenu(element = null) {
     document.querySelectorAll('.menu-page').forEach(e => e.style.visibility = 'hidden');
-    if (element !== null)
+    if (element != null)
         document.querySelector(`.${element}`).style.visibility = 'visible';
+    gameActive = element == null;
 
 }
 

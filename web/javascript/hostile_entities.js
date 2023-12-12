@@ -26,11 +26,11 @@ class EntityWizard extends Entity {
             this.height * pixelsPerMeter);
 
         // Rendering of the hearts above the player
-        for (let i = 1, w = pixelsPerMeter * 0.4; i <= this.maxHealth / 2; i++) {
+        /*for (let i = 1, w = pixelsPerMeter * 0.4; i <= this.maxHealth / 2; i++) {
             image(resources[this.health >= i * 2 ? "heart" : Math.round(this.health )=== i * 2 ? "heart_half" : "heart_background"],
                 - (this.maxHealth / 4) * w + (i + 1) * (w - 2),
                 -10, w, w);
-        }
+        }*/
         pop();
     }
 
@@ -65,7 +65,7 @@ class EntityWizard extends Entity {
             }
         }
 
-        // NOTE: if statement of dit nodig is. Dit maakt onPeriodicUpdate O(#entitys) tijds complex.
+        // NOTE: if statement of dit nodig is. Dit maakt onPeriodicUpdate O(entitys) tijds complex.
         Environment.entities.forEach(e => {
             if (this.#isTargetValid(e) && this.target == null) // Select the target if the entity hasn't focused yet
                 this.target = e;

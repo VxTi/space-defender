@@ -89,6 +89,10 @@ body, html {
     background-color: #505050;
 }
 
+.menu-button:active {
+    background-color: #606060;
+}
+
 .menu-button > span {
     margin: auto;
     display: block;

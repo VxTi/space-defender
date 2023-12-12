@@ -80,8 +80,9 @@ class Entity extends AABB {
 
             // perform calculations for x-axis collision detection
             if (this.colliding.x === 0 && Math.abs(this.velocity.x) >= Entity.collisionThreshold) {
-                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThreshold * 2; j += Entity.collisionThreshold) {
+                for (let j = 0; j <= Math.abs(this.velocity.x * dT) + Entity.collisionThreshold; j += Entity.collisionThreshold) {
                     if (this.copy.translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(target)) {
+
                         this.colliding.x = Math.sign(this.velocity.x);
                         if (typeof(this['onCollisionX']) === 'function')
                             this['onCollisionX'](target);
@@ -97,7 +98,7 @@ class Entity extends AABB {
 
             // Perform calculations for y-axis collision detection
             if (this.colliding.y === 0 && Math.abs(this.velocity.y) >= Entity.collisionThreshold) {
-                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + Entity.collisionThreshold * 2; j += Entity.collisionThreshold) {
+                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + Entity.collisionThreshold; j += Entity.collisionThreshold) {
                     if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(target)) {
 
                         this.colliding.y = Math.sign(this.velocity.y);

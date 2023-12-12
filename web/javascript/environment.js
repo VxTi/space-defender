@@ -30,12 +30,6 @@ class Environment {
         this.entities.forEach(object => object.update(deltaT));
     }
 
-    static regenerate() {
-        Environment.boundingBoxes = [];
-        Environment.boundingBoxes.push(Environment.entities);
-        Environment.generate();
-    }
-
     /**
      *  Method for generating terrain
      *  This terrain generation uses perlin-noise for

@@ -24,7 +24,7 @@ const cmPerBlock = 1; // size of each 'meter' on screen.
 /** Terrain related variables */
 const seed = null; // if null, terrain will generate random
 const terrainHeight = 25;
-const terrainRandomness = 0.2; // Higher number makes the terrain more erratic
+const terrainRandomness = 0.1; // Higher number makes the terrain more erratic
 
 // Object containing all loaded images.
 // If one wants to add images to the resources variable, you can do
@@ -38,11 +38,10 @@ let timePhase = 0; // used for timed animations.
 
 var gameActive = false;
 
-const Difficulties = ['Easy', 'Normal', 'Hard'];
+const Difficulties = ['Easy', 'Normal', 'Hard', 'Extreme'];
 let difficulty = 0;
 
 clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
-isWithinBounds = function(x, a, b) { return x >= a && x <= b; }
 
 /** This function is called before the setup function.
  *  This can be used to load images for resources.
@@ -56,8 +55,7 @@ function preload() {
     // If one wants to access the resource afterward, simply do 'resources['rs name']'
     const extension = 'png';
     const fileNames = ['player_animation_wielding', 'dirt', 'stone', 'grass_block',
-                        'deepslate_bricks', 'cracked_deepslate_bricks', 'moon_phases', 'skyImage',
-                        'heart', 'heart_half', 'heart_background', 'wizard', 'fireball'];
+                        'deepslate_bricks', 'cracked_deepslate_bricks', 'moon_phases', 'skyImage', 'wizard', 'health'];
 
     for (let element of fileNames)
         resources[element] = loadImage(`./assets/${element}.${extension}`);
@@ -86,6 +84,7 @@ function setup() {
     animations['moonAnimation'] = new Resource(resources['moon_phases'], 4, 2);
     animations['skyBackground'] = new Resource(resources['skyImage']);
     animations['playerAnimation'] = new Resource(resources['player_animation_wielding'], 4, 1);
+    animations['health'] = new Resource(resources['health'], 3, 1);
 
 
     // Whenever the screen resizes, adapt the canvas size with it.
@@ -98,7 +97,6 @@ function setup() {
 
     Environment.generate();            // generate environment
     Environment.introduce(player); // add player to the environment
-    //Environment.introduce(new EntityWizard(10, terrainHeight + 5, 5));
     Environment.introduce(new EntityWizard(10, 30, 4));
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 
@@ -189,5 +187,25 @@ async function readLoop() {
                 reader.releaseLock();
             }
         }
+    }
+}
+
+
+/**
+ * Method for rendering a health-bar above an entity.
+ * @param x The game x-coordinate at which to render the health-bar at
+ * @param y The game y-coordinate at which to render the health-bar at
+ * @param health The current health of the entity
+ * @param maxHealth The maximum amount of health of the entity
+ * @param scale The scale at which to render the health-bar. Default is 1.0
+ */
+function drawHealthBar(x, y, health, maxHealth, scale = 1) {
+    stroke(255);
+    text(`${health}/${maxHealth} HP`, x, y);
+    for (let i = 1, w = pixelsPerMeter * scale; i <= maxHealth / 2; i++) {
+        animations['health'].animate(
+            x + (-maxHealth / 4 + i) * w,
+            y , w, w, (i * 2) <= health ? 0 : (i * 2) - 1 <= health ? 1 : 2);
+
     }
 }

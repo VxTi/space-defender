@@ -22,32 +22,103 @@ const pool = mysql.createPool({
 });
 
 /*========================*\
-|         API Calls        |
+|        API Calls         |
 \*========================*/
 
-// Get all highscores
-app.get('/api/get', async (req, res) => {
-  const conn = await pool.getConnection();
-  result = await conn.execute("SELECT * FROM highscores;");
+// Get user data of a specific user
+app.get('/api/get/user', async (req, res) => {
+  let postData = JSON.stringify(req.body);
+  let parsedData = JSON.parse(postData);
 
-  console.log(result);
+  let name = parsedData.name;
+
+  console.log(`Got a GET request for user data of: ${name}`);
+  try {
+    const conn = await pool.getConnection();
+    result = await conn.execute(`SELECT * FROM ${name};`);
+    conn.release();
+    res.status(200); // HTTP Status 200: OK
+  } catch (err) {
+    res.status(500); // HTTP Status 500: Internal Server Error
+    result = [{ message: 'Error' }, { error: err }];
+  }
   res.json(result);
   return;
+});
+
+// Create a table
+app.post('/api/post/new', async (req, res) => {
+  let postData = JSON.stringify(req.body);
+  let parsedData = JSON.parse(postData);
+  let data;
+
+  let name = parsedData.name;
+
+  console.log(`Got a POST request for a new table for user: ${name}`);
+
+  try {
+    const conn = await pool.getConnection();
+    result = await conn.execute(
+      `CREATE TABLE ${name}(
+         name VARCHAR(255),
+         time TIME,
+         date DATE,
+         highscore INT,
+         coins INT);`);
+
+    await conn.execute(`ALTER TABLE \`${name}\` CHANGE \`time\` \`time\` TIME NULL DEFAULT '00:00:00';`);
+    await conn.execute(`ALTER TABLE \`${name}\` CHANGE \`date\` \`date\` DATE NULL DEFAULT '1970-01-01';`);
+    conn.release();
+    res.status(201); // HTTP Status 201: Created
+    data = [{ message: 'Message received' }];
+  } catch (err) {
+    res.status(500); // HTTP Status 500: Internal Server Error
+    data = [{ message: 'Error' }, { error: err }];
+  }
+  res.json(data);
+});
+
+// Insert into a table
+app.post('/api/post/insert', async (req, res) => {
+  console.log("Got a POST request");
+
+  let postData = JSON.stringify(req.body);
+  let parsedData = JSON.parse(postData);
+  let data;
+
+  let currentDate = new Date();
+  let day = currentDate.getDate(); // Get the day of the month
+  let month = currentDate.getMonth() + 1; // Get the month (0-11, so add 1 to get 1-12)
+  let year = currentDate.getFullYear(); // Get the year
+  let hours = currentDate.getHours(); // Get the hours
+  let minutes = currentDate.getMinutes(); // Get the minutes
+  let seconds = currentDate.getSeconds(); // Get the seconds
+
+  let name = parsedData.name;
+  let time = `${hours}:${minutes}:${seconds}`; // Format the time
+  let date = `${year}-${month}-${day}`; // Format the date
+  let highscore = parsedData.highscore;
+  let coins = parsedData.coins;
+
+  try {
+    const conn = await pool.getConnection();
+    result = await conn.execute(
+      `INSERT INTO ${name} (name, time, date, highscore, coins)
+        VALUES ('${name}', '${time}', '${date}', '${highscore}', '${coins}');`);
+    conn.release();
+    res.status(202); // HTTP Status 202: Accepted
+    data = [{ message: 'Message received' }];
+  } catch (err) {
+    res.status(500); // HTTP Status 500: Internal Server Error
+    data = [{ message: 'Error' }, { error: err }];
+  }
+  res.json(data);
 });
 
 // Test the API
 app.get('/api/test', (req, res) => {
   const data = [{ message: 'API Success' }, { success: true }];
   res.status(200); // HTTP Status 200: OK
-  res.json(data);
-});
-
-// POST request voorbeeld NOTE:gebruik x-www-form-urlencoded (formdata)
-app.post('/api/post', async (req, res) => {
-  console.log("Got a POST request");
-  console.log(req.body);
-  const data = [{ message: 'Message received' }];
-  res.status(201); // HTTP Status 201: Created
   res.json(data);
 });
 
@@ -61,3 +132,7 @@ app.get('/*', (req, res) => {
 app.listen(8080, () => {
   console.log('Server is listening at port 8080...');
 });
+
+// Database query, addition, deletion, update,
+
+// SQL: NAAM, TIJD, DATUM, HIGHSCORE, COINS

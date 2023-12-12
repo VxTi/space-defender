@@ -65,7 +65,7 @@ class EntityWizard extends Entity {
             }
         }
 
-        // NOTE: if statement of dit nodig is. Dit maakt onPeriodicUpdate O(#entitys) tijds complex.
+        // NOTE: if statement of dit nodig is. Dit maakt onPeriodicUpdate O(entitys) tijds complex.
         Environment.entities.forEach(e => {
             if (this.#isTargetValid(e) && this.target == null) // Select the target if the entity hasn't focused yet
                 this.target = e;

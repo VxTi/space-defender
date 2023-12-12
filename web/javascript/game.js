@@ -38,11 +38,10 @@ let timePhase = 0; // used for timed animations.
 
 var gameActive = false;
 
-const Difficulties = ['Easy', 'Normal', 'Hard'];
+const Difficulties = ['Easy', 'Normal', 'Hard', 'Extreme'];
 let difficulty = 0;
 
 clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
-isWithinBounds = function(x, a, b) { return x >= a && x <= b; }
 
 /** This function is called before the setup function.
  *  This can be used to load images for resources.
@@ -98,7 +97,6 @@ function setup() {
 
     Environment.generate();            // generate environment
     Environment.introduce(player); // add player to the environment
-    //Environment.introduce(new EntityWizard(10, terrainHeight + 5, 5));
     Environment.introduce(new EntityWizard(10, 30, 4));
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 

@@ -19,7 +19,8 @@ field1=value1&field2=value2
 
 !!! example "Voorbeeld van een POST request naar de API met JavaScript"
     ```js
-    const apiUrl = 'http://localhost:8080/api/test';
+
+    const apiUrl = "http://localhost:8080/api/test";
 
     // URL getting the data from a specific user:
     const apiUrl = 'http://localhost:8080/api/get/user';
@@ -43,6 +44,7 @@ field1=value1&field2=value2
     } catch (error) {
         console.error('Error:', error);
     }
+
     ```
 
 !!! info "Methode"
@@ -205,7 +207,7 @@ De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de sta
 ## Alle API DELETE requests
 
 
-    
+
 ### Leeg de tabel 'userdata'
 
 Om de tabel 'userdata' leeg te maken, stuur je een DELETE request naar de volgende URL: `127.0.0.1:8080/api/delete/table`. De API verwacht geen postData. De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de status van de request. Het JSON object ziet er als volgt uit:

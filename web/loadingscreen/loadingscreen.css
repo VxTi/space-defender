@@ -1,0 +1,43 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f1f1f1;
+    flex-direction: column; /* Added to stack items vertically */
+}
+
+/* Loading spinner */
+.loader {
+    border: 16px solid #f3f3f3;
+    border-top: 16px solid #3498db;
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    animation: spinAndScale 1.5s linear infinite;
+    position: relative;
+    margin-bottom: 20px; /* Added to create space between the spinner and the text */
+}
+
+/* Loading text */
+.loading-text {
+    font-size: 20px;
+    color: #3498db;
+    text-align: center;
+}
+
+.fade-out {
+    animation: fadeOut 1s;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes spinAndScale {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.3); }
+    100% { transform: rotate(360deg) scale(1); }
+}

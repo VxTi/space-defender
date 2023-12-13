@@ -1,6 +1,6 @@
 # API Documentatie
 
-## Hoe gebruik je de API?
+# Hoe gebruik je de API?
 
 Om de API te gebruiken, moet je eerst de API starten. Dit doe je door het volgende commando uit te voeren in de terminal:
 
@@ -48,11 +48,11 @@ field1=value1&field2=value2
 !!! info "Methode"
     Dit voorbeeld gebruikt fetch om een POST request te sturen naar de API. Je kunt met andere methodes verbinding maken met de API, maar dit is de manier die de game zal gebruiken om met de API te communiceren.
 
-## Beveiliging
+# Beveiliging
 
 De API is niet beveiligd met een API key. Dit is geen probleem, omdat de API alleen gebruikt wordt door de game zelf. De game is niet openbaar, en de URL is niet openbaar. De API is dus alleen te gebruiken door de game zelf. De API is tevens wel beveiligd tegen SQL injecties. Dit betekent dat de API niet te gebruiken is om de database te hacken. Dit is eigenlijk ook niet nodig, omdat we zeker weten dat de API alleen gebruikt wordt door de game zelf, maar we vonden het 'good practice' om de API te beveiligen tegen SQL injecties. Daarnaast was het ook een leuk onderwerp om te leren.
 
-## HTTP status codes
+# HTTP status codes
 
 De API zal HTTP status codes terugsturen. Deze status codes geven aan als de request succesvol is, of als er een error is opgetreden. De volgende HTTP status codes kunnen terug gestuurd worden:
 
@@ -71,10 +71,9 @@ De API zal HTTP status codes terugsturen. Deze status codes geven aan als de req
 !!! danger "Status 500: Internal Server Error"
     De request is niet succesvol uitgevoerd. Er is een error opgetreden in de database. De API zal een JSON object terugsturen met de error.
 
+# Alle API GET requests
 
-## Alle API GET requests
-
-### Verkrijg de data van alle gebruikers
+## Verkrijg de data van alle gebruikers
 
 Om de data van alle gebruikers te verkrijgen, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/allusers`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met alle data van alle gebruikers. Het JSON object ziet er als volgt uit:
 
@@ -95,7 +94,7 @@ Om de data van alle gebruikers te verkrijgen, stuur je een GET request naar de v
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
-### Verkrijg de data van een specifieke gebruiker
+## Verkrijg de data van een specifieke gebruiker
 
 Om de data van een specifieke gebruiker te verkrijgen, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/user`. De API verwacht postData dat er als volgt uit ziet:
 
@@ -122,7 +121,7 @@ De API zal een HTTP status 200 (OK) terugsturen, en een JSON object met alle dat
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
-### Verkrijg gebruiker met de hoogste score
+## Verkrijg gebruiker met de hoogste score
 
 Om de gebruiker te verkrijgen die de hoogste score heeft, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/highscore`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de gebruiker die de hoogste score heeft. Het JSON object ziet er als volgt uit:
 
@@ -139,7 +138,7 @@ Om de gebruiker te verkrijgen die de hoogste score heeft, stuur je een GET reque
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
-### Verkrijg de gebruiker met de meeste coins
+## Verkrijg de gebruiker met de meeste coins
 
 Om de gebruiker te verkrijgen die de meeste coins heeft, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/mostcoins`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de gebruiker die de meeste coins heeft. Het JSON object ziet er als volgt uit:
 
@@ -156,7 +155,7 @@ Om de gebruiker te verkrijgen die de meeste coins heeft, stuur je een GET reques
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
-### Test de API
+## Test de API
 
 Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8080/api/test'. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de status van de request. Het JSON object ziet er als volgt uit:
 
@@ -173,9 +172,9 @@ Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8
 !!! tip "Test de API"
     Het is verstandig om deze functie te gebruiken als je even snel wilt weten als de verbinding met de API wel werkt.
 
-## Alle API POST requests
+# Alle API POST requests
 
-### Creeër data voor een gebruiker
+## Creeër data voor een gebruiker
 
 Om data voor een gebruiker te creeëren, stuur je een POST request naar de volgende URL: `127.0.0.1:8080/api/post/insert`. De API verwacht postData dat er als volgt uit ziet:
 
@@ -198,9 +197,9 @@ De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de sta
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
-## Alle API DELETE requests
+# Alle API DELETE requests
 
-### Verwijder een gebruiker
+## Verwijder een gebruiker
 
 Om een gebruiker te verwijderen, stuur je een DELETE request naar de volgende URL: `127.0.0.1:8080/api/delete/user`. De API verwacht postData dat er als volgt uit ziet:
 

@@ -16,16 +16,17 @@
             document.getElementById('submitButton').addEventListener('click', async () => {
                 const inputValue = document.getElementById('textInput').value;
 
-                // Your API endpoint URL
-                const apiUrl = 'http://localhost:8080/api/post';
+                // URL getting the data from a specific user
+                const apiUrl = 'http://localhost:8080/api/get/user';
+                const name = "EXAMPLE";
 
                 try {
                     const response = await fetch(apiUrl, {
-                        method: 'POST',
+                        method: 'POST', // Send a post request, this can be GET, POST, PUT, DELETE, etc.
                         headers: {
                             'Content-Type': 'application/form-data', // Sending a string as form data
                         },
-                        body: `name=${name}`, // Sending the string as JSON
+                        body: `name=${name}`, // Content of the request
                     });
 
                     if (response.ok) {
@@ -33,6 +34,7 @@
                     } else {
                         console.error('Error sending string to the API');
                     }
+                    const data = await response.json(); // Get the response as JSON
                 } catch (error) {
                     console.error('Error:', error);
                 }

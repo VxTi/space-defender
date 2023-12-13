@@ -218,7 +218,7 @@ api.post('/api/post/insert', async (req, res) => {
 });
 
 // Delete all user data
-api.delete('/api/delete/flush', async (req, res) => {
+api.delete('/api/delete/table', async (req, res) => {
 
   consoleLog("DELETE", `deleting all user data`); // Log the request
 
@@ -227,7 +227,7 @@ api.delete('/api/delete/flush', async (req, res) => {
     let sql = `DELETE FROM \`userdata\`;`; // SQL query
     await conn.query(sql); // Execute the query
 
-    result = [{ message: 'Message received' }]
+    result = [{ message: 'Table deleted' }]
     conn.release(); // Release the connection
     res.status(202); // // HTTP Status 202: Accepted
   } catch (err) {

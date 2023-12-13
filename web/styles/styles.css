@@ -6,8 +6,9 @@
 
 :root {
     --background-color: #414141;
-    --button-width: 400px;
-    --button-height: 30px;
+    --button-width: 700px;
+    --button-height: 50px;
+    --font-size: 30px;
 }
 
 body, html {
@@ -86,6 +87,7 @@ body, html {
     border-radius: 3px;
     color: white;
     font-family: minecraft-font, serif;
+    font-size: var(--font-size);
     background-color: #606060;
     cursor: pointer;
 }

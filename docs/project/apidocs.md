@@ -44,13 +44,33 @@ field1=value1&field2=value2
     }
 
     ```
-
+    ```
 !!! info "Methode"
     Dit voorbeeld gebruikt fetch om een POST request te sturen naar de API. Je kunt met andere methodes verbinding maken met de API, maar dit is de manier die de game zal gebruiken om met de API te communiceren.
 
 ## Beveiliging
 
 De API is niet beveiligd met een API key. Dit is geen probleem, omdat de API alleen gebruikt wordt door de game zelf. De game is niet openbaar, en de URL is niet openbaar. De API is dus alleen te gebruiken door de game zelf. De API is tevens wel beveiligd tegen SQL injecties. Dit betekent dat de API niet te gebruiken is om de database te hacken. Dit is eigenlijk ook niet nodig, omdat we zeker weten dat de API alleen gebruikt wordt door de game zelf, maar we vonden het 'good practice' om de API te beveiligen tegen SQL injecties. Daarnaast was het ook een leuk onderwerp om te leren.
+
+## HTTP status codes
+
+De API zal HTTP status codes terugsturen. Deze status codes geven aan als de request succesvol is, of als er een error is opgetreden. De volgende HTTP status codes kunnen terug gestuurd worden:
+
+!!! info "Status 200: OK"
+    De request is succesvol uitgevoerd. De API zal de data terugsturen die je hebt opgevraagd.
+
+!!! success "Status 201: Created"
+    De request is succesvol uitgevoerd. De API heeft de data succesvol toegevoegd aan de database.
+
+!!! success "Status 202: Accepted"
+    De request is succesvol uitgevoerd. De API heeft de data succesvol verwijderd uit de database.
+
+!!! warning "Status 404: Not Found"
+    De request is niet succesvol uitgevoerd. De URL die je hebt gebruikt bestaat niet.
+
+!!! danger "Status 500: Internal Server Error"
+    De request is niet succesvol uitgevoerd. Er is een error opgetreden in de database. De API zal een JSON object terugsturen met de error.
+
 
 ## Alle API GET requests
 
@@ -155,32 +175,6 @@ Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8
 
 ## Alle API POST requests
 
-### Creeër een nieuwe tabel in de database
-
-Om een nieuwe tabel in de database te creeëren, stuur je een POST request naar de volgende URL: `127.0.0.1:8080/api/post/newtable`. De API verwacht postData dat er als volgt uit ziet:
-
-```postData
-name=VOORBEELD
-```
-
-De API zal HTTP status 201 (Created) terugsturen, en een JSON object met de status van de request. Het JSON object ziet er als volgt uit:
-
-```json
-[
-    [
-        {
-            "message": "Table created"
-        }
-    ]
-]
-```
-
-!!! note "Errors"
-    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
-
-!!! warning "Let op"
-    Houdt er rekening mee dat de tabelnaam niet mag beginnen met een cijfer, en dat de tabelnaam niet langer mag zijn dan 64 karakters. Deze functie zit er alleen in voor het geval dat er een nieuwe tabel nodig is. Verwacht niet dat deze functie vaak gebruikt zal worden.
-
 ### Creeër data voor een gebruiker
 
 Om data voor een gebruiker te creeëren, stuur je een POST request naar de volgende URL: `127.0.0.1:8080/api/post/insert`. De API verwacht postData dat er als volgt uit ziet:
@@ -206,15 +200,21 @@ De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de sta
 
 ## Alle API DELETE requests
 
-### Leeg de tabel 'userdata'
+### Verwijder een gebruiker
 
-Om de tabel 'userdata' leeg te maken, stuur je een DELETE request naar de volgende URL: `127.0.0.1:8080/api/delete/table`. De API verwacht geen postData. De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de status van de request. Het JSON object ziet er als volgt uit:
+Om een gebruiker te verwijderen, stuur je een DELETE request naar de volgende URL: `127.0.0.1:8080/api/delete/user`. De API verwacht postData dat er als volgt uit ziet:
+
+```postData
+name=VOORBEELD
+```
+
+De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de status van de request. Het JSON object ziet er als volgt uit:
 
 ```json
 [
     [
         {
-            "message": "Table deleted"
+            "message": "User deleted"
         }
     ]
 ]
@@ -224,4 +224,4 @@ Om de tabel 'userdata' leeg te maken, stuur je een DELETE request naar de volgen
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
 !!! danger "Waarschuwing"
-    Met deze actie zal alle data in de tabel 'userdata', en de tabel zelf verwijderd worden. Deze actie kan niet ongedaan gemaakt worden. Wees hier dus voorzichtig mee.
+    Met deze actie zal alle data van de gebruiker verwijderd worden. Deze actie kan niet ongedaan gemaakt worden. Wees hier dus voorzichtig mee.

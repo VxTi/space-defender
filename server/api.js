@@ -106,6 +106,8 @@ api.get('/api/get/allusers', async (req, res) => {
   return;
 });
 
+
+
 // Get user data of a specific user
 api.get('/api/get/user', async (req, res) => {
 
@@ -134,6 +136,8 @@ api.get('/api/get/user', async (req, res) => {
   res.json(result); // Send the response
   return;
 });
+
+
 
 // Get the user with the highest score
 api.get('/api/get/highscore', async (req, res) => {
@@ -168,6 +172,8 @@ api.get('/api/get/highscore', async (req, res) => {
   return;
 });
 
+
+
 // Get the user with the most coins
 api.get('/api/get/mostcoins', async (req, res) => {
   consoleLog("GET", "the most coins"); // Log the request
@@ -201,55 +207,6 @@ api.get('/api/get/mostcoins', async (req, res) => {
   return;
 });
 
-// Create a new table (SHOULD ONLY BE USED ONCE)
-api.post('/api/post/newtable', async (req, res) => {
-
-  // Get the data from the request:
-  let postData = JSON.stringify(req.body);
-  let parsedData = JSON.parse(postData);
-
-  // Get the data from the parsed data:
-  let name = parsedData.name;
-  let data;
-
-  consoleLog("POST", `a new table ${name}`); // Log the request
-
-  try {
-    const conn = await pool.getConnection(); // Get a connection from the pool
-
-    // Create a new table for the user:
-    let createTableSql = `CREATE TABLE ?? (
-                            name VARCHAR(255),
-                            time TIME,
-                            date DATE,
-                            highscore INT,
-                            coins INT);`;
-
-    let createTableInserts = [name]; // Using the ?? to prevent SQL injection
-    createTableSql = mysql.format(createTableSql, createTableInserts); // Format the SQL query
-    result = await conn.query(createTableSql); // Execute the query
-
-    // Set time and date to default values:
-    let alterTimeSql = `ALTER TABLE ?? CHANGE \`time\` \`time\` TIME NULL DEFAULT '00:00:00';`; // SQL query
-    let alterTimeInserts = [name]; // Using the ?? to prevent SQL injection
-    alterTimeSql = mysql.format(alterTimeSql, alterTimeInserts); // Format the SQL query
-    await conn.query(alterTimeSql); // Execute the query
-
-    let alterDateSql = `ALTER TABLE ?? CHANGE \`date\` \`date\` DATE NULL DEFAULT '1970-01-01';`; // SQL query
-    let alterDateInserts = [name]; // Using the ?? to prevent SQL injection
-    alterDateSql = mysql.format(alterDateSql, alterDateInserts); // Format the SQL query
-    await conn.query(alterDateSql); // Execute the query
-
-    conn.release(); // Release the connection
-    res.status(201); // HTTP Status 201: Created
-    data = [{ message: 'Table created' }];
-  } catch (err) {
-    res.status(500); // HTTP Status 500: Internal Server Error
-    data = [{ message: 'Error' }, { error: err }];
-  }
-  res.json(data); // Send the response
-});
-
 
 
 // Insert user data
@@ -279,7 +236,7 @@ api.post('/api/post/insert', async (req, res) => {
     conn.release(); // Release the connection
 
     // Send a response:
-    res.status(202); // HTTP Status 202: Accepted
+    res.status(201); // HTTP Status 201: Created
     data = [{ message: 'Data inserted' }];
   } catch (err) {
     res.status(500); // HTTP Status 500: Internal Server Error
@@ -288,17 +245,28 @@ api.post('/api/post/insert', async (req, res) => {
   res.json(data); // Send the response
 });
 
-// Delete all user data
-api.delete('/api/delete/table', async (req, res) => {
 
-  consoleLog("DELETE", `deleting all user data`); // Log the request
+
+// Delete user data of a specific user
+api.delete('/api/delete/user', async (req, res) => {
+  
+  // Get the data from the request:
+  let postData = JSON.stringify(req.body);
+  let parsedData = JSON.parse(postData);
+  
+  // Get the data from the parsed data:
+  let name = parsedData.name;
+
+  consoleLog("DELETE", `deleting user data for: ${name}`); // Log the request
 
   try {
     const conn = await pool.getConnection(); // Get a connection from the pool
-    let sql = `DELETE FROM \`userdata\`;`; // SQL query
+    let sql = `DELETE FROM \`userdata\` WHERE name = ?;`; // SQL query
+    let inserts = [name]; // Using the ? to prevent SQL injection
+    sql = mysql.format(sql, inserts); // Format the SQL query
     await conn.query(sql); // Execute the query
 
-    result = [{ message: 'Table deleted' }]
+    result = [{ message: `User data deleted for user: ${name}` }]
     conn.release(); // Release the connection
     res.status(202); // // HTTP Status 202: Accepted
   } catch (err) {
@@ -308,6 +276,8 @@ api.delete('/api/delete/table', async (req, res) => {
   res.json(result); // Send the response
   return;
 });
+
+
 
 // Test the API
 api.get('/api/test', (req, res) => {
@@ -319,7 +289,7 @@ api.get('/api/test', (req, res) => {
 
 
 
-// Default (wrong URL) 
+// Default (wrong URL(GET)) 
 api.get('/*', (req, res) => {
   consoleLog("GET", "wrong URL"); // Log the request
   const data = [{ message: 'Wrong URL' }];
@@ -327,6 +297,9 @@ api.get('/*', (req, res) => {
   res.json(data); // Send the response
 });
 
+
+
+// Default (wrong URL(POST))
 api.post('/*', (req, res) => {
   consoleLog("POST", "wrong URL"); // Log the request
   const data = [{ message: 'Wrong URL' }];

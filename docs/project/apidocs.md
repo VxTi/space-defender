@@ -18,7 +18,7 @@ field1=value1&field2=value2
     Als je een niet bestaande URL probeert te gebruiken, zal de API HTTP status 404 (Not Found) terugsturen, en een JSON object waarin staat dat de URL niet bestaat.
 
 !!! example "Voorbeeld van een POST request naar de API met JavaScript"
-    ``js
+    ```js
 
     const apiUrl = "http://localhost:8080/api/test";
 
@@ -45,7 +45,7 @@ field1=value1&field2=value2
         console.error('Error:', error);
     }
 
-    ``
+    ```
 
 !!! info "Methode"
     Dit voorbeeld gebruikt fetch om een POST request te sturen naar de API. Je kunt met andere methodes verbinding maken met de API, maar dit is de manier die de game zal gebruiken om met de API te communiceren.

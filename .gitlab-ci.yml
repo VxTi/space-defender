@@ -2,9 +2,6 @@ image: python:3.9-slim
 
 before_script:
   - time apt update
-  - time apt install -y git
-  - time apt install -y gcc
-  - time apt install -y python3-dev
   - time pip install -r requirements.txt
   - time cd mdocotion && python setup.py install && cd ..
 

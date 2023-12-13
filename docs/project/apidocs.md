@@ -14,8 +14,8 @@ De API zal nu draaien op localhost:8080. De API is nu klaar voor gebruik. De API
 field1=value1&field2=value2
 ```
 
-> [!NOTE]
-> Als je een niet bestaande URL probeert te gebruiken, zal de API HTTP status 404 (Not Found) terugsturen, en een JSON object waarin staat dat de URL niet bestaat.
+!!! note
+    Als je een niet bestaande URL probeert te gebruiken, zal de API HTTP status 404 (Not Found) terugsturen, en een JSON object waarin staat dat de URL niet bestaat.
 
 ## Beveiliging
 
@@ -41,8 +41,8 @@ Om de data van alle gebruikers te verkrijgen, stuur je een GET request naar de v
 ]
 ```
 
-> [!NOTE]
-> Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
+!!! note
+    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
 ### Verkrijg de data van een specifieke gebruiker
 
@@ -68,8 +68,8 @@ De API zal een HTTP status 200 (OK) terugsturen, en een JSON object met alle dat
 ]
 ```
 
-> [!NOTE]
-> Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
+!!! note
+    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
 ## Alle API POST requests
 
@@ -93,10 +93,11 @@ De API zal HTTP status 201 (Created) terugsturen, en een JSON object met de stat
 ]
 ```
 
-> [!NOTE]
-> Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
-> [!IMPORTANT]
-> Houdt er rekening mee dat de tabelnaam niet mag beginnen met een cijfer, en dat de tabelnaam niet langer mag zijn dan 64 karakters. Deze functie zit er alleen in voor het geval dat er een nieuwe tabel nodig is. Verwacht niet dat deze functie vaak gebruikt zal worden.
+!!! note
+    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
+
+!!! warning
+    Houdt er rekening mee dat de tabelnaam niet mag beginnen met een cijfer, en dat de tabelnaam niet langer mag zijn dan 64 karakters. Deze functie zit er alleen in voor het geval dat er een nieuwe tabel nodig is. Verwacht niet dat deze functie vaak gebruikt zal worden.
 
 ### Creeër data voor een gebruiker
 
@@ -118,8 +119,8 @@ De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de sta
 ]
 ```
 
-> [!NOTE]
-> Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
+!!! note
+    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
 ## Alle API DELETE requests
 
@@ -137,7 +138,8 @@ Om de tabel 'userdata' leeg te maken, stuur je een DELETE request naar de volgen
 ]
 ```
 
-> [!NOTE]
-> Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
-> [!CAUTION]  
-> Met deze actie zal alle data in de tabel 'userdata' verwijderd worden. Deze actie kan niet ongedaan gemaakt worden. Wees hier dus voorzichtig mee.
+!!! note
+    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
+
+!!! danger
+    Met deze actie zal alle data in de tabel 'userdata' verwijderd worden. Deze actie kan niet ongedaan gemaakt worden. Wees hier dus voorzichtig mee.

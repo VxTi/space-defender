@@ -20,10 +20,8 @@ field1=value1&field2=value2
 !!! example "Voorbeeld van een POST request naar de API met JavaScript"
     ```js
 
-    const apiUrl = "http://localhost:8080/api/test";
-
     // URL getting the data from a specific user:
-    const apiUrl = 'http://localhost:8080/api/get/user';
+    const apiUrl = "http://localhost:8080/api/get/user";
     const name = "EXAMPLE";
 
     try {

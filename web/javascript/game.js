@@ -123,7 +123,7 @@ function draw() {
     background(0);
 
     // Filthy javascript coding ...
-    player.direction.translate((-keyIsDown(65) + keyIsDown(68)) * (1 - 0.5 * keyIsDown(16)), keyIsDown(32) * 1);
+    player.move((-keyIsDown(65) + keyIsDown(68)) * (1 - 0.5 * keyIsDown(16)), keyIsDown(32) * 1);
 
     // Saves current matrix and pushes it on top of the stack
     push();
@@ -157,39 +157,6 @@ function draw() {
     Environment.draw(dT);
 
 }
-
-async function connectSerial() {
-    try {
-        port = await navigator.serial.requestPort(); // Open the port
-        await port.open({ baudRate: 115200 });
-        readLoop(); // Start the infinite read loop.
-    } catch (error) {
-        console.log(`Serial connection error: ${error}`);
-    }
-}
-
-async function readLoop() {
-    while (true) {
-        while (port.readable) {
-            const reader = port.readable.getReader();
-            try {
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) {
-                        console.log("Readloop canceled.");
-                        break;
-                    }
-                    console.log(`Value red: ${value}`)
-                }
-            } catch (error) {
-                console.log(`Serial read error: ${error}`);
-            } finally {
-                reader.releaseLock();
-            }
-        }
-    }
-}
-
 
 /**
  * Method for rendering a health-bar above an entity.

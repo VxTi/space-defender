@@ -61,7 +61,7 @@ class EntityWizard extends Entity {
 
                 // Entity is close enough to do damage
                 // NOTE: bad practice omditzo te doen. Ik zou een global damage controler maken die dit doet voor je.
-                this.target.damage(this.strength * 0.5, 'entityWizardAttack');
+                this.target.damage(this.strength * 0.5);
             }
         }
 

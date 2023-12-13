@@ -84,5 +84,17 @@ class Vec2 {
         let mag = this.magnitude;
         return new Vec2(this.x / mag, this.y / mag); // Returning a normalized vector
     }
+
+    //  measures distance squared to the other vector
+    distSq(other) {
+        if (!(other instanceof Vec2))
+            return 0;
+        return (this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y);
+    }
+
+    // measures distance to the other vector
+    dist(other) {
+        return Math.sqrt(this.distSq(other));
+    }
 }
 

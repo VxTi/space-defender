@@ -14,6 +14,8 @@ class AABB {
     #bottom;
     #width;
     #height;
+    #x;
+    #y;
 
     /**
      * Creates an AABB with specified dimensions.
@@ -21,55 +23,56 @@ class AABB {
      * @param {number} y - Y-coordinate of the top-left corner.
      * @param {number} width - Width of the AABB.
      * @param {number} height - Height of the AABB.
+     * The AABB is lined up like the following:
+     *    .---.
+     *    |   |
+     *    '.|.'
      */
     constructor(x, y, width, height) {
-        this.#left = x;
-        this.#top = y;
-        this.#right = x + width;
-        this.#bottom = y + height;
+        this.#x = x;
+        this.#y = y;
+        this.#left = x - width / 2;
+        this.#top = y + height;
+        this.#right = x + width / 2;
+        this.#bottom = y;
         this.#width = width;
         this.#height = height;
     }
 
-    // Getter and setter methods for width and height
-    set width(w) {
-        this.#width = w;
-        this.#right = this.#left + w;
-    }
 
-    set height(h) {
-        this.#height = h;
-        this.#bottom = this.#top + h;
-    }
-
-    get width() { return this.#width; }
-    get height() { return this.#height; }
 
     // Returns a copy of this Environment
     get copy() {
         return new AABB(this.#left, this.#top, this.#width, this.#height);
     }
 
-    // Function for translating the X coordinate of the Environment
+    /**
+     * Function for translating the X coordinate of the Environment
+     * @param {number} newX: The X position to translate to
+     */
     translateX(newX) {
-        this.#left = newX;
-        this.#right = newX + this.#width;
+        this.#x = newX;
+        this.#left = newX - this.#width / 2;
+        this.#right = newX + this.#width / 2;
         return this;
     }
 
     // Function for translating the Y coordinate of the Environment
     translateY(newY) {
-        this.#top = newY;
-        this.#bottom = newY + this.#height;
+        this.#y = newY;
+        this.#top = newY + this.#height;
+        this.#bottom = newY;
         return this;
     }
 
     // Function for translating the XY position of the Environment.
     translate(newX, newY) {
-        this.#left = newX;
-        this.#top = newY;
-        this.#right = newX + this.#width;
-        this.#bottom = newY + this.#height;
+        this.#x = newX;
+        this.#y = newY;
+        this.#left = newX - this.#width / 2;
+        this.#top = newY + this.#height;
+        this.#right = newX + this.#width / 2;
+        this.#bottom = newY;
         return this;
     }
 
@@ -90,10 +93,36 @@ class AABB {
             && this.#right >= boundingBox.#left && this.#left <= boundingBox.#right;
     }
 
+    get position() {
+        return new Vec2(this.#x, this.#y);
+    }
 
-    // Getters and setters for left and top properties
+    // Getters and setters for edge properties
     get left() { return this.#left; }
     set left(value) { this.#left = value; }
     get top() { return this.#top; }
     set top(value) { this.#top = value; }
+    get right() { return this.#right; }
+    set right(value) { this.#right = value; }
+    get bottom() { return this.#bottom; }
+    set bottom(value) { this.#bottom = value; }
+    get x() { return this.#x; }
+    get y() { return this.#y; }
+
+
+    // Getter and setter methods for width and height
+    set width(w) {
+        this.#width = w;
+        this.#left = this.#x - w / 2;
+        this.#right = this.#x + w / 2;
+    }
+
+    set height(h) {
+        this.#height = h;
+        this.#top = this.#y + h;
+        this.#bottom = h;
+    }
+
+    get width() { return this.#width; }
+    get height() { return this.#height; }
 }

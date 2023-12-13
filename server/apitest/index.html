@@ -23,14 +23,13 @@
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json', // Set the appropriate content type
+                            'Content-Type': 'application/form-data', // Sending a string as form data
                         },
-                        body: JSON.stringify({ message: inputValue }), // Sending the string as JSON
+                        body: `name=${name}`, // Sending the string as JSON
                     });
 
                     if (response.ok) {
                         console.log('String sent successfully');
-                        // Optionally, do something with the response if needed
                     } else {
                         console.error('Error sending string to the API');
                     }

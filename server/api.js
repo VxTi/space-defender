@@ -235,7 +235,7 @@ api.delete('/api/delete/flush', async (req, res) => {
 // Test the API
 api.get('/api/test', (req, res) => {
   consoleLog("GET", "test"); // Log the request
-  const data = [{ message: 'API Success' }, { success: true }];
+  const data = [{ message: 'API Success' }];
   res.status(200); // HTTP Status 200: OK
   res.json(data); // Send the response
 });

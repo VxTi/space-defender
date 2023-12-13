@@ -38,6 +38,11 @@ function getTime() {
   let minutes = currentDate.getMinutes(); // Get the minutes
   let seconds = currentDate.getSeconds(); // Get the seconds
 
+  // Format the time properly (add a 0 if the hours, minutes or seconds contains only 1 digit):
+  if (hours < 10) { hours = `0${hours}`; } // Add a 0 if the hours are less than 10
+  if (minutes < 10) { minutes = `0${minutes}`; } // Add a 0 if the minutes are less than 10
+  if (seconds < 10) { seconds = `0${seconds}`; } // Add a 0 if the seconds are less than 10
+
   let time = `${hours}:${minutes}:${seconds}`; // Format the time
 
   return time;
@@ -75,7 +80,7 @@ function consoleLog(request, description) {
   let date = getDateNL();
 
   // Log the request:
-  console.log(`[${date}, ${time}]: Got a ${request} request for ${description}.`);
+  console.log(`[${time}, ${date}]: Got a ${request} request for ${description}.`);
 }
 
 /*========================*\
@@ -122,6 +127,72 @@ api.get('/api/get/user', async (req, res) => {
 
     conn.release(); // Release the connection
     res.status(200); // HTTP Status 200: OK
+  } catch (err) {
+    res.status(500); // HTTP Status 500: Internal Server Error
+    result = [{ message: 'Error' }, { error: err }];
+  }
+  res.json(result); // Send the response
+  return;
+});
+
+// Get the user with the highest score
+api.get('/api/get/highscore', async (req, res) => {
+  consoleLog("GET", "the highest score"); // Log the request
+
+  try {
+    const conn = await pool.getConnection(); // Get a connection from the pool
+    let sql = `SELECT MAX(highscore) FROM \`userdata\`;`; // SQL query
+    maxresult = await conn.query(sql); // Execute the query
+
+    // Now get the name of the user with the highest score:
+    let highscore = maxresult[0][0]['MAX(highscore)']; // Get the highest score
+    let sql2 = `SELECT name FROM \`userdata\` WHERE highscore = ?;`; // SQL query
+    let inserts = [highscore]; // Using the ? to prevent SQL injection
+    sql2 = mysql.format(sql2, inserts); // Format the SQL query
+    result = await conn.query(sql2); // Execute the query
+
+    conn.release(); // Release the connection
+    res.status(200); // HTTP Status 200: OK
+
+    // Combine the results:
+    resultJson = JSON.parse(JSON.stringify(result[0][0])); // Convert the result to JSON
+    maxresultJson = JSON.parse(JSON.stringify(maxresult[0][0])); // Convert the result to JSON
+    resultJson['MAX(highscore)'] = maxresultJson['MAX(highscore)']; // Add the highscore to the result
+    result = resultJson; // Set the result to the combined result
+
+  } catch (err) {
+    res.status(500); // HTTP Status 500: Internal Server Error
+    result = [{ message: 'Error' }, { error: err }];
+  }
+  res.json(result); // Send the response
+  return;
+});
+
+// Get the user with the most coins
+api.get('/api/get/mostcoins', async (req, res) => {
+  consoleLog("GET", "the most coins"); // Log the request
+
+  try {
+    const conn = await pool.getConnection(); // Get a connection from the pool
+    let sql = `SELECT MAX(coins) FROM \`userdata\`;`; // SQL query
+    maxresult = await conn.query(sql); // Execute the query
+
+    // Now get the name of the user with the most coins:
+    let coins = maxresult[0][0]['MAX(coins)']; // Get the most coins
+    let sql2 = `SELECT name FROM \`userdata\` WHERE coins = ?;`; // SQL query
+    let inserts = [coins]; // Using the ? to prevent SQL injection
+    sql2 = mysql.format(sql2, inserts); // Format the SQL query
+    result = await conn.query(sql2); // Execute the query
+    
+    conn.release(); // Release the connection
+    res.status(200); // HTTP Status 200: OK
+
+    // Combine the results:
+    resultJson = JSON.parse(JSON.stringify(result[0][0])); // Convert the result to JSON
+    maxresultJson = JSON.parse(JSON.stringify(maxresult[0][0])); // Convert the result to JSON
+    resultJson['MAX(coins)'] = maxresultJson['MAX(coins)']; // Add the coins to the result
+    result = resultJson; // Set the result to the combined result
+
   } catch (err) {
     res.status(500); // HTTP Status 500: Internal Server Error
     result = [{ message: 'Error' }, { error: err }];

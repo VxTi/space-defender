@@ -18,7 +18,7 @@ field1=value1&field2=value2
     Als je een niet bestaande URL probeert te gebruiken, zal de API HTTP status 404 (Not Found) terugsturen, en een JSON object waarin staat dat de URL niet bestaat.
 
 !!! example "Voorbeeld van een POST request naar de API met JavaScript"
-    ```js
+    ``js
 
     const apiUrl = "http://localhost:8080/api/test";
 
@@ -45,26 +45,16 @@ field1=value1&field2=value2
         console.error('Error:', error);
     }
 
-    ```
+    ``
 
 !!! info "Methode"
     Dit voorbeeld gebruikt fetch om een POST request te sturen naar de API. Je kunt met andere methodes verbinding maken met de API, maar dit is de manier die de game zal gebruiken om met de API te communiceren.
-
-
-
-
 
 ## Beveiliging
 
 De API is niet beveiligd met een API key. Dit is geen probleem, omdat de API alleen gebruikt wordt door de game zelf. De game is niet openbaar, en de URL is niet openbaar. De API is dus alleen te gebruiken door de game zelf. De API is tevens wel beveiligd tegen SQL injecties. Dit betekent dat de API niet te gebruiken is om de database te hacken. Dit is eigenlijk ook niet nodig, omdat we zeker weten dat de API alleen gebruikt wordt door de game zelf, maar we vonden het 'good practice' om de API te beveiligen tegen SQL injecties. Daarnaast was het ook een leuk onderwerp om te leren.
 
-
-
-
-
 ## Alle API GET requests
-
-
 
 ### Verkrijg de data van alle gebruikers
 
@@ -86,10 +76,6 @@ Om de data van alle gebruikers te verkrijgen, stuur je een GET request naar de v
 
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
-
-
-
-
 
 ### Verkrijg de data van een specifieke gebruiker
 
@@ -118,9 +104,39 @@ De API zal een HTTP status 200 (OK) terugsturen, en een JSON object met alle dat
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
+### Verkrijg gebruiker met de hoogste score
 
+Om de gebruiker te verkrijgen die de hoogste score heeft, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/highscore`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de gebruiker die de hoogste score heeft. Het JSON object ziet er als volgt uit:
 
+```json
+{
+    "name": "NAAM",
+    "MAX(highscore)": 100
+}
+```
 
+!!! tip "Gebruik de hoogste score"
+    Je kunt de hoogste score gebruiken om de nummer 1 op het scorebord te laten zien. Je kunt de hoogste score ook gebruiken om te kijken als de gebruiker een nieuw record heeft gezet. Als de gebruiker een nieuw record heeft gezet, kun je de gebruiker feliciteren met het nieuwe record. Deze functie is toegevoegd zodat de game niet alle data van alle gebruikers hoeft op te halen, en vervolgens de hoogste score te berekenen. Dit scheelt veel tijd en regels code.
+
+!!! note "Errors"
+    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
+
+### Verkrijg de gebruiker met de meeste coins
+
+Om de gebruiker te verkrijgen die de meeste coins heeft, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/mostcoins`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de gebruiker die de meeste coins heeft. Het JSON object ziet er als volgt uit:
+
+```json
+{
+    "name": "NAAM",
+    "MAX(coins)": 100
+}
+```
+
+!!! tip "Gebruik de meeste coins"
+    Je kunt de meeste coins gebruiken om de nummer 1 op het scorebord te laten zien. Je kunt de meeste coins ook gebruiken om te kijken als de gebruiker een nieuw record heeft gezet. Als de gebruiker een nieuw record heeft gezet, kun je de gebruiker feliciteren met het nieuwe record. Deze functie is toegevoegd zodat de game niet alle data van alle gebruikers hoeft op te halen, en vervolgens de meeste coins te berekenen. Dit scheelt veel tijd en regels code.
+
+!!! note "Errors"
+    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
 ### Test de API
 
@@ -139,13 +155,7 @@ Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8
 !!! tip "Test de API"
     Het is verstandig om deze functie te gebruiken als je even snel wilt weten als de verbinding met de API wel werkt.
 
-
-
-
-
 ## Alle API POST requests
-
-
 
 ### Creeër een nieuwe tabel in de database
 
@@ -173,10 +183,6 @@ De API zal HTTP status 201 (Created) terugsturen, en een JSON object met de stat
 !!! warning "Let op"
     Houdt er rekening mee dat de tabelnaam niet mag beginnen met een cijfer, en dat de tabelnaam niet langer mag zijn dan 64 karakters. Deze functie zit er alleen in voor het geval dat er een nieuwe tabel nodig is. Verwacht niet dat deze functie vaak gebruikt zal worden.
 
-
-
-
-
 ### Creeër data voor een gebruiker
 
 Om data voor een gebruiker te creeëren, stuur je een POST request naar de volgende URL: `127.0.0.1:8080/api/post/insert`. De API verwacht postData dat er als volgt uit ziet:
@@ -200,13 +206,7 @@ De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de sta
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
-
-
-
-
 ## Alle API DELETE requests
-
-
 
 ### Leeg de tabel 'userdata'
 

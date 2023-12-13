@@ -1,3 +1,8 @@
+/*========================*\
+|Global variables, settings|
+\*========================*/
+
+
 // Libraries
 const express = require('express');
 const api = express();
@@ -45,6 +50,7 @@ function getDateUS() {
   let month = currentDate.getMonth() + 1; // Get the month (0-11, so add 1 to get 1-12)
   let year = currentDate.getFullYear(); // Get the year
 
+  // MySQL uses the American date format (YYYY-MM-DD), unfortunately...
   let date = `${year}-${month}-${day}`; // Format the date (YYYY-MM-DD) (Amerikaanse notatie, American notation)
 
   return date;

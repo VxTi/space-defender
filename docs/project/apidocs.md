@@ -14,43 +14,17 @@ De API zal nu draaien op localhost:8080. De API is nu klaar voor gebruik. De API
 field1=value1&field2=value2
 ```
 
+!!! tip "Probeer de API"
+    Wij hebben tijdens het ontwikkelen van de API het programma Postman gebruikt. Hierin kun je heel gemakkelijk requests sturen naar de API, en de response bekijken. Dit is heel handig om de API te testen. Je kunt Postman downloaden op de volgende website: [https://www.postman.com/downloads/](https://www.postman.com/downloads/)
+
 !!! note "Niet bestaande URL"
     Als je een niet bestaande URL probeert te gebruiken, zal de API HTTP status 404 (Not Found) terugsturen, en een JSON object waarin staat dat de URL niet bestaat.
-
-!!! example "Voorbeeld van een POST request naar de API met JavaScript"
-    ```js
-
-    // URL getting the data from a specific user:
-    const apiUrl = "http://localhost:8080/api/get/user";
-    const name = "EXAMPLE";
-
-    try {
-        const response = await fetch(apiUrl, {
-            method: 'GET', // Send a post request, this can be GET, POST, PUT, DELETE, etc.
-            headers: {
-                'Content-Type': 'application/form-data', // Sending a string as form data
-            },
-            body: `name=${name}`, // Content of the request
-        });
-
-        if (response.ok) {
-            console.log('String sent successfully');
-        } else {
-            console.error('Error sending string to the API');
-        }
-        const data = await response.json(); // Get the response as JSON
-    } catch (error) {
-        console.error('Error:', error);
-    }
-
-    ```
-
-!!! info "Methode"
-    Dit voorbeeld gebruikt fetch om een POST request te sturen naar de API. Je kunt met andere methodes verbinding maken met de API, maar dit is de manier die de game zal gebruiken om met de API te communiceren.
 
 # Beveiliging
 
 De API is niet beveiligd met een API key. Dit is geen probleem, omdat de API alleen gebruikt wordt door de game zelf. De game is niet openbaar, en de URL is niet openbaar. De API is dus alleen te gebruiken door de game zelf. De API is tevens wel beveiligd tegen SQL injecties. Dit betekent dat de API niet te gebruiken is om de database te hacken. Dit is eigenlijk ook niet nodig, omdat we zeker weten dat de API alleen gebruikt wordt door de game zelf, maar we vonden het 'good practice' om de API te beveiligen tegen SQL injecties. Daarnaast was het ook een leuk onderwerp om te leren.
+
+Misschien dat we in de toekomst de API beveiligen met een API key, maar dit is voor nu niet nodig.
 
 # HTTP status codes
 
@@ -79,15 +53,13 @@ Om de data van alle gebruikers te verkrijgen, stuur je een GET request naar de v
 
 ```json
 [
-    [
-        {
-            "name": "VOORBEELD",
-            "time": "12:00:00",
-            "date": "1970-01-01T23:00:00.000Z",
-            "highscore": 100,
-            "coins": 100
-        }
-    ]
+    {
+        "name": "VOORBEELD",
+        "time": "12:00:00",
+        "date": "1970-01-01T23:00:00.000Z",
+        "score": 100,
+        "coins": 100
+    }
 ]
 ```
 
@@ -106,15 +78,13 @@ De API zal een HTTP status 200 (OK) terugsturen, en een JSON object met alle dat
 
 ```json
 [
-    [
-        {
-            "name": "VOORBEELD",
-            "time": "12:00:00",
-            "date": "1970-01-01T23:00:00.000Z",
-            "highscore": 100,
-            "coins": 100
-        }
-    ]
+    {
+        "name": "VOORBEELD",
+        "time": "12:00:00",
+        "date": "1970-01-01T23:00:00.000Z",
+        "score": 100,
+        "coins": 100
+    }
 ]
 ```
 
@@ -123,13 +93,15 @@ De API zal een HTTP status 200 (OK) terugsturen, en een JSON object met alle dat
 
 ## Verkrijg gebruiker met de hoogste score
 
-Om de gebruiker te verkrijgen die de hoogste score heeft, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/highscore`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de gebruiker die de hoogste score heeft. Het JSON object ziet er als volgt uit:
+Om de gebruiker te verkrijgen die de hoogste score heeft, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/mostscore`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de gebruiker die de hoogste score heeft. Het JSON object ziet er als volgt uit:
 
 ```json
-{
-    "name": "NAAM",
-    "MAX(highscore)": 100
-}
+[
+    {
+        "name": "NAAM",
+        "MAX(score)": 100
+    }
+]
 ```
 
 !!! tip "Gebruik de hoogste score"
@@ -143,14 +115,76 @@ Om de gebruiker te verkrijgen die de hoogste score heeft, stuur je een GET reque
 Om de gebruiker te verkrijgen die de meeste coins heeft, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/mostcoins`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de gebruiker die de meeste coins heeft. Het JSON object ziet er als volgt uit:
 
 ```json
-{
-    "name": "NAAM",
-    "MAX(coins)": 100
-}
+[
+    {
+        "name": "NAAM",
+        "MAX(coins)": 100
+    }
+]
 ```
 
 !!! tip "Gebruik de meeste coins"
     Je kunt de meeste coins gebruiken om de nummer 1 op het scorebord te laten zien. Je kunt de meeste coins ook gebruiken om te kijken als de gebruiker een nieuw record heeft gezet. Als de gebruiker een nieuw record heeft gezet, kun je de gebruiker feliciteren met het nieuwe record. Deze functie is toegevoegd zodat de game niet alle data van alle gebruikers hoeft op te halen, en vervolgens de meeste coins te berekenen. Dit scheelt veel tijd en regels code.
+
+!!! note "Errors"
+    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
+
+## Verkrijg de top 10 gebruikers met de hoogste score
+
+Om de top 10 gebruikers te verkrijgen die de hoogste score hebben, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/leaderboard/score`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de top 10 gebruikers die de hoogste score hebben. Het JSON object ziet er als volgt uit:
+
+```json
+[
+    {
+        "name": "VOORBEELD",
+        "time": "12:00:00",
+        "date": "1970-01-01T23:00:00.000Z",
+        "score": 100,
+        "coins": 100
+    },
+    {
+        "name": "VOORBEELD2",
+        "time": "12:00:00",
+        "date": "1970-01-01T23:00:00.000Z",
+        "score": 100,
+        "coins": 100
+    }
+]
+```
+Et cetera...
+
+!!! tip "Gebruik de top 10 gebruikers met de hoogste score"
+    Je kunt de top 10 gebruikers met de hoogste score gebruiken om de top 10 op het scorebord te laten zien. Deze functie is toegevoegd zodat de game niet alle data van alle gebruikers hoeft op te halen, en vervolgens de top 10 te berekenen. Dit scheelt veel tijd en regels code.
+
+!!! note "Errors"
+    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
+
+## Verkrijg de top 10 gebruikers met de meeste coins
+
+Om de top 10 gebruikers te verkrijgen die de meeste coins hebben, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/leaderboard/coins`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de top 10 gebruikers die de meeste coins hebben. Het JSON object ziet er als volgt uit:
+
+```json
+[
+    {
+        "name": "VOORBEELD",
+        "time": "12:00:00",
+        "date": "1970-01-01T23:00:00.000Z",
+        "score": 100,
+        "coins": 100
+    },
+    {
+        "name": "VOORBEELD2",
+        "time": "12:00:00",
+        "date": "1970-01-01T23:00:00.000Z",
+        "score": 100,
+        "coins": 100
+    }
+]
+```
+Et cetera...
+
+!!! tip "Gebruik de top 10 gebruikers met de meeste coins"
+    Je kunt de top 10 gebruikers met de meeste coins gebruiken om de top 10 op het scorebord te laten zien. Deze functie is toegevoegd zodat de game niet alle data van alle gebruikers hoeft op te halen, en vervolgens de top 10 te berekenen. Dit scheelt veel tijd en regels code.
 
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
@@ -161,11 +195,9 @@ Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8
 
 ```json
 [
-    [
-        {
-            "message": "API Success"
-        }
-    ]
+    {
+        "message": "API Success"
+    }
 ]
 ```
 
@@ -179,18 +211,16 @@ Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8
 Om data voor een gebruiker te creeëren, stuur je een POST request naar de volgende URL: `127.0.0.1:8080/api/post/insert`. De API verwacht postData dat er als volgt uit ziet:
 
 ```postData
-name=VOORBEELD&time=12:00:00&date=1970-01-01T23:00:00.000Z&highscore=100&coins=100
+name=VOORBEELD&time=12:00:00&date=1970-01-01T23:00:00.000Z&score=100&coins=100
 ```
 
 De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de status van de request. Het JSON object ziet er als volgt uit:
 
 ```json
 [
-    [
-        {
-            "message": "Data inserted"
-        }
-    ]
+    {
+        "message": "Data inserted"
+    }
 ]
 ```
 

@@ -90,7 +90,6 @@ function consoleLog(request, description) {
 // Get user data of all users
 api.get('/api/get/allusers', async (req, res) => {
   consoleLog("GET", "all user data"); // Log the request
-
   try {
     const conn = await pool.getConnection(); // Get a connection from the pool
     let sql = `SELECT * FROM \`userdata\`;`; // SQL query
@@ -98,11 +97,12 @@ api.get('/api/get/allusers', async (req, res) => {
 
     conn.release(); // Release the connection
     res.status(200); // HTTP Status 200: OK
+
   } catch (err) {
     res.status(500); // HTTP Status 500: Internal Server Error
     result = [{ message: 'Error' }, { error: err }];
   }
-  res.json(result); // Send the response
+  res.json(result[0]); // Send the response, only send the data, not the metadata
   return;
 });
 
@@ -122,7 +122,7 @@ api.get('/api/get/user', async (req, res) => {
 
   try {
     const conn = await pool.getConnection(); // Get a connection from the pool
-    let sql = `SELECT * FROM \`userdata\` WHERE name = ?;`; // SQL query
+    let sql = `SELECT name, time, date, score, coins FROM \`userdata\` WHERE name = ?;`; // SQL query
     let inserts = [name]; // Using the ? to prevent SQL injection
     sql = mysql.format(sql, inserts); // Format the SQL query
     result = await conn.query(sql); // Execute the query
@@ -133,25 +133,25 @@ api.get('/api/get/user', async (req, res) => {
     res.status(500); // HTTP Status 500: Internal Server Error
     result = [{ message: 'Error' }, { error: err }];
   }
-  res.json(result); // Send the response
+  res.json(result[0]); // Send the response, only send the data, not the metadata
   return;
 });
 
 
 
 // Get the user with the highest score
-api.get('/api/get/highscore', async (req, res) => {
+api.get('/api/get/mostscore', async (req, res) => {
   consoleLog("GET", "the highest score"); // Log the request
 
   try {
     const conn = await pool.getConnection(); // Get a connection from the pool
-    let sql = `SELECT MAX(highscore) FROM \`userdata\`;`; // SQL query
+    let sql = `SELECT MAX(score) FROM \`userdata\`;`; // SQL query
     maxresult = await conn.query(sql); // Execute the query
 
     // Now get the name of the user with the highest score:
-    let highscore = maxresult[0][0]['MAX(highscore)']; // Get the highest score
-    let sql2 = `SELECT name FROM \`userdata\` WHERE highscore = ?;`; // SQL query
-    let inserts = [highscore]; // Using the ? to prevent SQL injection
+    let score = maxresult[0][0]['MAX(score)']; // Get the highest score
+    let sql2 = `SELECT name FROM \`userdata\` WHERE score = ?;`; // SQL query
+    let inserts = [score]; // Using the ? to prevent SQL injection
     sql2 = mysql.format(sql2, inserts); // Format the SQL query
     result = await conn.query(sql2); // Execute the query
 
@@ -161,14 +161,17 @@ api.get('/api/get/highscore', async (req, res) => {
     // Combine the results:
     resultJson = JSON.parse(JSON.stringify(result[0][0])); // Convert the result to JSON
     maxresultJson = JSON.parse(JSON.stringify(maxresult[0][0])); // Convert the result to JSON
-    resultJson['MAX(highscore)'] = maxresultJson['MAX(highscore)']; // Add the highscore to the result
+    resultJson['MAX(score)'] = maxresultJson['MAX(score)']; // Add the score to the result
     result = resultJson; // Set the result to the combined result
+
+    // Encapsulate the result in an array:
+    result = [result];
 
   } catch (err) {
     res.status(500); // HTTP Status 500: Internal Server Error
     result = [{ message: 'Error' }, { error: err }];
   }
-  res.json(result); // Send the response
+  res.json(result); // Send the response, only send the data, not the metadata
   return;
 });
 
@@ -189,7 +192,7 @@ api.get('/api/get/mostcoins', async (req, res) => {
     let inserts = [coins]; // Using the ? to prevent SQL injection
     sql2 = mysql.format(sql2, inserts); // Format the SQL query
     result = await conn.query(sql2); // Execute the query
-    
+
     conn.release(); // Release the connection
     res.status(200); // HTTP Status 200: OK
 
@@ -199,11 +202,56 @@ api.get('/api/get/mostcoins', async (req, res) => {
     resultJson['MAX(coins)'] = maxresultJson['MAX(coins)']; // Add the coins to the result
     result = resultJson; // Set the result to the combined result
 
+    // Encapsulate the result in an array:
+    result = [result];
+
   } catch (err) {
     res.status(500); // HTTP Status 500: Internal Server Error
     result = [{ message: 'Error' }, { error: err }];
   }
-  res.json(result); // Send the response
+  res.json(result); // Send the response, only send the data, not the metadata
+  return;
+});
+
+
+
+// Get the top 10 users with the highest score
+api.get('/api/get/leaderboard/score', async (req, res) => {
+  consoleLog("GET", "leaderboard score"); // Log the request
+
+  try {
+    const conn = await pool.getConnection(); // Get a connection from the pool
+    let sql = `SELECT * FROM \`userdata\` ORDER BY \`userdata\`.\`score\` DESC LIMIT 10`; // SQL query
+    result = await conn.query(sql); // Execute the query
+
+    conn.release(); // Release the connection
+    res.status(200); // HTTP Status 200: OK
+  } catch (err) {
+    res.status(500); // HTTP Status 500: Internal Server Error
+    result = [{ message: 'Error' }, { error: err }];
+  }
+  res.json(result[0]); // Send the response, only send the data, not the metadata
+  return;
+});
+
+
+
+// Get the top 10 users with the most coins
+api.get('/api/get/leaderboard/coins', async (req, res) => {
+  consoleLog("GET", "leaderboard coins"); // Log the request
+
+  try {
+    const conn = await pool.getConnection(); // Get a connection from the pool
+    let sql = `SELECT * FROM \`userdata\` ORDER BY \`userdata\`.\`coins\` DESC LIMIT 10`; // SQL query
+    result = await conn.query(sql); // Execute the query
+
+    conn.release(); // Release the connection
+    res.status(200); // HTTP Status 200: OK
+  } catch (err) {
+    res.status(500); // HTTP Status 500: Internal Server Error
+    result = [{ message: 'Error' }, { error: err }];
+  }
+  res.json(result[0]); // Send the response, only send the data, not the metadata
   return;
 });
 
@@ -221,7 +269,7 @@ api.post('/api/post/insert', async (req, res) => {
   let name = parsedData.name;
   let time = getTime();
   let date = getDateUS();
-  let highscore = parsedData.highscore;
+  let score = parsedData.score;
   let coins = parsedData.coins;
 
   consoleLog("POST", `inserting user data for: ${name}`); // Log the request
@@ -229,8 +277,8 @@ api.post('/api/post/insert', async (req, res) => {
   try {
     // Make a connection to the database:
     const conn = await pool.getConnection(); // Get a connection from the pool
-    let sql = `INSERT INTO userdata (name, time, date, highscore, coins) VALUES (?, ?, ?, ?, ?);`; // SQL query
-    let inserts = [name, time, date, highscore, coins]; // Using the ? to prevent SQL injection
+    let sql = `INSERT INTO userdata (name, time, date, score, coins) VALUES (?, ?, ?, ?, ?);`; // SQL query
+    let inserts = [name, time, date, score, coins]; // Using the ? to prevent SQL injection
     sql = mysql.format(sql, inserts); // Format the SQL query
     result = await conn.query(sql); // Execute the query
     conn.release(); // Release the connection
@@ -249,11 +297,11 @@ api.post('/api/post/insert', async (req, res) => {
 
 // Delete user data of a specific user
 api.delete('/api/delete/user', async (req, res) => {
-  
+
   // Get the data from the request:
   let postData = JSON.stringify(req.body);
   let parsedData = JSON.parse(postData);
-  
+
   // Get the data from the parsed data:
   let name = parsedData.name;
 
@@ -307,10 +355,15 @@ api.post('/*', (req, res) => {
   res.json(data); // Send the response
 });
 
-api.listen(8080, () => {
-  consoleLog("LISTEN", "running server on port 8080"); // Log the request
+// Default (wrong URL(DELETE))
+api.delete('/*', (req, res) => {
+  consoleLog("DELETE", "wrong URL"); // Log the request
+  const data = [{ message: 'Wrong URL' }];
+  res.status(404); // HTTP Status 404: Not Found
+  res.json(data); // Send the response
 });
 
-// Database query, addition, deletion, update,
-
-// SQL: NAAM, TIJD, DATUM, HIGHSCORE, COINS
+// Run the API on port 8080
+api.listen(8080, () => {
+  consoleLog("LISTEN", "running API on port 8080"); // Log the request
+});

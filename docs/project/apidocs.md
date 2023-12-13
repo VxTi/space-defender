@@ -1,13 +1,16 @@
 # API Documentatie
 
 ## Hoe gebruik je de API?
+
 Om de API te gebruiken, moet je eerst de API starten. Dit doe je door het volgende commando uit te voeren in de terminal:
-```
+
+```terminal
 node api.js
 ```
+
 De API zal nu draaien op localhost:8080. De API is nu klaar voor gebruik. De API is te gebruiken door een request te sturen naar de volgende URL: `127.0.0.1:8080`. De API verwacht meestal postData dat er als volgt uit kan zien:
 
-```
+```postData
 field1=value1&field2=value2
 ```
 
@@ -45,7 +48,7 @@ Om de data van alle gebruikers te verkrijgen, stuur je een GET request naar de v
 
 Om de data van een specifieke gebruiker te verkrijgen, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/user`. De API verwacht postData dat er als volgt uit ziet:
 
-```
+```postData
 name=VOORBEELD
 ```
 
@@ -74,7 +77,7 @@ De API zal een HTTP status 200 (OK) terugsturen, en een JSON object met alle dat
 
 Om een nieuwe tabel in de database te creeëren, stuur je een POST request naar de volgende URL: `127.0.0.1:8080/api/post/newtable`. De API verwacht postData dat er als volgt uit ziet:
 
-```
+```postData
 name=VOORBEELD
 ```
 
@@ -92,7 +95,6 @@ De API zal HTTP status 201 (Created) terugsturen, en een JSON object met de stat
 
 > [!NOTE]
 > Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
-
 > [!IMPORTANT]
 > Houdt er rekening mee dat de tabelnaam niet mag beginnen met een cijfer, en dat de tabelnaam niet langer mag zijn dan 64 karakters. Deze functie zit er alleen in voor het geval dat er een nieuwe tabel nodig is. Verwacht niet dat deze functie vaak gebruikt zal worden.
 
@@ -100,7 +102,7 @@ De API zal HTTP status 201 (Created) terugsturen, en een JSON object met de stat
 
 Om data voor een gebruiker te creeëren, stuur je een POST request naar de volgende URL: `127.0.0.1:8080/api/post/insert`. De API verwacht postData dat er als volgt uit ziet:
 
-```
+```postData
 name=VOORBEELD&time=12:00:00&date=1970-01-01T23:00:00.000Z&highscore=100&coins=100
 ```
 
@@ -137,6 +139,5 @@ Om de tabel 'userdata' leeg te maken, stuur je een DELETE request naar de volgen
 
 > [!NOTE]
 > Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
-
 > [!CAUTION]  
 > Met deze actie zal alle data in de tabel 'userdata' verwijderd worden. Deze actie kan niet ongedaan gemaakt worden. Wees hier dus voorzichtig mee.

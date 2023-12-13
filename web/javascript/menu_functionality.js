@@ -4,9 +4,9 @@ const serverAddress = "http://localhost:8080/api/get";
 (() => {
 
     document.onkeydown = (event) => {
-        if (event.key === 'Escape') {
-            gameActive = !gameActive;
-            showMenu(gameActive ? null : 'menu-pause');
+        if (event.key === 'Escape' && gameActive) {
+            gameActive = false;
+            showMenu('menu-pause');
         }
     }
 
@@ -27,14 +27,9 @@ const serverAddress = "http://localhost:8080/api/get";
     element['pause-resume'].onclick = () => showMenu();
 
     // main screen
-    element['main-leaderboards'].onclick = () => retrieveLeaderboards().then(r => console.log(r));
+    element['main-leaderboards'].onclick = () => showMenu('menu-leaderboards');
     element['main-play'].onclick = () => showMenu();
-    element['main-difficulty'].onclick = () => {
-        let textElement = document.querySelector(".difficulty-title");
-        textElement.innerText =
-            Difficulties[difficulty = (difficulty + 1) % Difficulties.length]; // Rotate around all texts.
-        textElement.style.color = `hsl(${(1 - (difficulty + 1) / Difficulties.length) * 130}, 100%, 50%)`;
-    };
+    element['main-difficulty'].onclick = () => setDifficulty(difficulty + 1);
 
     showMenu("menu-start");
 

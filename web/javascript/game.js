@@ -41,6 +41,14 @@ var gameActive = false;
 const Difficulties = ['Easy', 'Normal', 'Hard', 'Extreme'];
 let difficulty = 0;
 
+setDifficulty = function(diff) {
+    difficulty = diff % Difficulties.length;
+    let textElement = document.querySelector(".difficulty-title");
+    textElement.innerText =
+        Difficulties[difficulty]; // Rotate around all texts.
+    textElement.style.color = `hsl(${(1 - (difficulty + 1) / Difficulties.length) * 130}, 100%, 50%)`;
+}
+
 clamp = function(x, a, b) { return x < a ? a : x > b ? b : x; }
 
 /** This function is called before the setup function.
@@ -76,6 +84,7 @@ function setup() {
 
     // Create a canvas to render onto
     createCanvas(window.innerWidth, window.innerHeight);
+    setDifficulty(0);
 
     // Load all block resources
     for (const [key, value] of Object.entries(resources))

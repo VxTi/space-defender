@@ -64,6 +64,7 @@ body, html {
     font-family: minecraft-font, serif;
     color: white;
     text-align: center;
+    font-size: var(--font-size);
 }
 
 .match-parent-size {

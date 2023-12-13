@@ -37,9 +37,9 @@ class Entity extends AABB {
     update(dT) {
 
         this.#velocity.add(
-            !this.againstWall ? this.direction.x * horizontalSpeed * 0.25 * this.#movementSpeed : 0,
+            !this.againstWall ? this.#direction.x * horizontalSpeed * 0.25 * this.#movementSpeed : 0,
             this.onGround || (allowDoubleJump && this.againstWall && this.#velocity.y < 0)
-                ? this.direction.y * verticalSpeed * this.#movementSpeed : 0);
+                ? this.#direction.y * verticalSpeed * this.#movementSpeed : 0);
         //this.direction.translate(0, 0);
 
         // Set it to an unrealistic number, just before testing for collision.
@@ -60,8 +60,8 @@ class Entity extends AABB {
             // If another class extends this class and defines the function 'onCollisionCheck',
             // this then calls the function with the current target as parameter.
             // If this function returns false, collision detection should skip this target
-            if (this.position.distSq(target) > this.#velocity.magSq)
-                continue;
+            /*if (this.position.distSq(target) > this.#velocity.magSq * 2)
+                continue;*/
 
             /**
              * SECTION: X AXIS COLLISION DETECTION
@@ -189,4 +189,8 @@ class Entity extends AABB {
 
     get maxHealth() { return this.#maxHealth; }
     get health() { return this.#health; }
+    set health(newHealth) { this.#health = Math.min(this.#maxHealth, newHealth); }
+
+    get velocity() { return this.#velocity; }
+    get position() { return this.#position; }
 }

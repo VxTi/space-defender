@@ -37,7 +37,7 @@ class EntityWizard extends Entity {
     update(dT) {
         super.update(dT);
         if (this.target != null) { // make an attempt for pathfinding...
-            this.direction.translate(
+            this.move(
                 Math.sign(this.target.position.x - this.position.x), Math.sign(Math.abs(this.target.position.y - this.position.y)));
         }
     }

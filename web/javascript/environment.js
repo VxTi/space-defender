@@ -39,7 +39,7 @@ class Environment {
     static generate() {
 
         // generate ground (temp)
-        let n = 500;
+        let n = 100;
         let fnY = (x) => noise(x) * 0.75 + noise(x / 2) * 0.25 + noise(x / 4) * 0.25;
 
         for (let x = 0; x < n; x++) {

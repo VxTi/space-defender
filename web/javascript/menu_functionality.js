@@ -12,24 +12,34 @@ const serverAddress = "http://localhost:8080/api/get";
 
     const elements = [
         'game-settings-button', 'main-difficulty', 'main-play', 'main-leaderboards',
-        'pause-main-menu', 'pause-settings', 'pause-resume', 'pause-statistics'
+        'pause-main-menu', 'pause-settings', 'pause-resume', 'pause-statistics',
+        'main-information'
     ];
     let element = {};
     for (let e of elements)
         element[e] = document.querySelector(`.${e}`);
 
+    document.querySelectorAll('.button-menu').forEach(e => {
+        e.onclick = () => {
+            showMenu(typeof e.dataset.target !== 'undefined' ? e.dataset.target : 'menu-start');
+        }
+    });
+
     element['game-settings-button'].onclick = () => showMenu('menu-pause');
 
     // pause screen
     element['pause-main-menu'].onclick = () => showMenu('menu-start');
-    element['pause-settings'].onclick = () => console.log('showing settings menu');
-    element['pause-statistics'].onclick = () => console.log('showing statistics');
+    element['pause-settings'].onclick = () => showMenu('menu-settings')
+    element['pause-statistics'].onclick = () => showMenu('menu-statistics');
     element['pause-resume'].onclick = () => showMenu();
 
     // main screen
     element['main-leaderboards'].onclick = () => showMenu('menu-leaderboards');
     element['main-play'].onclick = () => showMenu();
     element['main-difficulty'].onclick = () => setDifficulty(difficulty + 1);
+    element['main-information'].onclick = () => showMenu('menu-information');
+
+
 
     showMenu("menu-start");
 

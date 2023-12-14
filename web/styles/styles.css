@@ -9,6 +9,10 @@
     --button-width: 700px;
     --button-height: 50px;
     --font-size: 30px;
+    --border-radius: 8px;
+    --color-button-static: #606060;
+    --color-button-hover: #505050;
+    --color-button-press: #404040;
 }
 
 body, html {
@@ -53,11 +57,34 @@ body, html {
 
 .bg {
     background-color: var(--background-color);
-    border-radius: 8px;
+    border-radius: var(--border-radius);
 }
 
 .mc-font {
     font-family: minecraft-font, serif;
+}
+
+.button-menu {
+    position: absolute;
+    display: inline-block;
+    color: white;
+    font-family: minecraft-font, serif;
+    background-color: var(--color-button-static);
+    font-size: var(--font-size);
+    width: calc(var(--font-size));
+    height: calc(var(--font-size) * 1.2);
+    border-radius: var(--border-radius);
+    user-select: none;
+    cursor: pointer;
+    padding: 2px 4px 2px 10px;
+}
+
+.button-menu:hover {
+    background-color: var(--color-button-hover);
+}
+
+.button-menu:active {
+    background-color: var(--color-button-press);
 }
 
 .frame-title {
@@ -65,6 +92,22 @@ body, html {
     color: white;
     text-align: center;
     font-size: var(--font-size);
+}
+
+.menu-text-content {
+    display: block;
+    width: var(--button-width);
+    padding: 20px 20px;
+    color: white;
+    font-family: minecraft-font, serif;
+    font-size: var(--font-size);
+}
+
+.menu-text-content > b {
+    background-color: color-mix(in srgb, var(--color-button-static) 20%, #ffffff);
+    border-radius: 5px;
+    padding: 0 10px;
+    color: #101010;
 }
 
 .match-parent-size {
@@ -82,23 +125,23 @@ body, html {
     user-select: none;
     display: block;
     text-align: center;
-    width: var(--button-width);
+    min-width: var(--button-width);
     height: var(--button-height);
     margin: 5px;
     border-radius: 3px;
     color: white;
     font-family: minecraft-font, serif;
     font-size: var(--font-size);
-    background-color: #606060;
+    background-color: var(--color-button-static);
     cursor: pointer;
 }
 
 .menu-button:hover {
-    background-color: #505050;
+    background-color: var(--color-button-hover);
 }
 
 .menu-button:active {
-    background-color: #606060;
+    background-color: var(--color-button-press);
 }
 
 .menu-button > span {
@@ -113,10 +156,8 @@ body, html {
     width: 60px;
     padding: 2px;
     margin-right: 10px;
-    /*transition: background-color 300ms ease-in-out;*/
 }
 
 .game-settings-button:hover {
     filter: brightness(90%);
-    /*background-color: rgba(80, 8 20);*/
 }

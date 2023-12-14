@@ -31,66 +31,10 @@ const pool = mysql.createPool({
 |        Functions         |
 \*========================*/
 
-// Get the time:
-function getTime() {
-  let currentDate = new Date();
-  let hours = currentDate.getHours(); // Get the hours
-  let minutes = currentDate.getMinutes(); // Get the minutes
-  let seconds = currentDate.getSeconds(); // Get the seconds
-
-  // Format the time properly (add a 0 if the hours, minutes or seconds contains only 1 digit):
-  if (hours < 10) { hours = `0${hours}`; } // Add a 0 if the hours are less than 10
-  if (minutes < 10) { minutes = `0${minutes}`; } // Add a 0 if the minutes are less than 10
-  if (seconds < 10) { seconds = `0${seconds}`; } // Add a 0 if the seconds are less than 10
-
-  let time = `${hours}:${minutes}:${seconds}`; // Format the time
-
-  return time;
-}
-
-// Get the date (US):
-function getDateUS() {
-  let currentDate = new Date();
-  let day = currentDate.getDate(); // Get the day of the month
-  let month = currentDate.getMonth() + 1; // Get the month (0-11, so add 1 to get 1-12)
-  let year = currentDate.getFullYear(); // Get the year
-
-  // MySQL uses the American date format (YYYY-MM-DD), unfortunately...
-  let date = `${year}-${month}-${day}`; // Format the date (YYYY-MM-DD) (Amerikaanse notatie, American notation)
-
-  return date;
-}
-
-// Get the date (NL):
-function getDateNL() {
-  let currentDate = new Date();
-  let day = currentDate.getDate(); // Get the day of the month
-  let month = currentDate.getMonth() + 1; // Get the month (0-11, so add 1 to get 1-12)
-  let year = currentDate.getFullYear(); // Get the year
-
-  let date = `${day}-${month}-${year}`; // Format the date (DD-MM-YYYY) (Nederlandse notatie, Dutch notation)
-
-  return date;
-}
-
-// save default function
-const defLog = console.log;
-
-// and then overwrite it >:)
-console.log = (...content) => {
-  let time = new Date().toLocaleDateString();
-  defLog(`[${time}: ${content}`);
-}
-
 // Log requests with formatting:
 function consoleLog(request, description) {
-  // Get the time and date:
-  let time = getTime();
-  let date = getDateNL();
-
-  console.log()
-  // Log the request:
-  //console.log(`[${time}, ${date}]: Got a ${request} request for ${description}.`);
+  let date = new Date();
+  console.log(`[${date.toLocaleDateString()} ${date.toLocaleTimeString()}]: Retrieved ${request} request for ${description}`);
 }
 
 /*========================*\

@@ -86,10 +86,10 @@ function retrieveLeaderboards() {
             for (let [key, value] of Object.entries(result)) {
                 if (i++ >= maxScores)
                     break;
-                content += `${value.name} \t- ${value.coins} coins, ${value.score} pt\n`;
+                content += `${value.name}  ${value.coins} coins, ${value.score} pt<br>`;
             }
             //content = JSON.stringify(result);
         })
         .catch(() => content = "Failed to load leaderboard statistics")
-        .finally(() => element['leaderboard-content'].innerText = content);
+        .finally(() => element['leaderboard-content'].innerHTML = content);
 }

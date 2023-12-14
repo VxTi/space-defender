@@ -1,9 +1,14 @@
 
-const serverAddress = "http://localhost:8080/api/get/allusers";
+const serverAddress = "http://localhost:8080/api/get";
 
 let element = {};
 
 const maxScores = 10;
+
+let leaderboardFilter = 'coins';
+
+let leaderboardData = {};
+
 
 (() => {
 
@@ -32,6 +37,16 @@ const maxScores = 10;
             showMenu(typeof e.dataset.target !== 'undefined' ? e.dataset.target : 'menu-start');
         }
     });
+
+    // Add event listeners to the leaderboard buttons, so that when the user clicks on one of the filters,
+    // the page automatically updates the order of elements
+    let leadFilterButtons = document.querySelectorAll('.leaderboards-filter');
+    leadFilterButtons.forEach(e => e.onclick = () => {
+            leadFilterButtons.forEach(e => e.classList.remove('selected'));
+            e.classList.add('selected');
+            leaderboardFilter = e.dataset.filter;
+            retrieveLeaderboards();
+        });
 
     element['game-settings-button'].onclick = () => showMenu('menu-pause');
 
@@ -77,19 +92,38 @@ function publishScore(obj) {
  * Usage: retrieveLeaderboards().then(result => console.log(result))
  */
 function retrieveLeaderboards() {
-    let content = "";
+    let content = "Waiting for leaderboard data...";
 
-    fetch(serverAddress)
+    fetch(serverAddress, {
+        method: "POST",
+        contentType: "application/json",
+        cors: "no-cors",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            tables: ["name", "coins", "score"],
+            results: maxScores,
+            orderBy: leaderboardFilter
+        })
+    })
         .then(result => result.json())
         .then(result => {
-            let i = 0;
-            for (let [key, value] of Object.entries(result)) {
-                if (i++ >= maxScores)
-                    break;
-                content += `${value.name}  ${value.coins} coins, ${value.score} pt<br>`;
-            }
-            //content = JSON.stringify(result);
+            leaderboardData = result;
+            content = parseLeaderboardData(leaderboardData, leaderboardFilter);
         })
         .catch(() => content = "Failed to load leaderboard statistics")
         .finally(() => element['leaderboard-content'].innerHTML = content);
+}
+
+// Method for parsing the leaderboard data and sorting it accordingly.
+// Method accepts data, as an object containing leaderboard data,
+// and filter as a string, denoting what to filter
+function parseLeaderboardData(data, filter) {
+    let content = '';
+    data.sort((a, b) => a[filter] < b[filter])
+    Object.entries(data).forEach(([key, object]) => {
+        content += `<span class="leaderboard-data">${object.name}</span> <span class="leaderboard-data" style="color: #a29b06">${object.coins} coins</span> <span class="leaderboard-data" style="color: #3245d5">${object.score} pt</span><br>\n`;
+    })
+    return content;
 }

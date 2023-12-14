@@ -94,6 +94,39 @@ body, html {
     font-size: var(--font-size);
 }
 
+.leaderboards-filter-container {
+    width: 100%;
+    display: flex;
+    flex-flow: row nowrap;
+}
+
+.leaderboards-filter {
+    display: inline-block;
+    position: relative;
+    color: white;
+    font-family: minecraft-font, serif;
+    font-size: var(--font-size);
+    width: 50%;
+    text-align: center;
+    height: var(--button-height);
+}
+
+.leaderboards-filter:hover {
+    background-color: var(--color-button-hover);
+}
+
+.leaderboards-filter.selected {
+    background-color: var(--color-button-static);
+}
+
+.leaderboard-data {
+    font-family: minecraft-font, serif;
+    font-size: var(--font-size);
+    display: inline-block;
+    width: 25%;
+    height: var(--font-size);
+}
+
 .menu-text-content {
     display: block;
     width: var(--button-width);

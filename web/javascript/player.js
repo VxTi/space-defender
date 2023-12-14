@@ -8,6 +8,10 @@
 class Player extends Entity {
 
     static #playerHealth = 20;
+
+    #coins = 0; // Coins the player has gathered
+    #score = 0; // Points the player received
+
     constructor(x, y) {
         super(x, y, Player.#playerHealth, 0.9, 1.8, 1);
     }

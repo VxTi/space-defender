@@ -151,6 +151,7 @@ Om de top 10 gebruikers te verkrijgen die de hoogste score hebben, stuur je een 
     }
 ]
 ```
+
 Et cetera...
 
 !!! tip "Gebruik de top 10 gebruikers met de hoogste score"
@@ -181,6 +182,7 @@ Om de top 10 gebruikers te verkrijgen die de meeste coins hebben, stuur je een G
     }
 ]
 ```
+
 Et cetera...
 
 !!! tip "Gebruik de top 10 gebruikers met de meeste coins"
@@ -254,4 +256,3 @@ De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de sta
 
 !!! danger "Waarschuwing"
     Met deze actie zal alle data van de gebruiker verwijderd worden. Deze actie kan niet ongedaan gemaakt worden. Wees hier dus voorzichtig mee.
-

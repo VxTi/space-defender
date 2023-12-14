@@ -73,14 +73,24 @@ function getDateNL() {
   return date;
 }
 
+// save default function
+const defLog = console.log;
+
+// and then overwrite it >:)
+console.log = (...content) => {
+  let time = new Date().toLocaleDateString();
+  defLog(`[${time}: ${content}`);
+}
+
 // Log requests with formatting:
 function consoleLog(request, description) {
   // Get the time and date:
   let time = getTime();
   let date = getDateNL();
 
+  console.log()
   // Log the request:
-  console.log(`[${time}, ${date}]: Got a ${request} request for ${description}.`);
+  //console.log(`[${time}, ${date}]: Got a ${request} request for ${description}.`);
 }
 
 /*========================*\

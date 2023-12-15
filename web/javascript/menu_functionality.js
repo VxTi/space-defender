@@ -83,6 +83,7 @@ function showMenu(element = null) {
 
 function publishScore(obj) {
     // TODO: add functionality
+
 }
 
 /**
@@ -102,6 +103,7 @@ function retrieveLeaderboards() {
             "Content-Type": "application/json",
         },
         body: JSON.stringify({
+            requestType: "all-data",
             tables: ["name", "coins", "score"],
             results: maxScores,
             orderBy: leaderboardFilter

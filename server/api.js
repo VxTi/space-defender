@@ -19,8 +19,8 @@ api.use(cors({
     origin: '*'
 }));
 
-// Database connection
-const pool = mysql.createPool({
+// Database connection:
+const credentials = {
     user: 'koopenj',
     password: 'pSmwQExG/1rux.',
     host: 'oege.ie.hva.nl',
@@ -29,9 +29,11 @@ const pool = mysql.createPool({
     insecureAuth: false,
     ssl: { rejectUnauthorized: false }, // Necessary to connect to the database!!!
     connectionLimit: 10
-});
+};
 
-const oegePassword = "pSmwQExG/1rux." // Password for creating a new API key
+const pool = mysql.createPool(credentials);
+const oegePassword = credentials.password // Password for creating a new API key
+const timeout = 0.1; // Timeout in seconds
 
 /*========================*\
 |        Functions         |
@@ -43,12 +45,31 @@ function consoleLog(request, description) {
     console.log(`[${date.toLocaleDateString()} ${date.toLocaleTimeString()}]: Retrieved ${request} request for ${description}`);
 }
 
+// Check if the client is rate limited:
+function isClientRateLimited(apiKey) {
+    let rateLimits = JSON.parse(fs.readFileSync(`${__dirname}/rates.json`)); // Read and parse the rate limit file
+    let rateLimitTime = rateLimits[apiKey]; // Get the time of the last request for this API key
+    let currentTime = Date.now(); // Get the current time
+    let timeDifference = currentTime - (rateLimitTime || 0); // Calculate the time difference
+    let timeDifferenceSeconds = timeDifference / 1000; // Convert the time difference to seconds
+
+    if (timeDifferenceSeconds < timeout) {
+        return true;
+    } else {
+        // Update the rate limit file:
+        rateLimits[apiKey] = currentTime; // Update the time of the last request for this API key
+        fs.writeFileSync(`${__dirname}/rates.json`, JSON.stringify(rateLimits)); // Write the new rate limit file
+        return false;
+    }
+}
+
 /*========================*\
 |        API Calls         |
 \*========================*/
 
 // Get user data of all users
 api.get('/api/get/allusers', async (req, res) => {
+
     consoleLog("GET", "all user data"); // Log the request
 
     // Get the post data from the request:
@@ -65,6 +86,14 @@ api.get('/api/get/allusers', async (req, res) => {
     if (!validkeys.includes(key)) {
         res.status(401); // HTTP Status 401: Unauthorized
         const data = [{ message: 'Unauthorized' }];
+        res.json(data); // Send the response
+        return;
+    }
+
+    // Check if the client is rate limited:
+    if (isClientRateLimited(key)) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
         res.json(data); // Send the response
         return;
     }
@@ -90,6 +119,14 @@ api.get('/api/get/allusers', async (req, res) => {
 
 // Get user data of a specific user
 api.get('/api/get/user', async (req, res) => {
+
+    // Check if the client is rate limited:
+    if (isClientRateLimited()) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
+        res.json(data); // Send the response
+        return;
+    }
 
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
@@ -136,6 +173,15 @@ api.get('/api/get/user', async (req, res) => {
 
 // Get the user with the highest score
 api.get('/api/get/mostscore', async (req, res) => {
+
+    // Check if the client is rate limited:
+    if (isClientRateLimited()) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
+        res.json(data); // Send the response
+        return;
+    }
+
     consoleLog("GET", "the highest score"); // Log the request
 
     // Get the post data from the request:
@@ -193,6 +239,15 @@ api.get('/api/get/mostscore', async (req, res) => {
 
 // Get the user with the most coins
 api.get('/api/get/mostcoins', async (req, res) => {
+
+    // Check if the client is rate limited:
+    if (isClientRateLimited()) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
+        res.json(data); // Send the response
+        return;
+    }
+
     consoleLog("GET", "the most coins"); // Log the request
 
     // Get the post data from the request:
@@ -250,6 +305,15 @@ api.get('/api/get/mostcoins', async (req, res) => {
 
 // Get the top 10 users with the highest score
 api.get('/api/get/leaderboard/score', async (req, res) => {
+
+    // Check if the client is rate limited:
+    if (isClientRateLimited()) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
+        res.json(data); // Send the response
+        return;
+    }
+
     consoleLog("GET", "leaderboard score"); // Log the request
 
     // Get the post data from the request:
@@ -290,6 +354,15 @@ api.get('/api/get/leaderboard/score', async (req, res) => {
 
 // Get the top 10 users with the most coins
 api.get('/api/get/leaderboard/coins', async (req, res) => {
+
+    // Check if the client is rate limited:
+    if (isClientRateLimited()) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
+        res.json(data); // Send the response
+        return;
+    }
+
     consoleLog("GET", "leaderboard coins"); // Log the request
 
     // Get the post data from the request:
@@ -330,6 +403,14 @@ api.get('/api/get/leaderboard/coins', async (req, res) => {
 
 // Insert user data
 api.post('/api/post/insert', async (req, res) => {
+
+    // Check if the client is rate limited:
+    if (isClientRateLimited()) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
+        res.json(data); // Send the response
+        return;
+    }
 
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
@@ -384,6 +465,14 @@ api.post('/api/post/insert', async (req, res) => {
 // Delete user data of a specific user
 api.delete('/api/delete/user', async (req, res) => {
 
+    // Check if the client is rate limited:
+    if (isClientRateLimited()) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
+        res.json(data); // Send the response
+        return;
+    }
+
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
     let parsedData = JSON.parse(postData);
@@ -430,7 +519,17 @@ api.delete('/api/delete/user', async (req, res) => {
 
 // Test the API
 api.get('/api/test', (req, res) => {
+
+    // Check if the client is rate limited:
+    if (isClientRateLimited()) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
+        res.json(data); // Send the response
+        return;
+    }
+
     consoleLog("GET", "test"); // Log the request
+
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
     let parsedData = JSON.parse(postData);
@@ -458,7 +557,17 @@ api.get('/api/test', (req, res) => {
 
 
 // Create a new API key
-api.get ('/api/createkey', (req, res) => {
+api.get('/api/createkey', (req, res) => {
+
+    // Check if the client is rate limited:
+    if (isClientRateLimited()) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
+        res.json(data); // Send the response
+        return;
+    }
+
+    consoleLog("GET", "creating a new API key"); // Log the request
 
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
@@ -477,7 +586,7 @@ api.get ('/api/createkey', (req, res) => {
     // Generate a new API key:
     let key = crypto.randomBytes(12).toString('hex');
     let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    
+
     // Insert the new key in the JSON file:
     let keys = JSON.parse(rawKeys);
     keys.key.push(key);
@@ -486,11 +595,57 @@ api.get ('/api/createkey', (req, res) => {
 
     // Send the response:
     res.status(201); // HTTP Status 201: Created
-    const data = [{ message: 'API key created', key: key}];
+    const data = [{ message: 'API key created', key: key }];
     res.json(data); // Send the response
     return;
 });
-    
+
+
+
+// Delete an API key
+api.delete('/api/deletekey', (req, res) => {
+
+    // Check if the client is rate limited:
+    if (isClientRateLimited()) {
+        res.status(429); // HTTP Status 429: Too Many Requests
+        const data = [{ message: 'Too many requests' }];
+        res.json(data); // Send the response
+        return;
+    }
+
+    consoleLog("DELETE", "removing an API key"); // Log the request
+
+    // Get the data from the request:
+    let postData = JSON.stringify(req.body);
+    let parsedData = JSON.parse(postData);
+    let password = parsedData.password;
+    let key = parsedData.key;
+
+    // Check if the password is correct:
+    if (password != oegePassword) {
+        res.status(401); // HTTP Status 401: Unauthorized
+        const data = [{ message: 'Unauthorized' }];
+        res.json(data); // Send the response
+        return;
+    }
+
+    // Authorized, continue with the request:
+    // Delete the API key:
+    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
+    let keys = JSON.parse(rawKeys);
+    let index = keys.key.indexOf(key);
+    if (index > -1) {
+        keys.key.splice(index, 1);
+    }
+    let newKeys = JSON.stringify(keys);
+    fs.writeFileSync(`${__dirname}/keys.json`, newKeys);
+
+    // Send the response:
+    res.status(202); // HTTP Status 202: Accepted
+    const data = [{ message: 'API key deleted' }];
+    res.json(data); // Send the response
+    return;
+});
 
 
 

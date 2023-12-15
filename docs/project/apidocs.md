@@ -2,16 +2,10 @@
 
 # Hoe gebruik je de API?
 
-Om de API te gebruiken, moet je eerst de API starten. Dit doe je door het volgende commando uit te voeren in de terminal:
-
-```terminal
-node api.js
-```
-
-De API zal nu draaien op localhost:8080. De API is nu klaar voor gebruik. De API is te gebruiken door een request te sturen naar de volgende URL: `127.0.0.1:8080`. De API verwacht meestal postData dat er als volgt uit kan zien:
+De API is te gebruiken door een request naar webadres: `http://oege.ie.hva.nl:8080/api`. De API verwacht altijd postData dat er als volgt uit kan zien:
 
 ```postData
-field1=value1&field2=value2
+key=value&name=iets&score=100&coins=100
 ```
 
 !!! tip "Probeer de API"
@@ -22,9 +16,28 @@ field1=value1&field2=value2
 
 # Beveiliging
 
-De API is niet beveiligd met een API key. Dit is geen probleem, omdat de API alleen gebruikt wordt door de game zelf. De game is niet openbaar, en de URL is niet openbaar. De API is dus alleen te gebruiken door de game zelf. De API is tevens wel beveiligd tegen SQL injecties. Dit betekent dat de API niet te gebruiken is om de database te hacken. Dit is eigenlijk ook niet nodig, omdat we zeker weten dat de API alleen gebruikt wordt door de game zelf, maar we vonden het 'good practice' om de API te beveiligen tegen SQL injecties. Daarnaast was het ook een leuk onderwerp om te leren.
+## API key
 
-Misschien dat we in de toekomst de API beveiligen met een API key, maar dit is voor nu niet nodig.
+De API is beveiligd met een API key. Deze API key is te verkrijgen door een GET request te sturen naar de volgende URL `http://oege.ie.hva.nl:8080/api/createkey`. Om een key te creëren heb je het Oege wachtwoord nodig, en een al bestaande API key. Het wachtwoord is niet openbaar, en is alleen te verkrijgen via ons. De API verwacht postData waarin het wachtwoord en een key staan. Het postData ziet er als volgt uit:
+
+```postData
+key=APIKEY&password=PASSWORD
+```
+
+```json
+[
+    {
+        "key": "(NEW KEY)"
+    }
+]
+```
+Als de key en/of het wachtwoord niet overeenkomt, zal de API HTTP status 401 (Unauthorized) terugsturen, en een JSON object waarin staat dat je niet geautoriseerd bent.
+
+## Rate limit
+
+Naast een unieke API key, heeft de API ook een rate limit. Dit betekent dat je maar een bepaald aantal requests per seconde mag sturen. Als je meer requests stuurt dan het aantal dat is toegestaan, zal de API HTTP status 429 (Too Many Requests) terugsturen, en een JSON object waarin staat dat je te veel requests hebt gestuurd. Het aantal requests dat je mag sturen per seconde is tien. Als je meer dan 600 requests per minuut stuurt, zal de API HTTP status 429 (Too Many Requests) terugsturen, en een JSON object waarin staat dat je te veel requests hebt gestuurd. De rate limit is gebonden aan jouw API key, en is dus niet te omzeilen tenzij je nog een key aanvraagt.
+
+De rate limit is laag genoeg dat de game er geen last van zal hebben. De game stuurt namelijk maar één request per keer. De game stuurt alleen een request als de gebruiker een nieuw record heeft gezet. Dit zal niet vaak gebeuren, en dus zal de game niet snel de rate limit bereiken. Het is puur en alleen ter beveiliging dat iemand niet zomaar de hele API kan flooden met requests.
 
 # HTTP status codes
 
@@ -39,8 +52,14 @@ De API zal HTTP status codes terugsturen. Deze status codes geven aan als de req
 !!! success "Status 202: Accepted"
     De request is succesvol uitgevoerd. De API heeft de data succesvol verwijderd uit de database.
 
+!!! warning "Status 401: Unauthorized"
+    De request is niet succesvol uitgevoerd. De API heeft geen toegang tot de database. De API zal een JSON object terugsturen met de error.
+
 !!! warning "Status 404: Not Found"
     De request is niet succesvol uitgevoerd. De URL die je hebt gebruikt bestaat niet.
+
+!!! warning "Status 429: Too Many Requests"
+    De request is niet succesvol uitgevoerd. De API heeft te veel requests ontvangen. De API zal een JSON object terugsturen met de error.
 
 !!! danger "Status 500: Internal Server Error"
     De request is niet succesvol uitgevoerd. Er is een error opgetreden in de database. De API zal een JSON object terugsturen met de error.

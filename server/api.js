@@ -72,7 +72,7 @@ function isClientRateLimited(apiKey) {
 \*========================*/
 
 // Get user data of all users
-api.get('/api/get/allusers', async (req, res) => {
+api.get('/api/getalluserdata', async (req, res) => {
 
     consoleLog("GET", "all user data"); // Log the request
 
@@ -122,7 +122,7 @@ api.get('/api/get/allusers', async (req, res) => {
 
 
 // Get user data of a specific user
-api.get('/api/get/user', async (req, res) => {
+api.get('/api/getuserdata', async (req, res) => {
 
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
@@ -173,237 +173,8 @@ api.get('/api/get/user', async (req, res) => {
 
 
 
-// Get the user with the highest score
-api.get('/api/get/mostscore', async (req, res) => {
-
-    consoleLog("GET", "the highest score"); // Log the request
-
-    // Get the post data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let key = parsedData.key;
-
-    // Read the keys from the JSON file
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    let keys = JSON.parse(rawKeys);
-
-    // Check if the API key is correct:
-    const validkeys = keys.key;
-    if (!validkeys.includes(key)) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Check if the client is rate limited:
-    if (isClientRateLimited(key)) {
-        res.status(429); // HTTP Status 429: Too Many Requests
-        const data = [{ message: 'Too many requests' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Continue with the request:
-    try {
-        const conn = await pool.getConnection(); // Get a connection from the pool
-        let sql = `SELECT MAX(score) FROM \`userdata\`;`; // SQL query
-        maxresult = await conn.query(sql); // Execute the query
-
-        // Now get the name of the user with the highest score:
-        let score = maxresult[0][0]['MAX(score)']; // Get the highest score
-        let sql2 = `SELECT name FROM \`userdata\` WHERE score = ?;`; // SQL query
-        let inserts = [score]; // Using the ? to prevent SQL injection
-        sql2 = mysql.format(sql2, inserts); // Format the SQL query
-        result = await conn.query(sql2); // Execute the query
-
-        conn.release(); // Release the connection
-        res.status(200); // HTTP Status 200: OK
-
-        // Combine the results:
-        resultJson = JSON.parse(JSON.stringify(result[0][0])); // Convert the result to JSON
-        maxresultJson = JSON.parse(JSON.stringify(maxresult[0][0])); // Convert the result to JSON
-        resultJson['MAX(score)'] = maxresultJson['MAX(score)']; // Add the score to the result
-        result = resultJson; // Set the result to the combined result
-
-        // Encapsulate the result in an array:
-        result = [result];
-
-    } catch (err) {
-        res.status(500); // HTTP Status 500: Internal Server Error
-        result = [{ message: 'Error' }, { error: err }];
-    }
-    res.json(result); // Send the response, only send the data, not the metadata
-    return;
-});
-
-
-
-// Get the user with the most coins
-api.get('/api/get/mostcoins', async (req, res) => {
-
-    consoleLog("GET", "the most coins"); // Log the request
-
-    // Get the post data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let key = parsedData.key;
-
-    // Read the keys from the JSON file
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    let keys = JSON.parse(rawKeys);
-
-    // Check if the API key is correct:
-    const validkeys = keys.key;
-    if (!validkeys.includes(key)) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Check if the client is rate limited:
-    if (isClientRateLimited(key)) {
-        res.status(429); // HTTP Status 429: Too Many Requests
-        const data = [{ message: 'Too many requests' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Continue with the request:
-    try {
-        const conn = await pool.getConnection(); // Get a connection from the pool
-        let sql = `SELECT MAX(coins) FROM \`userdata\`;`; // SQL query
-        maxresult = await conn.query(sql); // Execute the query
-
-        // Now get the name of the user with the most coins:
-        let coins = maxresult[0][0]['MAX(coins)']; // Get the most coins
-        let sql2 = `SELECT name FROM \`userdata\` WHERE coins = ?;`; // SQL query
-        let inserts = [coins]; // Using the ? to prevent SQL injection
-        sql2 = mysql.format(sql2, inserts); // Format the SQL query
-        result = await conn.query(sql2); // Execute the query
-
-        conn.release(); // Release the connection
-        res.status(200); // HTTP Status 200: OK
-
-        // Combine the results:
-        resultJson = JSON.parse(JSON.stringify(result[0][0])); // Convert the result to JSON
-        maxresultJson = JSON.parse(JSON.stringify(maxresult[0][0])); // Convert the result to JSON
-        resultJson['MAX(coins)'] = maxresultJson['MAX(coins)']; // Add the coins to the result
-        result = resultJson; // Set the result to the combined result
-
-        // Encapsulate the result in an array:
-        result = [result];
-
-    } catch (err) {
-        res.status(500); // HTTP Status 500: Internal Server Error
-        result = [{ message: 'Error' }, { error: err }];
-    }
-    res.json(result); // Send the response, only send the data, not the metadata
-    return;
-});
-
-
-
-// Get the top 10 users with the highest score
-api.get('/api/get/leaderboard/score', async (req, res) => {
-
-    consoleLog("GET", "leaderboard score"); // Log the request
-
-    // Get the post data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let key = parsedData.key;
-
-    // Read the keys from the JSON file
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    let keys = JSON.parse(rawKeys);
-
-    // Check if the API key is correct:
-    const validkeys = keys.key;
-    if (!validkeys.includes(key)) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Check if the client is rate limited:
-    if (isClientRateLimited(key)) {
-        res.status(429); // HTTP Status 429: Too Many Requests
-        const data = [{ message: 'Too many requests' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Continue with the request:
-    try {
-        const conn = await pool.getConnection(); // Get a connection from the pool
-        let sql = `SELECT * FROM \`userdata\` ORDER BY \`userdata\`.\`score\` DESC LIMIT 10`; // SQL query
-        result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-        res.status(200); // HTTP Status 200: OK
-    } catch (err) {
-        res.status(500); // HTTP Status 500: Internal Server Error
-        result = [{ message: 'Error' }, { error: err }];
-    }
-    res.json(result[0]); // Send the response, only send the data, not the metadata
-    return;
-});
-
-
-
-// Get the top 10 users with the most coins
-api.get('/api/get/leaderboard/coins', async (req, res) => {
-
-    consoleLog("GET", "leaderboard coins"); // Log the request
-
-    // Get the post data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let key = parsedData.key;
-
-    // Read the keys from the JSON file
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    let keys = JSON.parse(rawKeys);
-
-    // Check if the API key is correct:
-    const validkeys = keys.key;
-    if (!validkeys.includes(key)) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Check if the client is rate limited:
-    if (isClientRateLimited(key)) {
-        res.status(429); // HTTP Status 429: Too Many Requests
-        const data = [{ message: 'Too many requests' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Continue with the request:
-    try {
-        const conn = await pool.getConnection(); // Get a connection from the pool
-        let sql = `SELECT * FROM \`userdata\` ORDER BY \`userdata\`.\`coins\` DESC LIMIT 10`; // SQL query
-        result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-        res.status(200); // HTTP Status 200: OK
-    } catch (err) {
-        res.status(500); // HTTP Status 500: Internal Server Error
-        result = [{ message: 'Error' }, { error: err }];
-    }
-    res.json(result[0]); // Send the response, only send the data, not the metadata
-});
-
-
-
 // Insert user data
-api.post('/api/post/insert', async (req, res) => {
+api.post('/api/insert', async (req, res) => {
 
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
@@ -412,8 +183,8 @@ api.post('/api/post/insert', async (req, res) => {
 
     // Get the data from the parsed data:
     let name = parsedData.name;
-    let time = getTime();
-    let date = getDateUS();
+    let time =  new Date().toLocaleTimeString("nl-NL");
+    let date = new Date().toLocaleDateString("fr-CA");
     let score = parsedData.score;
     let coins = parsedData.coins;
     let key = parsedData.key;
@@ -464,7 +235,7 @@ api.post('/api/post/insert', async (req, res) => {
 
 
 // Delete user data of a specific user
-api.delete('/api/delete/user', async (req, res) => {
+api.delete('/api/deleteuser', async (req, res) => {
 
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
@@ -641,6 +412,9 @@ api.delete('/api/deletekey', (req, res) => {
     return;
 });
 
+
+
+// Filtered get request, for users to request specific kinds of data:
 // Get request, for users to request specific kinds of data
 // One can provide a body containing request parameters, such as how many objects one wants to retrieve
 // A JSON request body will look like the following, if all properties are present:
@@ -649,10 +423,7 @@ api.delete('/api/deletekey', (req, res) => {
 //  "orderBy": "coins",                     Which table to filter by
 //  "tables": ["name", "coins", "score"],   Which table to select, can also be '*' to be any
 // }
-api.post('/api/get', (req, res) => {
-    console.log("Retrieved post request");
-    console.log(req.body);
-
+api.get('/api/get', (req, res) => {
     let resultCount = maxResults;
     let ordered = null;
 
@@ -687,9 +458,8 @@ api.post('/api/get', (req, res) => {
                 // Open connection and make the produced query
                 let connection = await pool.getConnection();
                 await connection.query(sqlQuery)
-                    .then(result => res.json(result[0]))
-                    .catch((e) => console.log("Error occurred"))
-                    .finally(() => res.status(400));
+                    .then(result => res.status(200).json(result[0]))
+                    .catch((e) => res.status(400).json([{ message: "Error" }, { error: e }]))
                 connection.release();
             })();
 
@@ -697,7 +467,6 @@ api.post('/api/get', (req, res) => {
         }
     }
 });
-
 
 
 

@@ -184,11 +184,7 @@ De API zal een HTTP status 200 (OK) terugsturen, en een JSON object met alle dat
 ```
 
 !!! note "Errors"
-    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
-
-## Formatteer en voer een specifieke query uit op de database
-
-# LUCA DIT IS JOUW SHIT
+    Als er een fout is opgetreden, zal de API `HTTP Status 500 (Internal Server Error)` terugsturen, en een JSON object met de error.
 
 ## Test de API
 

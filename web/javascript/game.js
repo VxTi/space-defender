@@ -41,6 +41,10 @@ var gameActive = false;
 const Difficulties = ['Easy', 'Normal', 'Hard', 'Extreme'];
 let difficulty = 0;
 
+let statistics = {}
+
+let
+
 setDifficulty = function(diff) {
     difficulty = diff % Difficulties.length;
     let textElement = document.querySelector(".difficulty-title");

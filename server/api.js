@@ -15,11 +15,13 @@ var crypto = require("crypto");
 // Parse JSON and URL-encoded data
 api.use(bodyParser.json());
 api.use(bodyParser.urlencoded({ extended: true }));
-api.use(cors({
-    origin: '*'
-}));
+api.use(cors({ origin: '*' }));
 
+// how many results will be returned by the GET query from the database
 const maxResults = 100;
+
+// The types of tables that are available when users send a GET api request.
+// If the request
 const tables = ['name', 'coins', 'time', 'score', 'date'];
 
 // Database connection:
@@ -54,10 +56,9 @@ function isClientRateLimited(apiKey) {
     let rateLimits = JSON.parse(fs.readFileSync(`${__dirname}/rates.json`)); // Read and parse the rate limit file
     let rateLimitTime = rateLimits[apiKey]; // Get the time of the last request for this API key
     let currentTime = Date.now(); // Get the current time
-    let timeDifference = currentTime - (rateLimitTime || 0); // Calculate the time difference
-    let timeDifferenceSeconds = timeDifference / 1000; // Convert the time difference to seconds
+    let dT = (currentTime - (rateLimitTime || 0)) / 1000; // Calculate the time difference
 
-    if (timeDifferenceSeconds < timeout) {
+    if (dT < timeout) {
         return true;
     } else {
         // Update the rate limit file:
@@ -372,7 +373,6 @@ api.get('/api/createkey', (req, res) => {
     res.status(201); // HTTP Status 201: Created
     const data = [{ message: 'API key created', key: key }];
     res.json(data); // Send the response
-    return;
 });
 
 
@@ -411,43 +411,71 @@ api.delete('/api/deletekey', (req, res) => {
     res.status(202); // HTTP Status 202: Accepted
     const data = [{ message: 'API key deleted' }];
     res.json(data); // Send the response
-    return;
 });
 
 
+// Default (wrong URL(GET))
 
-// Filtered get request, for users to request specific kinds of data:
-// Get request, for users to request specific kinds of data
-// One can provide a body containing request parameters, such as how many objects one wants to retrieve
-// A JSON request body will look like the following, if all properties are present:
-// {
-//  "results": 100,                         How many results will be returned
-//  "orderBy": "coins",                     Which table to filter by
-//  "tables": ["name", "coins", "score"],   Which table to select, can also be '*' to be any
-// }
-api.get('/api/get', (req, res) => {
-    let resultCount = maxResults;
-    let ordered = null;
 
-    // If the body contains a 'results' parameter of type 'number', the server
-    // will return that many results from the database.
-    if (typeof req.body.results === 'number')
-        resultCount = req.body.results;
 
-    // If the provided JSON body contains an 'orderBy' tag of type 'string', and the string
-    // is a valid table, as defined above, it will order the query by that table.
-    if (typeof req.body.orderBy === 'string' && tables.includes(req.body.orderBy))
-        ordered = req.body.orderBy;
+/**
+ *  Get request, for users to request specific kinds of data
+ *  One can provide a body containing request parameters, such as how many objects one wants to retrieve
+ *  A JSON request body will look like the following, when requesting all kind of data:
+ *  {
+ *      "requestType": "all-data",              What kind of data the user wants to retrieve
+ *      "results": 100,                         How many results will be returned
+ *      "orderBy": "coins",                     Which table to filter by
+ *      "tables": ["name", "coins", "score"],   Which table to select, can also be '*' to be any
+ *  }
+ * If the user wants to retrieve user-specific data, one must send a request like the following:
+ *  {
+ *      "requestType": "user-data",
+ *      "user": "name"
+ *  }
+ */
+api.post('/api/get', (req, res) => {
 
-    if (req.body.tables === "*")
-        req.body.tables = tables;
+    // Check whether the JSON body has a 'method' parameter. If it doesn't, we'll return an error.
+    // Every
+    if (!req.body.hasOwnProperty('requestType')) {
+        res.status(400).json("{\"error\": \"Faulty request. Add 'requestType' parameter to JSON body.\"}");
+        return;
+    }
+    let sqlQuery = null;
 
-    if (Array.isArray(req.body.tables)) {
-        // Check whether the content of 'req.body.tables' contains acceptable tables
-        let receivedTables = req.body.tables.filter((key) => tables.includes(key));
+    if (req.body.requestType === 'all-data') {
 
-        // Check if there are any accepted tables
-        if (receivedTables.length > 0) {
+        let resultCount = maxResults;
+        let ordered = null;
+
+        // If the body contains a 'results' parameter of type 'number', the server
+        // will return that many results from the database.
+        if (typeof req.body.results === 'number')
+            resultCount = req.body.results;
+
+        // If the provided JSON body contains an 'orderBy' tag of type 'string', and the string
+        // is a valid table, as defined above, it will order the query by that table.
+        // We have to check whether tables include the tag, otherwise it'll be vulnerable for injection...
+        if (typeof req.body.orderBy === 'string' && tables.includes(req.body.orderBy))
+            ordered = req.body.orderBy;
+
+        // Table selector for query
+        let tableQuery = null;
+
+        // Check if the provided 'tables' object is of type Array
+        if (Array.isArray(req.body.tables)) {
+            // Check whether the content of 'req.body.tables' contains acceptable tables
+            let filtered = req.body.tables.filter((key) => tables.includes(key));
+            if (filtered.length > 0)
+                tableQuery = filtered.toString();
+
+            // If the provided 'tables' object contains '*', we want to select all tables, so add it to the query.
+        } else if (req.body.tables === "*")
+            tableQuery = "*";
+
+        // Check whether we've received a valid tables
+        if (tableQuery != null) {
 
             // SQL query for looking up things from the database.
             // When the user provides tables to look up, it will return the table
@@ -464,13 +492,19 @@ api.get('/api/get', (req, res) => {
                     .catch((e) => res.status(400).json([{ message: "Error" }, { error: e }]))
                 connection.release();
             })();
+
+            console.log(sqlQuery);
         }
     }
+
+    // Default response when user provides incorrect method type
+    res.status(400).json([{error: "Provided invalid method type. Choose from 'get-data' and 'get-user' "}]);
 });
 
 
 
-// Default (wrong URL(GET)) 
+
+
 api.get('/*', (req, res) => {
     consoleLog("GET", "wrong URL"); // Log the request
     const data = [{ message: 'Wrong URL' }];

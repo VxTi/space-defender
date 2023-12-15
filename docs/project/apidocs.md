@@ -91,7 +91,8 @@ Dit JSON object hoort in het volgende formaat aanwezig te zijn:
 ```json
 {
   "requestType": "user-data",
-  "user": "username"
+  "apiKey": "API-KEY",
+  "user": "NAAM"
 }
 ```
 Dit gaat gepaard met een header met `Content-Type: application/json` op te sturen.
@@ -99,13 +100,13 @@ Dit gaat gepaard met een header met `Content-Type: application/json` op te sture
 Als dit verzoek in het juiste formaat is opgestuurd, zal de server een JSON object
 als response sturen. Dit zal er uit zien als volgt:
 
-``` json
+``` 
 POST http://oege.ie.hva.nl:8080/api/get HTTP/1.1
 Content-Type: application/json
 ...
 {
     "requestType": "all-data",
-    "apiKey": "apiKey"
+    "apiKey": "API-KEY"
     "tables": "*"
 }
 ```
@@ -147,8 +148,8 @@ Als laatste hoor je een JSON object als body mee te geven, wat in het volgende f
 ```json
 {
     "requestType": "user-data",
-    "apiKey": "apiKey",
-    "user": "username"
+    "apiKey": "API-KEY",
+    "user": "NAAM"
 }
 ```
 
@@ -207,7 +208,7 @@ Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8
 
 Om data voor een gebruiker te creeëren, stuur je een POST request naar de volgende URL: `http://oege.ie.hva.nl/api/insert`. De API verwacht postData met jouw API key en alle gegevens die je wilt opsturen naar de database dat er als volgt uit ziet:
 
-```postData
+```
 name=NAAM&score=100&coins=100&key=APIKEY
 ```
 
@@ -230,7 +231,7 @@ De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de sta
 
 Om een gebruiker te verwijderen, stuur je een DELETE request naar de volgende URL: `http://oege.ie.hva.nl/api/deleteuser`. De API verwacht postData met de gebruiker die jij wilt verwijderen, en jouw API key, dat er als volgt uit ziet:
 
-```postData
+```
 name=VOORBEELD&key=APIKEY
 ```
 

@@ -24,10 +24,12 @@ De API is beveiligd met een API key. Deze API key is te verkrijgen door een GET 
 key=APIKEY&password=PASSWORD
 ```
 
+Als dit succesvol is, zal de API HTTP status 201 (Created) terugsturen, en een JSON object waarin staat dat de key succesvol is aangemaakt. Het JSON object ziet er als volgt uit:
+
 ```json
 [
     {
-        "key": "(NEW KEY)"
+        "message": "API key created", "key": "APIKEY" 
     }
 ]
 ```
@@ -38,6 +40,16 @@ Als de key en/of het wachtwoord niet overeenkomt, zal de API HTTP status 401 (Un
 Naast een unieke API key, heeft de API ook een rate limit. Dit betekent dat je maar een bepaald aantal requests per seconde mag sturen. Als je meer requests stuurt dan het aantal dat is toegestaan, zal de API HTTP status 429 (Too Many Requests) terugsturen, en een JSON object waarin staat dat je te veel requests hebt gestuurd. Het aantal requests dat je mag sturen per seconde is tien. Als je meer dan 600 requests per minuut stuurt, zal de API HTTP status 429 (Too Many Requests) terugsturen, en een JSON object waarin staat dat je te veel requests hebt gestuurd. De rate limit is gebonden aan jouw API key, en is dus niet te omzeilen tenzij je nog een key aanvraagt.
 
 De rate limit is laag genoeg dat de game er geen last van zal hebben. De game stuurt namelijk maar één request per keer. De game stuurt alleen een request als de gebruiker een nieuw record heeft gezet. Dit zal niet vaak gebeuren, en dus zal de game niet snel de rate limit bereiken. Het is puur en alleen ter beveiliging dat iemand niet zomaar de hele API kan flooden met requests.
+
+Als je ge-rate-limited bent krijg je een JSON object terug met de volgende informatie:
+
+```json
+[
+    {
+        "message": "Too many requests"
+    }
+]
+```
 
 # HTTP status codes
 
@@ -68,12 +80,25 @@ De API zal HTTP status codes terugsturen. Deze status codes geven aan als de req
 
 ## Verkrijg de data van alle gebruikers
 
-Om de data van alle gebruikers te verkrijgen, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/allusers`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met alle data van alle gebruikers. Het JSON object ziet er als volgt uit:
+Om de data van alle gebruikers te verkrijgen, stuur je een GET request naar de volgende URL: `http://oege.ie.hva.nl:8080/api/getalluserdata`. De API verwacht een API key in de postData. Het postData ziet er als volgt uit:
+
+```postData
+key=APIKEY
+```
+
+Als de API key geaccepteerd wordt, krijg je een JSON array terug met alle data van alle gebruikers. Dit ziet er als volgt uit:
 
 ```json
 [
     {
         "name": "VOORBEELD",
+        "time": "12:00:00",
+        "date": "1970-01-01T23:00:00.000Z",
+        "score": 100,
+        "coins": 100
+    },
+    {
+        "name": "VOORBEELD2",
         "time": "12:00:00",
         "date": "1970-01-01T23:00:00.000Z",
         "score": 100,
@@ -87,10 +112,10 @@ Om de data van alle gebruikers te verkrijgen, stuur je een GET request naar de v
 
 ## Verkrijg de data van een specifieke gebruiker
 
-Om de data van een specifieke gebruiker te verkrijgen, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/user`. De API verwacht postData dat er als volgt uit ziet:
+Om de data van een specifieke gebruiker te verkrijgen, stuur je een GET request naar de volgende URL: `http://oege.ie.hva.nl:8080/api/getuserdata`. De API verwacht postData met jouw API key, en de naam van de gebruiker van wie je de data wilt ontvangen, dat er als volgt uit ziet:
 
 ```postData
-name=VOORBEELD
+key=APIKEY&name=NAAM
 ```
 
 De API zal een HTTP status 200 (OK) terugsturen, en een JSON object met alle data van de specifieke gebruiker. Het JSON object ziet er als volgt uit:
@@ -110,105 +135,9 @@ De API zal een HTTP status 200 (OK) terugsturen, en een JSON object met alle dat
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
 
-## Verkrijg gebruiker met de hoogste score
+## Formatteer en voer een specifieke query uit op de database
 
-Om de gebruiker te verkrijgen die de hoogste score heeft, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/mostscore`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de gebruiker die de hoogste score heeft. Het JSON object ziet er als volgt uit:
-
-```json
-[
-    {
-        "name": "NAAM",
-        "MAX(score)": 100
-    }
-]
-```
-
-!!! tip "Gebruik de hoogste score"
-    Je kunt de hoogste score gebruiken om de nummer 1 op het scorebord te laten zien. Je kunt de hoogste score ook gebruiken om te kijken als de gebruiker een nieuw record heeft gezet. Als de gebruiker een nieuw record heeft gezet, kun je de gebruiker feliciteren met het nieuwe record. Deze functie is toegevoegd zodat de game niet alle data van alle gebruikers hoeft op te halen, en vervolgens de hoogste score te berekenen. Dit scheelt veel tijd en regels code.
-
-!!! note "Errors"
-    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
-
-## Verkrijg de gebruiker met de meeste coins
-
-Om de gebruiker te verkrijgen die de meeste coins heeft, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/mostcoins`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de gebruiker die de meeste coins heeft. Het JSON object ziet er als volgt uit:
-
-```json
-[
-    {
-        "name": "NAAM",
-        "MAX(coins)": 100
-    }
-]
-```
-
-!!! tip "Gebruik de meeste coins"
-    Je kunt de meeste coins gebruiken om de nummer 1 op het scorebord te laten zien. Je kunt de meeste coins ook gebruiken om te kijken als de gebruiker een nieuw record heeft gezet. Als de gebruiker een nieuw record heeft gezet, kun je de gebruiker feliciteren met het nieuwe record. Deze functie is toegevoegd zodat de game niet alle data van alle gebruikers hoeft op te halen, en vervolgens de meeste coins te berekenen. Dit scheelt veel tijd en regels code.
-
-!!! note "Errors"
-    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
-
-## Verkrijg de top 10 gebruikers met de hoogste score
-
-Om de top 10 gebruikers te verkrijgen die de hoogste score hebben, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/leaderboard/score`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de top 10 gebruikers die de hoogste score hebben. Het JSON object ziet er als volgt uit:
-
-```json
-[
-    {
-        "name": "VOORBEELD",
-        "time": "12:00:00",
-        "date": "1970-01-01T23:00:00.000Z",
-        "score": 100,
-        "coins": 100
-    },
-    {
-        "name": "VOORBEELD2",
-        "time": "12:00:00",
-        "date": "1970-01-01T23:00:00.000Z",
-        "score": 100,
-        "coins": 100
-    }
-]
-```
-
-Et cetera...
-
-!!! tip "Gebruik de top 10 gebruikers met de hoogste score"
-    Je kunt de top 10 gebruikers met de hoogste score gebruiken om de top 10 op het scorebord te laten zien. Deze functie is toegevoegd zodat de game niet alle data van alle gebruikers hoeft op te halen, en vervolgens de top 10 te berekenen. Dit scheelt veel tijd en regels code.
-
-!!! note "Errors"
-    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
-
-## Verkrijg de top 10 gebruikers met de meeste coins
-
-Om de top 10 gebruikers te verkrijgen die de meeste coins hebben, stuur je een GET request naar de volgende URL: `127.0.0.1:8080/api/get/leaderboard/coins`. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON object met de top 10 gebruikers die de meeste coins hebben. Het JSON object ziet er als volgt uit:
-
-```json
-[
-    {
-        "name": "VOORBEELD",
-        "time": "12:00:00",
-        "date": "1970-01-01T23:00:00.000Z",
-        "score": 100,
-        "coins": 100
-    },
-    {
-        "name": "VOORBEELD2",
-        "time": "12:00:00",
-        "date": "1970-01-01T23:00:00.000Z",
-        "score": 100,
-        "coins": 100
-    }
-]
-```
-
-Et cetera...
-
-!!! tip "Gebruik de top 10 gebruikers met de meeste coins"
-    Je kunt de top 10 gebruikers met de meeste coins gebruiken om de top 10 op het scorebord te laten zien. Deze functie is toegevoegd zodat de game niet alle data van alle gebruikers hoeft op te halen, en vervolgens de top 10 te berekenen. Dit scheelt veel tijd en regels code.
-
-!!! note "Errors"
-    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON object met de error.
+# LUCA DIT IS JOUW SHIT
 
 ## Test de API
 
@@ -229,10 +158,10 @@ Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8
 
 ## Creeër data voor een gebruiker
 
-Om data voor een gebruiker te creeëren, stuur je een POST request naar de volgende URL: `127.0.0.1:8080/api/post/insert`. De API verwacht postData dat er als volgt uit ziet:
+Om data voor een gebruiker te creeëren, stuur je een POST request naar de volgende URL: `http://oege.ie.hva.nl/api/insert`. De API verwacht postData met jouw API key en alle gegevens die je wilt opsturen naar de database dat er als volgt uit ziet:
 
 ```postData
-name=VOORBEELD&time=12:00:00&date=1970-01-01T23:00:00.000Z&score=100&coins=100
+name=NAAM&score=100&coins=100&key=APIKEY
 ```
 
 De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de status van de request. Het JSON object ziet er als volgt uit:
@@ -252,10 +181,10 @@ De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de sta
 
 ## Verwijder een gebruiker
 
-Om een gebruiker te verwijderen, stuur je een DELETE request naar de volgende URL: `127.0.0.1:8080/api/delete/user`. De API verwacht postData dat er als volgt uit ziet:
+Om een gebruiker te verwijderen, stuur je een DELETE request naar de volgende URL: `http://oege.ie.hva.nl/api/deleteuser`. De API verwacht postData met de gebruiker die jij wilt verwijderen, en jouw API key, dat er als volgt uit ziet:
 
 ```postData
-name=VOORBEELD
+name=VOORBEELD&key=APIKEY
 ```
 
 De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de status van de request. Het JSON object ziet er als volgt uit:
@@ -264,7 +193,7 @@ De API zal HTTP status 202 (Accepted) terugsturen, en een JSON object met de sta
 [
     [
         {
-            "message": "User deleted"
+            "message": "User data deleted for user: NAAM"
         }
     ]
 ]

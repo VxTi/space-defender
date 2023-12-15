@@ -23,20 +23,11 @@ class AABB {
      * @param {number} y - Y-coordinate of the top-left corner.
      * @param {number} width - Width of the AABB.
      * @param {number} height - Height of the AABB.
-     * The AABB is lined up like the following:
-     *    .---.
-     *    |   |
-     *    '.|.'
      */
     constructor(x, y, width, height) {
-        this.#x = x;
-        this.#y = y;
-        this.#left = x - width / 2;
-        this.#top = y + height;
-        this.#right = x + width / 2;
-        this.#bottom = y;
         this.#width = width;
         this.#height = height;
+        this.translate(x, y);
     }
 
 
@@ -52,27 +43,23 @@ class AABB {
      */
     translateX(newX) {
         this.#x = newX;
-        this.#left = newX - this.#width / 2;
-        this.#right = newX + this.#width / 2;
+        this.#left = newX - this.#width * 0.5;
+        this.#right = newX + this.#width * 0.5;
         return this;
     }
 
     // Function for translating the Y coordinate of the Environment
     translateY(newY) {
         this.#y = newY;
-        this.#top = newY + this.#height;
-        this.#bottom = newY;
+        this.#top = newY - this.#height * 0.5;
+        this.#bottom = newY + this.#height * 0.5;
         return this;
     }
 
     // Function for translating the XY position of the Environment.
     translate(newX, newY) {
-        this.#x = newX;
-        this.#y = newY;
-        this.#left = newX - this.#width / 2;
-        this.#top = newY + this.#height;
-        this.#right = newX + this.#width / 2;
-        this.#bottom = newY;
+        this.translateX(newX);
+        this.translateY(newY);
         return this;
     }
 

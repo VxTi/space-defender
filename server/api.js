@@ -19,6 +19,9 @@ api.use(cors({
     origin: '*'
 }));
 
+const maxResults = 100;
+const tables = ['name', 'coins', 'time', 'score', 'date'];
+
 // Database connection:
 const credentials = {
     user: 'koopenj',
@@ -33,7 +36,8 @@ const credentials = {
 
 const pool = mysql.createPool(credentials);
 const oegePassword = credentials.password // Password for creating a new API key
-const timeout = 0.1; // Timeout in seconds
+const rateLimit = 10; // How many api calls one can make per second with their key
+const timeout = 1 / rateLimit; // Timeout in seconds
 
 /*========================*\
 |        Functions         |
@@ -394,7 +398,6 @@ api.get('/api/get/leaderboard/coins', async (req, res) => {
         result = [{ message: 'Error' }, { error: err }];
     }
     res.json(result[0]); // Send the response, only send the data, not the metadata
-    return;
 });
 
 
@@ -510,7 +513,6 @@ api.delete('/api/delete/user', async (req, res) => {
         result = [{ message: 'Error' }, { error: err }];
     }
     res.json(result); // Send the response
-    return;
 });
 
 
@@ -638,6 +640,64 @@ api.delete('/api/deletekey', (req, res) => {
     res.json(data); // Send the response
     return;
 });
+
+// Get request, for users to request specific kinds of data
+// One can provide a body containing request parameters, such as how many objects one wants to retrieve
+// A JSON request body will look like the following, if all properties are present:
+// {
+//  "results": 100,                         How many results will be returned
+//  "orderBy": "coins",                     Which table to filter by
+//  "tables": ["name", "coins", "score"],   Which table to select, can also be '*' to be any
+// }
+api.post('/api/get', (req, res) => {
+    console.log("Retrieved post request");
+    console.log(req.body);
+
+    let resultCount = maxResults;
+    let ordered = null;
+
+    // If the body contains a 'results' parameter of type 'number', the server
+    // will return that many results from the database.
+    if (typeof req.body.results === 'number')
+        resultCount = req.body.results;
+
+    // If the provided JSON body contains an 'orderBy' tag of type 'string', and the string
+    // is a valid table, as defined above, it will order the query by that table.
+    if (typeof req.body.orderBy === 'string' && tables.includes(req.body.orderBy))
+        ordered = req.body.orderBy;
+
+    if (req.body.tables === "*")
+        req.body.tables = tables;
+
+    if (Array.isArray(req.body.tables)) {
+        // Check whether the content of 'req.body.tables' contains acceptable tables
+        let receivedTables = req.body.tables.filter((key) => tables.includes(key));
+
+        // Check if there are any accepted tables
+        if (receivedTables.length > 0) {
+
+            // SQL query for looking up things from the database.
+            // When the user provides tables to look up, it will return the table
+            // If the user provides a limit, it will add "LIMIT x" to the query
+            // If the user provides 'orderBy' tag, and then provides an appropriate table, it will sort by that table
+            let sqlQuery =
+                `SELECT ${receivedTables.toString()} FROM userdata${ordered != null ? ` ORDER BY ${ordered} DESC` : ""} ${resultCount < 0 ? "" : `LIMIT ${resultCount}`}`;
+
+            (async () => {
+                // Open connection and make the produced query
+                let connection = await pool.getConnection();
+                await connection.query(sqlQuery)
+                    .then(result => res.json(result[0]))
+                    .catch((e) => console.log("Error occurred"))
+                    .finally(() => res.status(400));
+                connection.release();
+            })();
+
+            console.log(sqlQuery);
+        }
+    }
+});
+
 
 
 

@@ -60,8 +60,8 @@ class Entity extends AABB {
             // If another class extends this class and defines the function 'onCollisionCheck',
             // this then calls the function with the current target as parameter.
             // If this function returns false, collision detection should skip this target
-            /*if (this.position.distSq(target) > this.#velocity.magSq * 2)
-                continue;*/
+            if (this.position.distSq(target) > this.#velocity.magSq * 2)
+                continue;
 
             /**
              * SECTION: X AXIS COLLISION DETECTION
@@ -69,7 +69,8 @@ class Entity extends AABB {
 
             // perform calculations for x-axis collision detection
             if (!this.collidingHorizontally && Math.abs(this.#velocity.x) >= Entity.collisionThreshold) {
-                for (let j = 0; j <= Math.abs(this.#velocity.x * dT) + Entity.collisionThreshold; j += Entity.collisionThreshold) {
+
+                for (let j = Math.abs(this.#velocity.x * dT); j >= 0; j -= Entity.collisionThreshold) {
                     if (this.copy.translateX(this.position.x + j * Math.sign(this.velocity.x)).intersects(target)) {
 
                         this.#colliding.x = Math.sign(this.#velocity.x);
@@ -87,7 +88,7 @@ class Entity extends AABB {
 
             // Perform calculations for y-axis collision detection
             if (!this.collidingVertically && Math.abs(this.velocity.y) >= Entity.collisionThreshold) {
-                for (let j = 0; j <= Math.abs(this.velocity.y * dT) + Entity.collisionThreshold; j += Entity.collisionThreshold) {
+                for (let j = Math.abs(this.velocity.y * dT); j >= 0; j -= Entity.collisionThreshold) {
                     if (this.copy.translateY(this.position.y + j * Math.sign(this.velocity.y)).intersects(target)) {
 
                         this.#colliding.y = Math.sign(this.velocity.y);
@@ -95,7 +96,7 @@ class Entity extends AABB {
                         if (typeof(this['onCollisionY']) === 'function')
                             this['onCollisionY'](target);
 
-                        this.velocity.y = 0;
+                        this.#velocity.y = 0;
                         break;
                     }
                 }

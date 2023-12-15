@@ -23,8 +23,8 @@ const cmPerBlock = 1; // size of each 'meter' on screen.
 
 /** Terrain related variables */
 const seed = null; // if null, terrain will generate random
-const terrainHeight = 25;
-const terrainRandomness = 0.1; // Higher number makes the terrain more erratic
+const terrainHeight = 10;
+const terrainRandomness = 0.01; // Higher number makes the terrain more erratic
 
 // Object containing all loaded images.
 // If one wants to add images to the resources variable, you can do

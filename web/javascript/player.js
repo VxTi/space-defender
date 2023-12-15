@@ -12,6 +12,10 @@ class Player extends Entity {
     #coins = 0; // Coins the player has gathered
     #score = 0; // Points the player received
 
+    statistics = {
+        meters_fallen: 0
+    }
+
     constructor(x, y) {
         super(x, y, Player.#playerHealth, 0.9, 1.8, 1);
     }
@@ -21,6 +25,8 @@ class Player extends Entity {
         super.update(dT);
         if (this !== player)
             return;
+
+        this.statistics.meters_fallen += this.fallingDistance * dT;
         // If you come too close to the corner of the screen horizontally, move the camera accordingly.
         if (this.position.x + screenOffsetX < screenEdgeMargin) // left side of the screen
             screenOffsetX = -this.position.x + screenEdgeMargin;

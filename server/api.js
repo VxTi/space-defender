@@ -5,17 +5,34 @@
 
 // Libraries
 const express = require('express');
-const api = express();
+const app = express();
 const mysql = require("mysql2/promise");
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
-var crypto = require("crypto");
+const crypto = require("crypto");
+
+/*
+ * Which port to host the server on.
+ * Since we're using two servers, one for API calls and one for
+ * generic web calls, we must host them on two separate ports.
+ */
+const port = 8081;
+
+// Maximum amount of requests allowed per time-frame (window size is 1000ms / 1s)
+const rateLimit = 10;
+
+// Add rate limiting to every request made from Client to Server.
+app.use(require('express-rate-limit')({
+    windowMs: 1000, // Milliseconds per window. (1 second)
+    max: rateLimit,
+    message: '[{"message": "You have exceeded your API rate limit. Please slow down."}]'
+}));
 
 // Parse JSON and URL-encoded data
-api.use(bodyParser.json());
-api.use(bodyParser.urlencoded({ extended: true }));
-api.use(cors({ origin: '*' }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors({ origin: '*' }));
 
 // how many results will be returned by the GET query from the database
 const maxResults = 100;
@@ -23,6 +40,12 @@ const maxResults = 100;
 // The types of tables that are available when users send a GET api request.
 // If the request
 const tables = ['name', 'coins', 'time', 'score', 'date'];
+
+// Kinds of accepted request types in a POST request, for retrieving data
+const RequestType = {
+    ALL: "all-data", // Accepts all data from tables
+    USER: "user-data" // Accepts data from one user
+}
 
 // Database connection:
 const credentials = {
@@ -38,144 +61,28 @@ const credentials = {
 
 const pool = mysql.createPool(credentials);
 const oegePassword = credentials.password // Password for creating a new API key
-const rateLimit = 10; // How many api calls one can make per second with their key
 const timeout = 1 / rateLimit; // Timeout in seconds
 
-/*========================*\
-|        Functions         |
-\*========================*/
+/* - - - - - - - - - - - - *
+ |        Functions        |
+ * - - - - - - - - - - - - */
+
+// Function for retrieving the right year-month-day format
+getDateString = () => new Date().toLocaleDateString("fr-CA");
+
+// Function for retrieving the right time format
+getTimeString = () => new Date().toLocaleTimeString("nl-NL");
 
 // Log requests with formatting:
-function consoleLog(request, description) {
-    let date = new Date();
-    console.log(`[${date.toLocaleDateString()} ${date.toLocaleTimeString()}]: Retrieved ${request} request for ${description}`);
-}
-
-// Check if the client is rate limited:
-function isClientRateLimited(apiKey) {
-    let rateLimits = JSON.parse(fs.readFileSync(`${__dirname}/rates.json`)); // Read and parse the rate limit file
-    let rateLimitTime = rateLimits[apiKey]; // Get the time of the last request for this API key
-    let currentTime = Date.now(); // Get the current time
-    let dT = (currentTime - (rateLimitTime || 0)) / 1000; // Calculate the time difference
-
-    if (dT < timeout) {
-        return true;
-    } else {
-        // Update the rate limit file:
-        rateLimits[apiKey] = currentTime; // Update the time of the last request for this API key
-        fs.writeFileSync(`${__dirname}/rates.json`, JSON.stringify(rateLimits)); // Write the new rate limit file
-        return false;
-    }
-}
-
-/*========================*\
-|        API Calls         |
-\*========================*/
-
-// Get user data of all users
-api.get('/api/getalluserdata', async (req, res) => {
-
-    consoleLog("GET", "all user data"); // Log the request
-
-    // Get the post data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let key = parsedData.key;
-
-    // Read the keys from the JSON file
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    let keys = JSON.parse(rawKeys);
-
-    // Check if the API key is correct:
-    const validkeys = keys.key;
-    if (!validkeys.includes(key)) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Check if the client is rate limited:
-    if (isClientRateLimited(key)) {
-        res.status(429); // HTTP Status 429: Too Many Requests
-        const data = [{ message: 'Too many requests' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Continue with the request:
-    try {
-        const conn = await pool.getConnection(); // Get a connection from the pool
-        let sql = `SELECT * FROM \`userdata\`;`; // SQL query
-        result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-        res.status(200); // HTTP Status 200: OK
-
-    } catch (err) {
-        res.status(500); // HTTP Status 500: Internal Server Error
-        result = [{ message: 'Error' }, { error: err }];
-    }
-    res.json(result[0]); // Send the response, only send the data, not the metadata
-    return;
-});
+consoleLog = (message, ... parameters) => console.log(`[${getDateString()} ${getTimeString()}]: ${message}`, parameters);
 
 
-
-// Get user data of a specific user
-api.get('/api/getuserdata', async (req, res) => {
-
-    // Get the data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let name = parsedData.name;
-    let key = parsedData.key;
-
-    consoleLog("GET", `user data for user: ${name}`); // Log the request
-
-    // Read the keys from the JSON file
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    let keys = JSON.parse(rawKeys);
-
-    // Check if the API key is correct:
-    const validkeys = keys.key;
-    if (!validkeys.includes(key)) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Check if the client is rate limited:
-    if (isClientRateLimited(key)) {
-        res.status(429); // HTTP Status 429: Too Many Requests
-        const data = [{ message: 'Too many requests' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Continue with the request:
-    try {
-        const conn = await pool.getConnection(); // Get a connection from the pool
-        let sql = `SELECT name, time, date, score, coins FROM \`userdata\` WHERE name = ?;`; // SQL query
-        let inserts = [name]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-        result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-        res.status(200); // HTTP Status 200: OK
-    } catch (err) {
-        res.status(500); // HTTP Status 500: Internal Server Error
-        result = [{ message: 'Error' }, { error: err }];
-    }
-    res.json(result[0]); // Send the response, only send the data, not the metadata
-    return;
-});
-
-
+/* - - - - - - - - - - - - *
+ |        API Calls        |
+ * - - - - - - - - - - - - */
 
 // Insert user data
-api.post('/api/insert', async (req, res) => {
+app.post('/api/insert', async (req, res) => {
 
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
@@ -184,8 +91,8 @@ api.post('/api/insert', async (req, res) => {
 
     // Get the data from the parsed data:
     let name = parsedData.name;
-    let time =  new Date().toLocaleTimeString("nl-NL");
-    let date = new Date().toLocaleDateString("fr-CA");
+    let time =  getTimeString()
+    let date = getDateString();
     let score = parsedData.score;
     let coins = parsedData.coins;
     let key = parsedData.key;
@@ -205,13 +112,13 @@ api.post('/api/insert', async (req, res) => {
         return;
     }
 
-    // Check if the client is rate limited:
+    /*// Check if the client is rate limited:
     if (isClientRateLimited(key)) {
         res.status(429); // HTTP Status 429: Too Many Requests
         const data = [{ message: 'Too many requests' }];
         res.json(data); // Send the response
         return;
-    }
+    }*/
 
     // Continue with the request:
     try {
@@ -220,7 +127,7 @@ api.post('/api/insert', async (req, res) => {
         let sql = `INSERT INTO userdata (name, time, date, score, coins) VALUES (?, ?, ?, ?, ?);`; // SQL query
         let inserts = [name, time, date, score, coins]; // Using the ? to prevent SQL injection
         sql = mysql.format(sql, inserts); // Format the SQL query
-        result = await conn.query(sql); // Execute the query
+        await conn.query(sql); // Execute the query
         conn.release(); // Release the connection
 
         // Send a response:
@@ -236,7 +143,7 @@ api.post('/api/insert', async (req, res) => {
 
 
 // Delete user data of a specific user
-api.delete('/api/deleteuser', async (req, res) => {
+app.delete('/api/deleteuser', async (req, res) => {
 
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
@@ -290,7 +197,7 @@ api.delete('/api/deleteuser', async (req, res) => {
 
 
 // Test the API
-api.get('/api/test', (req, res) => {
+app.get('/api/test', (req, res) => {
 
     consoleLog("GET", "test"); // Log the request
 
@@ -329,9 +236,9 @@ api.get('/api/test', (req, res) => {
 
 
 // Create a new API key
-api.get('/api/createkey', (req, res) => {
+app.get('/api/createkey', (req, res) => {
 
-    consoleLog("GET", "creating a new API key"); // Log the request
+    consoleLog("Creating a new API key", "GET"); // Log the request
 
     // Get the data from the request:
     let postData = JSON.stringify(req.body);
@@ -348,13 +255,13 @@ api.get('/api/createkey', (req, res) => {
         return;
     }
 
-    // Check if the client is rate limited:
+    /*// Check if the client is rate limited:
     if (isClientRateLimited(key)) {
         res.status(429); // HTTP Status 429: Too Many Requests
         const data = [{ message: 'Too many requests' }];
         res.json(data); // Send the response
         return;
-    }
+    }*/
 
     // Authorized, continue with the request:
     // Generate a new API key:
@@ -376,7 +283,7 @@ api.get('/api/createkey', (req, res) => {
 
 
 // Delete an API key
-api.delete('/api/deletekey', (req, res) => {
+app.delete('/api/deletekey', (req, res) => {
 
     consoleLog("DELETE", "removing an API key"); // Log the request
 
@@ -432,7 +339,7 @@ api.delete('/api/deletekey', (req, res) => {
  *      "user": "name"
  *  }
  */
-api.post('/api/get', (req, res) => {
+app.post('/api/get', (req, res) => {
 
     // Check whether the JSON body has a 'method' parameter. If it doesn't, we'll return an error.
     // Every
@@ -442,7 +349,7 @@ api.post('/api/get', (req, res) => {
     }
     let sqlQuery = null;
 
-    if (req.body.requestType === 'all-data') {
+    if (req.body.requestType === RequestType.ALL) {
 
         let resultCount = maxResults;
         let ordered = null;
@@ -458,7 +365,7 @@ api.post('/api/get', (req, res) => {
         if (typeof req.body.orderBy === 'string' && tables.includes(req.body.orderBy))
             ordered = req.body.orderBy;
 
-        // Table selector for query
+        // Table selector for final query
         let tableQuery = null;
 
         // Check if the provided 'tables' object is of type Array
@@ -479,19 +386,26 @@ api.post('/api/get', (req, res) => {
             // When the user provides tables to look up, it will return the table
             // If the user provides a limit, it will add "LIMIT x" to the query
             // If the user provides 'orderBy' tag, and then provides an appropriate table, it will sort by that table
+            // Type checking is done before inserting them into the SQL query, to prevent injection threats
             sqlQuery =
                 `SELECT ${tableQuery} FROM userdata${ordered != null ? ` ORDER BY ${ordered} DESC` : ""} ${resultCount < 0 ? "" : `LIMIT ${resultCount}`}`;
-            //sqlQuery = mysql.format(`SELECT ? FROM userdata ${ordered != null ? 'ORDER BY ?'}`)
+        } else {
+            // Send a status code 'Unprocessable Entity' with associated error message
+            res.status(422).json([{error: "Provided incorrect table format. Use either '[\"table1\", \"table2\", ...\"]' or '\"*\"'."}])
         }
-    } else if (req.body.requestType === 'user-data') {
+        // Check for type user-data
+    } else if (req.body.requestType === RequestType.USER) {
         if (!req.body.hasOwnProperty('user')) {
-            res.status(402).json([{error: "User must provide parameter 'user' with request-type 'user-data'"}])
+            res.status(402).json([{error: `User must provide parameter 'user' with request-type '${RequestType.USER}'`}]);
             return;
         }
         // Select the requested data from the provided user.
         sqlQuery = mysql.format('SELECT * FROM userdata WHERE name=? LIMIT 1', req.body.user);
     }
+    // Check if we've processed a valid query
     if (sqlQuery != null) {
+
+        // If so, process the query
         (async () => {
             // Open connection and make the produced query
             let connection = await pool.getConnection();
@@ -504,43 +418,34 @@ api.post('/api/get', (req, res) => {
     }
 
     // Default response when user provides incorrect method type
-    res.status(400).json([{error: "Provided invalid method type. Choose from 'get-data' and 'get-user' "}]);
+    res.status(400).json([{error: `Provided invalid JSON content.`}]);
 });
 
 
-
-
-
-api.get('/*', (req, res) => {
+app.get('/*', (req, res) => {
     consoleLog("GET", "wrong URL"); // Log the request
-    const data = [{ message: 'Wrong URL' }];
-    res.status(404); // HTTP Status 404: Not Found
-    res.json(data); // Send the response
+    res.status(404).json([{ message: 'Wrong URL' }]); // Send status 404 with appropriate JSON-body
 });
 
 
 
 // Default (wrong URL(POST))
-api.post('/*', (req, res) => {
+app.post('/*', (req, res) => {
     consoleLog("POST", "wrong URL"); // Log the request
-    const data = [{ message: 'Wrong URL' }];
-    res.status(404); // HTTP Status 404: Not Found
-    res.json(data); // Send the response
+    res.status(404).json([{ message: 'Wrong URL' }]); // Send status 404 with appropriate JSON-body
 });
 
 
 
 // Default (wrong URL(DELETE))
-api.delete('/*', (req, res) => {
+app.delete('/*', (req, res) => {
     consoleLog("DELETE", "wrong URL"); // Log the request
-    const data = [{ message: 'Wrong URL' }];
-    res.status(404); // HTTP Status 404: Not Found
-    res.json(data); // Send the response
+    res.status(404).json([{ message: 'Wrong URL' }]); // Send status 404 with appropriate JSON-body
 });
 
 
 
-// Run the API on port 8080
-api.listen(8080, () => {
-    consoleLog("LISTEN", "running API on port 8080"); // Log the request
+// Run the API on port 8081
+app.listen(port, () => {
+    consoleLog(`API Server started on port ${port}`); // Log the request
 });  

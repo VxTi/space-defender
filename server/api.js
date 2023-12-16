@@ -76,6 +76,14 @@ getTimeString = () => new Date().toLocaleTimeString("nl-NL");
 // Log requests with formatting:
 consoleLog = (message, ... parameters) => console.log(`[${getDateString()} ${getTimeString()}]: ${message}`, parameters);
 
+// Check if the given API key is valid:
+isApiKeyInvalid = (apiKey) => {
+    let fileData = fs.readFileSync(`${__dirname}/keys.json`); // Read the keys from the JSON file
+    let json = JSON.parse(fileData); // Parse the keys
+    const keys = json.key; // Get the valid keys
+    return keys.includes(apiKey);
+}
+
 
 /* - - - - - - - - - - - - *
  |        API Calls        |
@@ -99,26 +107,19 @@ app.post('/api/insert', async (req, res) => {
 
     consoleLog("POST", `inserting user data for: ${name}`); // Log the request
 
-    // Read the keys from the JSON file
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    let keys = JSON.parse(rawKeys);
-
     // Check if the API key is correct:
-    const validkeys = keys.key;
-    if (!validkeys.includes(key)) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
+    if (isApiKeyInvalid(key)) {
+        res.status(401).json([{ message: 'Unauthorized' }]); // Send the response, Status 401: Unauthorized
         return;
     }
 
-    /*// Check if the client is rate limited:
-    if (isClientRateLimited(key)) {
-        res.status(429); // HTTP Status 429: Too Many Requests
-        const data = [{ message: 'Too many requests' }];
+    // Check if the data is valid:
+    if (name == null || score == null || coins == null) {
+        res.status(400); // HTTP Status 400: Bad Request
+        data = [{ message: 'Bad Request' }];
         res.json(data); // Send the response
         return;
-    }*/
+    }
 
     // Continue with the request:
     try {
@@ -155,26 +156,14 @@ app.delete('/api/deleteuser', async (req, res) => {
 
     consoleLog("DELETE", `deleting user data for: ${name}`); // Log the request
 
-    // Read the keys from the JSON file
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    let keys = JSON.parse(rawKeys);
-
     // Check if the API key is correct:
-    const validkeys = keys.key;
-    if (!validkeys.includes(key)) {
+    if (isApiKeyInvalid(key)) {
         res.status(401); // HTTP Status 401: Unauthorized
         const data = [{ message: 'Unauthorized' }];
         res.json(data); // Send the response
         return;
     }
 
-    // Check if the client is rate limited:
-    if (isClientRateLimited(key)) {
-        res.status(429); // HTTP Status 429: Too Many Requests
-        const data = [{ message: 'Too many requests' }];
-        res.json(data); // Send the response
-        return;
-    }
 
     // Continue with the request:
     try {
@@ -206,23 +195,10 @@ app.get('/api/test', (req, res) => {
     let parsedData = JSON.parse(postData);
     let key = parsedData.key;
 
-    // Read the keys from the JSON file
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    let keys = JSON.parse(rawKeys);
-
     // Check if the API key is correct:
-    const validkeys = keys.key;
-    if (!validkeys.includes(key)) {
+    if (isApiKeyInvalid(key)) {
         res.status(401); // HTTP Status 401: Unauthorized
         const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Check if the client is rate limited:
-    if (isClientRateLimited(key)) {
-        res.status(429); // HTTP Status 429: Too Many Requests
-        const data = [{ message: 'Too many requests' }];
         res.json(data); // Send the response
         return;
     }
@@ -245,34 +221,34 @@ app.get('/api/createkey', (req, res) => {
     let parsedData = JSON.parse(postData);
     let key = parsedData.key;
     let password = parsedData.password;
-    const validkeys = keys.key;
 
-    // Check if the password and API key are correct:
-    if ((password !== oegePassword) && (!validkeys.includes(key))) {
+    // Check if the API key is correct:
+    if (isApiKeyInvalid(key)) {
         res.status(401); // HTTP Status 401: Unauthorized
         const data = [{ message: 'Unauthorized' }];
         res.json(data); // Send the response
         return;
     }
 
-    /*// Check if the client is rate limited:
-    if (isClientRateLimited(key)) {
-        res.status(429); // HTTP Status 429: Too Many Requests
-        const data = [{ message: 'Too many requests' }];
+    // Check if the password is correct:
+    if (password != oegePassword) {
+        res.status(401); // HTTP Status 401: Unauthorized
+        const data = [{ message: 'Unauthorized' }];
         res.json(data); // Send the response
         return;
-    }*/
+    }
+
 
     // Authorized, continue with the request:
     // Generate a new API key:
-    let newKey = crypto.randomBytes(12).toString('hex');
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
+    let newKey = crypto.randomBytes(12).toString('hex'); // Generate a new API key
+    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`); // Read the keys from the JSON file
 
     // Insert the new key in the JSON file:
-    let keys = JSON.parse(rawKeys);
-    keys.key.push(newKey);
-    let newKeys = JSON.stringify(keys);
-    fs.writeFileSync(`${__dirname}/keys.json`, newKeys);
+    let keys = JSON.parse(rawKeys); // Parse the keys
+    keys.key.push(newKey); // Add the new key to the list of keys
+    let newKeys = JSON.stringify(keys); // Stringify the new keys
+    fs.writeFileSync(`${__dirname}/keys.json`, newKeys); // Write the new keys to the JSON file
 
     // Send the response:
     res.status(201); // HTTP Status 201: Created

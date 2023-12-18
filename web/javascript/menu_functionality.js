@@ -49,9 +49,15 @@ function keyTyped() {
     else if (key === ' ') { // If spacebar pressed, perform button click
         if (currentMenu != null) {
 
-            let menuTarget = currentMenu.querySelector('.gamepad-selected').dataset.menu;
-            if (menuTarget != null) {
-                showMenu(menuTarget);
+            let selected = currentMenu.querySelector('.gamepad-selected');
+
+            // Check if it has a menu to go to
+            if (selected.dataset.menu != null) {
+                showMenu(selected.dataset.menu);
+
+                // Check if it has a function to perform when interacted with
+            } else if (selected.dataset.onload != null && typeof this[selected.dataset.onload] === 'function') {
+                this[selected.dataset.onload]();
             }
         }
     }

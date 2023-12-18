@@ -60,12 +60,12 @@ class Entity extends AABB {
             // If another class extends this class and defines the function 'onCollisionCheck',
             // this then calls the function with the current target as parameter.
             // If this function returns false, collision detection should skip this target
-            if (this.position.distSq(target) > this.#velocity.magSq * 2)
-                continue;
-
-            /**
+            /*if (this.position.distSq(target) > this.#velocity.magSq * 2)
+                continue;*/
+/*
+            /!**
              * SECTION: X AXIS COLLISION DETECTION
-             **/
+             **!/
 
             // perform calculations for x-axis collision detection
             if (!this.collidingHorizontally && Math.abs(this.#velocity.x) >= Entity.collisionThreshold) {
@@ -82,9 +82,9 @@ class Entity extends AABB {
                 }
             }
 
-            /**
+            /!**
              * SECTION: Y AXIS COLLISION DETECTION
-             **/
+             **!/
 
             // Perform calculations for y-axis collision detection
             if (!this.collidingVertically && Math.abs(this.velocity.y) >= Entity.collisionThreshold) {
@@ -100,6 +100,16 @@ class Entity extends AABB {
                         break;
                     }
                 }
+            }*/
+
+            if (this.#colliding.x === 0 && this.#checkAxialCollision('x', this, dT, target)) {
+                this.#colliding.x = Math.sign(this.#velocity.x);
+                this.#velocity.x = 0;
+            }
+
+            if (this.#colliding.y === 0 && this.#checkAxialCollision('y', this, dT, target)) {
+                this.#colliding.y = Math.sign(this.#velocity.y);
+                this.#velocity.y = 0;
             }
 
             // If we're colliding on both axis, stop further checks
@@ -147,25 +157,17 @@ class Entity extends AABB {
 
     /**
      * Method for checking whether the entity collides with another on a provided axis
-     * @param axis The axis to check collision for. This can be 'x' or 'y'
-     * @param entityOrigin The entity to check from
-     * @param dT       Time difference. The next position is axis + velocity[axis] * dT
-     * @param step     This is how accurate we check velocity
-     * @param entityTarget The target entity to check with
+     * @param {string} axis The axis to check collision for. This can be 'x' or 'y'
+     * @param {Entity} entityOrigin The entity to check from
+     * @param {number} dT       Time difference. The next position is axis + velocity[axis] * dT
+     * @param {Entity} entityTarget The target entity to check with
      * @returns {boolean} Whether we collided or not
      */
-    #checkAxialCollision(axis, entityOrigin, dT, step, entityTarget) {
-
-        // If the distance to the target is larger than the velocity + step, don't check collision
-        if (entityOrigin.#position.distSq(entityTarget.#position) > entityOrigin.#velocity[axis] + step)
-            return false;
-
-        for (let i = entityOrigin.#velocity[axis] * dT; i >= 0; i -= step) {
-            if (entityOrigin.copy().translate(entityTarget.x).intersects(entityTarget)) {
-
-            }
-        }
-        return false;
+    #checkAxialCollision(axis, entityOrigin, dT, entityTarget) {
+        let vecOffset = entityOrigin.position.copy;                 // create copy
+        vecOffset[axis] += entityOrigin.velocity[axis] * dT; // add velocity offset (next frame position)
+        vecOffset[axis] += Math.sign(entityOrigin[axis]) * entityOrigin.dimensions[axis] / 2; // Add width/height offset
+        return entityTarget.intersectsPoint(vecOffset.x, vecOffset.y);
     }
 
     /**

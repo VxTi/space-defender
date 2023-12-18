@@ -46,10 +46,14 @@ function keyTyped() {
         selectNextMenuItem(-1);
     else if (key === 's' || key === 'a') // with 's' and 'a', do the opposite, move down
         selectNextMenuItem(1);
-    else if (key === ' ') { // If spacebar pressed, perform button click
+    else if (key === ' ') { // If space-bar is pressed, perform button click
         if (currentMenu != null) {
 
             let selected = currentMenu.querySelector('.gamepad-selected');
+
+            // Check whether we've selected an item
+            if (selected == null)
+                return;
 
             // Check if it has a menu to go to
             if (selected.dataset.menu != null) {

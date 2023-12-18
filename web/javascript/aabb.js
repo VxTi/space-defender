@@ -110,6 +110,7 @@ class AABB {
         this.#bottom = h;
     }
 
+    get dimensions() { return new Vec2(this.#width, this.#height); }
     get width() { return this.#width; }
     get height() { return this.#height; }
 }

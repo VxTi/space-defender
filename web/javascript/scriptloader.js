@@ -9,7 +9,7 @@
         'p5', 'resource', 'vec2', 'aabb',
         'block', 'blocktype', 'entity', 'player',
         'environment', 'hostile_entities', 'game',
-        'menu_functionality defer'
+        'menu_functionality defer', 'tree'
     ];
     let head = document.getElementsByTagName('head')[0];
 

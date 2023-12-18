@@ -9,6 +9,53 @@ let leaderboardFilter = 'coins';
 
 let leaderboardData = {};
 
+let currentMenu = null;
+
+
+selectNextMenuItem = (direction = 1) => {
+
+    // Check if we're currently in a menu, if not, discard the action
+    if (currentMenu === null)
+        return;
+
+    // Get the list of possible selectors
+    let selectables = currentMenu.querySelectorAll(".gamepad-selectable");
+    let currentlySelected = currentMenu.querySelector(".gamepad-selected");
+
+    // If we're not selecting an element, pick the first one and stop.
+    if (currentlySelected == null) {
+        selectables[0].classList.add("gamepad-selected");
+        return;
+    }
+
+
+    for (let i = 0; i < selectables.length; i++) {
+        if (selectables[i] === currentlySelected) {
+            selectables[(i + direction + selectables.length) % selectables.length].classList.add("gamepad-selected");
+            break;
+        }
+    }
+
+    // Remove selector from previously selected element
+    currentlySelected.classList.remove("gamepad-selected");
+}
+
+function keyTyped() {
+    // For controller movement, when user enters 'w' or 'd', select next upper element
+    if (key === 'w' || key === 'd')
+        selectNextMenuItem(-1);
+    else if (key === 's' || key === 'a') // with 's' and 'a', do the opposite, move down
+        selectNextMenuItem(1);
+    else if (key === ' ') { // If spacebar pressed, perform button click
+        if (currentMenu != null) {
+
+            let menuTarget = currentMenu.querySelector('.gamepad-selected').dataset.menu;
+            if (menuTarget != null) {
+                showMenu(menuTarget);
+            }
+        }
+    }
+}
 
 (() => {
 
@@ -67,14 +114,15 @@ let leaderboardData = {};
  * @param element
  */
 function showMenu(element = null) {
+    currentMenu = null;
     document.querySelectorAll('.menu-page').forEach(e => e.style.visibility = 'hidden');
     if (element != null && element.length > 1) {
-        let e = document.querySelector(`.${element}`);
-        e.style.visibility = 'visible';
+        currentMenu = document.querySelector(`.${element}`);
+        currentMenu.style.visibility = 'visible';
         // Check if the element has an onload function in its dataset, defined as 'data-onload=".."'
         // If it does, call the function.
-        if (typeof e.dataset.onload !== 'undefined' && typeof this[e.dataset.onload] === 'function')
-            this[e.dataset.onload]();
+        if (typeof currentMenu.dataset.onload !== 'undefined' && typeof this[currentMenu.dataset.onload] === 'function')
+            this[currentMenu.dataset.onload]();
 
     }
     gameActive = element === "" || element == null;

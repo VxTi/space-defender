@@ -87,6 +87,10 @@ body, html {
     background-color: var(--color-button-press);
 }
 
+.gamepad-selected {
+    border: #ffffff 1px solid;
+}
+
 .frame-title {
     font-family: minecraft-font, serif;
     color: white;

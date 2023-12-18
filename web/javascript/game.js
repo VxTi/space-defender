@@ -43,8 +43,6 @@ let difficulty = 0;
 
 let statistics = {}
 
-let
-
 setDifficulty = function(diff) {
     difficulty = diff % Difficulties.length;
     let textElement = document.querySelector(".difficulty-title");

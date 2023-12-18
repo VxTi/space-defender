@@ -61,7 +61,6 @@ const credentials = {
 
 const pool = mysql.createPool(credentials);
 const oegePassword = credentials.password // Password for creating a new API key
-const timeout = 1 / rateLimit; // Timeout in seconds
 
 /* - - - - - - - - - - - - *
  |        Functions        |
@@ -305,6 +304,7 @@ app.delete('/api/deletekey', (req, res) => {
  *  A JSON request body will look like the following, when requesting all kind of data:
  *  {
  *      "requestType": "all-data",              What kind of data the user wants to retrieve
+ *      "apiKey": "key",                        What
  *      "results": 100,                         How many results will be returned
  *      "orderBy": "coins",                     Which table to filter by
  *      "tables": ["name", "coins", "score"],   Which table to select, can also be '*' to be any
@@ -312,6 +312,7 @@ app.delete('/api/deletekey', (req, res) => {
  * If the user wants to retrieve user-specific data, one must send a request like the following:
  *  {
  *      "requestType": "user-data",
+ *      "apiKey": "key",
  *      "user": "name"
  *  }
  */

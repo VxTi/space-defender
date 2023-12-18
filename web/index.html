@@ -18,13 +18,13 @@
             <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-start">
                 <div class="bg">
                     <div class="frame-title">Menu</div>
-                    <div class="menu-button main-information" data-menu="menu-information">How to play</div>
-                    <div class="menu-button main-difficulty">
+                    <div class="menu-button main-information gamepad-selectable" data-menu="menu-information">How to play</div>
+                    <div class="menu-button main-difficulty gamepad-selectable">
                         <span style="float: left; width: 50%; margin: auto; ">Difficulty</span>
                         <span class="difficulty-title" style="float: right; width: 50%; margin: auto">Easy</span>
                     </div>
-                    <div class="menu-button main-leaderboards" data-menu="menu-leaderboards">Leaderboards</div>
-                    <div class="menu-button main-play" data-menu="">Play</div>
+                    <div class="menu-button main-leaderboards gamepad-selectable" data-menu="menu-leaderboards">Leaderboards</div>
+                    <div class="menu-button main-play gamepad-selectable" data-menu="">Play</div>
                 </div>
             </div>
 
@@ -33,10 +33,10 @@
             -->
             <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-pause">
                 <div class="bg">
-                    <div class="menu-button pause-main-menu" data-menu="menu-start">Return to menu</div>
-                    <div class="menu-button pause-settings" data-menu="menu-settings">Settings</div>
-                    <div class="menu-button pause-statistics" data-menu="menu-statistics">Statistics</div>
-                    <div class="menu-button pause-resume" data-menu="">Resume</div>
+                    <div class="menu-button pause-main-menu gamepad-selectable" data-menu="menu-start">Return to menu</div>
+                    <div class="menu-button pause-settings gamepad-selectable" data-menu="menu-settings">Settings</div>
+                    <div class="menu-button pause-statistics gamepad-selectable" data-menu="menu-statistics">Statistics</div>
+                    <div class="menu-button pause-resume gamepad-selectable" data-menu="">Resume</div>
                 </div>
             </div>
 
@@ -46,11 +46,11 @@
             -->
             <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-leaderboards" data-onload="retrieveLeaderboards">
                 <div class="bg">
-                    <div class="button-menu"><</div>
-                    <div class="frame-title">Leaderboards</div>
+                    <div class="button-menu gamepad-selectable"><</div>
+                    <div class="frame-title gamepad-selectable">Leaderboards</div>
                     <div class="leaderboards-filter-container">
-                        <div class="leaderboards-filter selected" data-filter="coins">Coins</div>
-                        <div class="leaderboards-filter" data-filter="score">Points</div>
+                        <div class="leaderboards-filter selected gamepad-selectable" data-filter="coins">Coins</div>
+                        <div class="leaderboards-filter gamepad-selectable" data-filter="score">Points</div>
                     </div>
 
                     <div class="menu-text-content leaderboard-content"></div>
@@ -62,7 +62,7 @@
             -->
             <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-settings">
                 <div class="bg">
-                    <div class="button-menu" data-target="menu-pause"><</div>
+                    <div class="button-menu gamepad-selectable" data-target="menu-pause"><</div>
                     <div class="frame-title">Settings</div>
                     <div class="menu-text-content">
                         <!-- TODO: Put settings here -->
@@ -76,7 +76,7 @@
             -->
             <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-statistics">
                 <div class="bg">
-                    <div class="button-menu" data-target="menu-pause"><</div>
+                    <div class="button-menu gamepad-selectable" data-target="menu-pause"><</div>
                     <div class="frame-title">Statistics</div>
                     <div class="menu-text-content">
                         <!-- TODO: Put statistics content here -->
@@ -90,7 +90,7 @@
             -->
             <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-information">
                 <div class="bg">
-                    <div class="button-menu"><</div>
+                    <div class="button-menu gamepad-selectable"><</div>
                     <div class="frame-title">How to play</div>
                     <div class="menu-text-content">
                         Hello beginning user! <br>

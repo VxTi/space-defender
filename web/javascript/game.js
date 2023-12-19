@@ -16,15 +16,18 @@ var windowHeightInMeters;
 var screenEdgeMargin = 5; // If the player gets close to the edge of the screen (in game meters), the screen moves.
 var screenOffsetX = 0;
 var screenOffsetY = 0;
-// How many on-screen pixels represent an in-game meter
-var pixelsPerMeter;
+// How many on-screen pixels represent an in-game meter (pixels per meter)
+var ppm;
 
 const cmPerBlock = 1; // size of each 'meter' on screen.
 
 /** Terrain related variables */
 const seed = null; // if null, terrain will generate random
-const terrainHeight = 10;
-const terrainRandomness = 0.01; // Higher number makes the terrain more erratic
+const terrainHeight = 20;
+const terrainRandomness = 0.1; // Higher number makes the terrain more erratic
+
+// Object containing terrain data
+let terrain;
 
 // Object containing all loaded images.
 // If one wants to add images to the resources variable, you can do
@@ -75,9 +78,9 @@ function preload() {
         resources[element] = loadImage(`./assets/${element}.${extension}`);
 
     // How many pixels represent a 'meter' ingame. This uses an invisible div element that's one cm large.
-    pixelsPerMeter = document.querySelector(".pixel-size").clientWidth * cmPerBlock;
-    windowWidthInMeters = window.innerWidth / pixelsPerMeter;
-    windowHeightInMeters = window.innerHeight / pixelsPerMeter;
+    ppm = document.querySelector(".pixel-size").clientWidth * cmPerBlock;
+    windowWidthInMeters = window.innerWidth / ppm;
+    windowHeightInMeters = window.innerHeight / ppm;
 }
 
 
@@ -107,24 +110,25 @@ function setup() {
 
     // Create an instance of the first player, for when the user decides to play single-player.
     player = new Player(5, terrainHeight + 5);
+    terrain = new Terrain(seed, 512);
 
-    noiseSeed(seed === null ? Math.floor((1 << 10) * Math.random()) : seed);
 
-    Environment.generate();            // generate environment
-    Environment.introduce(player); // add player to the environment
-    Environment.introduce(new EntityWizard(10, 30, 4));
+
+
+    terrain.generate();            // generate environment
+    terrain.addEntity(player); // add player to the environment
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 
     // Add periodic updates for entities
     // For example, hostile entity damage, only once per second.
-    setInterval(() => {
+    /*setInterval(() => {
         if (!gameActive)
             return;
-        Environment.entities.forEach(e => {
+        /!*Terrain.entities.forEach(e => {
             if (typeof e['onPeriodicUpdate'] === 'function')
-                e['onPeriodicUpdate']();
+                e['onPeriodicUpdate']();*!/
         });
-    }, entityTick);
+    }, entityTick);*/
 }
 
 // Draw function is called every 1/60th a second.
@@ -159,7 +163,7 @@ function draw() {
     animations['moonAnimation'].animate(window.innerWidth - 200, 50, 100, 100, Math.floor(timePhase));
 
     // Offset the screen by the scrolling position
-    translate(screenOffsetX * pixelsPerMeter, -screenOffsetY * pixelsPerMeter);
+    translate(screenOffsetX * ppm, -screenOffsetY * ppm);
 
     // If the game isn't active, prevent updates.
     if (!gameActive)
@@ -168,8 +172,8 @@ function draw() {
     let dT = deltaTime / 1000;
 
     timePhase += dT;
-    Environment.update(dT);
-    Environment.draw(dT);
+    terrain.update(dT);
+    terrain.draw(dT);
 
 }
 
@@ -184,7 +188,7 @@ function draw() {
 function drawHealthBar(x, y, health, maxHealth, scale = 1) {
     stroke(255);
     text(`${health}/${maxHealth} HP`, x, y);
-    for (let i = 1, w = pixelsPerMeter * scale; i <= maxHealth / 2; i++) {
+    for (let i = 1, w = ppm * scale; i <= maxHealth / 2; i++) {
         animations['health'].animate(
             x + (-maxHealth / 4 + i) * w,
             y , w, w, (i * 2) <= health ? 0 : (i * 2) - 1 <= health ? 1 : 2);

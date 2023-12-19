@@ -16,14 +16,14 @@ class EntityWizard extends Entity {
 
     draw(dt) {
         push();
-        translate((this.position.x) * pixelsPerMeter,
-            window.innerHeight - (this.height + this.position.y) * pixelsPerMeter);
+        translate((this.position.x) * ppm,
+            window.innerHeight - (this.height + this.position.y) * ppm);
 
         // Render the player image (animate when walking)
         image(resources['wizard'],
             -10, 0, // since we translated, the player's screen pos is at 0, 0 in the current matrix.
-            this.width * pixelsPerMeter,
-            this.height * pixelsPerMeter);
+            this.width * ppm,
+            this.height * ppm);
 
         // Rendering of the hearts above the player
         /*for (let i = 1, w = pixelsPerMeter * 0.4; i <= this.maxHealth / 2; i++) {
@@ -66,7 +66,7 @@ class EntityWizard extends Entity {
         }
 
         // NOTE: if statement of dit nodig is. Dit maakt onPeriodicUpdate O(entitys) tijds complex.
-        Environment.entities.forEach(e => {
+        Terrain.entities.forEach(e => {
             if (this.#isTargetValid(e) && this.target == null) // Select the target if the entity hasn't focused yet
                 this.target = e;
         });

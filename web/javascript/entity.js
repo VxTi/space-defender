@@ -49,9 +49,11 @@ class Entity extends AABB {
         // Natural regeneration, every ten seconds
         this.health = Math.min(this.health + dT / Entity.regenerationInterval, this.#maxHealth);
 
+        this.#checkCollision(dT);
+/*
         // Check if the next position of the entity is colliding with another
-        for (let i = 0; i < Environment.boundingBoxes.length; i++) {
-            let target = Environment.boundingBoxes[i];
+        for (let i = 0; i < Terrain.boundingBoxes.length; i++) {
+            let target = Terrain.boundingBoxes[i];
 
             // Collision detection with self is always going to be true so let's just skip that shall we...
             if (!(target instanceof Block))
@@ -60,9 +62,9 @@ class Entity extends AABB {
             // If another class extends this class and defines the function 'onCollisionCheck',
             // this then calls the function with the current target as parameter.
             // If this function returns false, collision detection should skip this target
-            /*if (this.position.distSq(target) > this.#velocity.magSq * 2)
-                continue;*/
-/*
+            /!*if (this.position.distSq(target) > this.#velocity.magSq * 2)
+                continue;*!/
+/!*
             /!**
              * SECTION: X AXIS COLLISION DETECTION
              **!/
@@ -100,9 +102,11 @@ class Entity extends AABB {
                         break;
                     }
                 }
-            }*/
+            }*!/
 
-            if (this.#colliding.x === 0 && this.#checkAxialCollision('x', this, dT, target)) {
+
+
+            if (this.#colliding.x === 0 && this.#checkCollision('x', this, dT, target)) {
                 this.#colliding.x = Math.sign(this.#velocity.x);
                 this.#velocity.x = 0;
             }
@@ -115,7 +119,7 @@ class Entity extends AABB {
             // If we're colliding on both axis, stop further checks
             if (this.#colliding.x !== 0 && this.#colliding.y !== 0)
                 break;
-        }
+        }*/
 
         // Add velocity to position
         this.position.add(this.velocity.x * dT, this.velocity.y * dT);
@@ -140,7 +144,7 @@ class Entity extends AABB {
             }
             this.fallingDistance = 0;
         } else {
-            this.velocity.addY(-Environment.G * dT);
+            this.velocity.addY(-Terrain.G * dT);
         }
 
 
@@ -149,25 +153,32 @@ class Entity extends AABB {
         this.velocity.x *= 0.8;
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
-        this.position.y = Math.max(this.position.y, 0);
+        this.position.y = Math.max(this.position.y, this.height / 2);
 
         // Update the AABB position
         this.translate(this.position.x, this.position.y);
     }
 
     /**
-     * Method for checking whether the entity collides with another on a provided axis
-     * @param {string} axis The axis to check collision for. This can be 'x' or 'y'
-     * @param {Entity} entityOrigin The entity to check from
-     * @param {number} dT       Time difference. The next position is axis + velocity[axis] * dT
-     * @param {Entity} entityTarget The target entity to check with
+     * Method for checking whether the entity is going to collide in the next frame
+     * @param {number} dT Time difference. The next position is axis + velocity[axis] * dT
      * @returns {boolean} Whether we collided or not
      */
-    #checkAxialCollision(axis, entityOrigin, dT, entityTarget) {
-        let vecOffset = entityOrigin.position.copy;                 // create copy
-        vecOffset[axis] += entityOrigin.velocity[axis] * dT; // add velocity offset (next frame position)
-        vecOffset[axis] += Math.sign(entityOrigin[axis]) * entityOrigin.dimensions[axis] / 2; // Add width/height offset
-        return entityTarget.intersectsPoint(vecOffset.x, vecOffset.y);
+    #checkCollision(dT) {
+        let [dx, dy] = [this.#velocity.x, this.#velocity.y];
+        // x-axis checks
+        if (terrain.getBlock(this.x + this.#velocity.x, this.y) != null) {
+            dx = 0;//Math.sign(this.#velocity.x) * (1 - Math.abs(this.#velocity.x * dT));
+            this.#colliding.x = Math.sign(this.#velocity.x);
+        }
+
+        // y-axis checks
+        if (terrain.getBlock(this.x, this.y + this.#velocity.y) != null) {
+            dy = 0;//Math.sign(this.#velocity.y) * (1 - Math.abs(this.#velocity.y * dT));
+            this.#colliding.y = Math.sign(this.#velocity.y);
+        }
+
+        this.#velocity.translate(dx, dy);
     }
 
     /**

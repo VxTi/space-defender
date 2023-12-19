@@ -1,5 +1,5 @@
 
-const serverAddress = "http://localhost:8081/api/get";
+const serverAddress = "http://localhost:8081/api/get";//"http://oege.ie.hva.nl:8081/api/get";
 
 let element = {};
 
@@ -58,7 +58,7 @@ selectNextMenuItem = (direction = 1) => {
 function keyTyped() {
 
     // Pause game key
-    if ((key === 'r' || key === 'Escape') && gameActive) {
+    if ((key === 'r' || key === ESCAPE) && gameActive) {
         gameActive = false;
         showMenu('menu-pause');
     }

@@ -23,8 +23,8 @@
 #define BUTTON_RIGHT_KEY    ((uint8_t) 'd')
 #define BUTTON_DOWN_KEY     ((uint8_t) 's')
 #define BUTTON_A_KEY        ((uint8_t) ' ')
-#define BUTTON_B_KEY        ((uint8_t) 'r')
-#define BUTTON_OPT_KEY      ((uint8_t) 'ESC')
+#define BUTTON_B_KEY        ((uint8_t) 'f')
+#define BUTTON_OPT_KEY      ((uint8_t) 'r')
 
 #define DEVICE_NAME "Game Controller"
 
@@ -261,6 +261,8 @@ void bluetoothTask(void*) {
     Serial.println("Bluetooth device is ready to be connected");
     delay(portMAX_DELAY);
 };
+
+
 
 
 void write(const char* text) {

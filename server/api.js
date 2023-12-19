@@ -424,7 +424,6 @@ app.delete('/*', (req, res) => {
 });
 
 
-
 // Run the API on port 8081
 app.listen(port, () => {
     consoleLog(`API Server started on port ${port}`); // Log the request

@@ -11,6 +11,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
 const crypto = require("crypto");
+const { error } = require('console');
 
 /*
  * Which port to host the server on.
@@ -37,16 +38,16 @@ app.use(cors({ origin: '*' }));
 // how many results will be returned by the GET query from the database
 const maxResults = 100;
 
-// The types of tables that are available when users send a GET api request.
+// The types of columns that are available when users send a GET api request.
 // If the request
-const tables = ['name', 'coins', 'time', 'score', 'date'];
+const columns = ['name', 'coins', 'time', 'score', 'date'];
 
-// SQL data types for the tables above.
-const tableType = ['varchar(255)', 'int', 'time', 'int', 'date'];
+// SQL data types for the columns above.
+const tables = ["highScores", "lastScores", "lastPlayed"]; 
 
 // Kinds of accepted request types in a POST request, for retrieving data
 const RequestType = {
-    ALL: "all-data", // Accepts all data from tables
+    ALL: "all-data", // Accepts all data from columns
     USER: "user-data" // Accepts data from one user
 }
 
@@ -79,19 +80,96 @@ getTimeString = () => new Date().toLocaleTimeString("nl-NL");
 consoleLog = (message, ...parameters) => console.log(`[${getDateString()} ${getTimeString()}]: ${message}`, parameters);
 
 // Check if the given API key is valid:
-function isApiKeyInvalid(apiKey) {
+isApiKeyInvalid = (apiKey) => {
     let fileData = fs.readFileSync(`${__dirname}/keys.json`); // Read the keys from the JSON file
     let keys = JSON.parse(fileData); // Parse the keys
     let validkeys = keys.key; // Get the keys from the JSON file
-    if (!validkeys.includes(apiKey)) {
-        return true;
-    } else {
-        return false;
+    return !validkeys.includes(apiKey); // Check if the API key is valid
+}
+
+createTables = async () => {
+    // Create a connection to the database:
+    const conn = await pool.getConnection(); // Get a connection from the pool
+
+    // Create the columns if they don't exist:
+        let sql1 = `CREATE TABLE IF NOT EXISTS highScores (userId varchar(255), maxScore int, maxCoins int);`;
+        let sql2 = `CREATE TABLE IF NOT EXISTS lastScores (userId varchar(255), lastScore int, lastCoins int);`;
+        let sql3 = `CREATE TABLE IF NOT EXISTS lastPlayed (name varchar(255), time time, date date);`;
+        await conn.query(sql1)
+            .then(() => consoleLog("Created table1"))
+            .catch((err) => consoleLog("Error creating table1", err)); // Execute the query
+        await conn.query(sql2)
+            .then(() => consoleLog("Created table2"))
+            .catch((err) => consoleLog("Error creating table2", err)); // Execute the query
+        await conn.query(sql3)
+            .then(() => consoleLog("Created table3"))
+            .catch((err) => consoleLog("Error creating table2", err)); // Execute the query
+        conn.release(); // Release the connection
+        return;
+}
+
+compareLastScores = async (userId) => {
+    try {
+        // Create a connection to the database:
+        const conn = await pool.getConnection(); // Get a connection from the pool
+
+        // Get the last score and coins from the database:
+        let sql1 = `SELECT * FROM lastScores WHERE userId = ?;`; // SQL query
+        let inserts1 = [userId]; // Using the ? to prevent SQL injection
+        sql1 = mysql.format(sql1, inserts1); // Format the SQL query
+
+        let result1 = await conn.query(sql1); // Execute the query
+
+        let sql2 = `SELECT * FROM highScores WHERE userId = ?;`; // SQL query
+        let inserts2 = [userId]; // Using the ? to prevent SQL injection
+        sql2 = mysql.format(sql2, inserts2); // Format the SQL query
+
+        let result2 = await conn.query(sql2); // Execute the query
+
+        conn.release(); // Release the connection
+        lastScore = result1[0][0].lastScore;
+        lastCoins = result1[0][0].lastCoins;
+
+        highScore = result2[0][0].maxScore;
+        highCoins = result2[0][0].maxCoins;
+
+        // Compare the last score and coins with the high score and coins:
+        if (lastScore > highScore) {
+            // Update the high score if the last score is higher:
+            let sql3 = `UPDATE highScores SET maxScore = ? WHERE userId = ?;`; // SQL query
+            let inserts3 = [lastScore, userId]; // Using the ? to prevent SQL injection
+            sql3 = mysql.format(sql3, inserts3); // Format the SQL query
+            await conn.query(sql3); // Execute the query
+        }
+        
+        if (lastCoins > highCoins) {
+            // Update the high coins if the last coins is higher:
+            let sql4 = `UPDATE highScores SET maxCoins = ? WHERE userId = ?;`; // SQL query
+            let inserts4 = [lastCoins, userId]; // Using the ? to prevent SQL injection
+            sql4 = mysql.format(sql4, inserts4); // Format the SQL query
+            await conn.query(sql4); // Execute the query
+        }
+    } catch (err) {
+        return err;
     }
 }
+
+
+
 /* - - - - - - - - - - - - *
  |        API Calls        |
  * - - - - - - - - - - - - */
+app.get('/api/lastscore', (req, res) => {
+    // Get the data from the request:
+    let postData = JSON.stringify(req.body);
+    let parsedData = JSON.parse(postData);
+    let userId = parsedData.userId;
+
+    compareLastScores(userId).then((result) => {
+        res.status(200).json(result);
+    });
+});
+
 
 // Insert user data
 app.post('/api/insert', async (req, res) => {
@@ -307,7 +385,7 @@ app.delete('/api/deletekey', (req, res) => {
  *      "apiKey": "key",                        What
  *      "results": 100,                         How many results will be returned
  *      "orderBy": "coins",                     Which table to filter by
- *      "tables": ["name", "coins", "score"],   Which table to select, can also be '*' to be any
+ *      "columns": ["name", "coins", "score"],   Which table to select, can also be '*' to be any
  *  }
  * If the user wants to retrieve user-specific data, one must send a request like the following:
  *  {
@@ -348,29 +426,29 @@ app.post('/api/get', (req, res) => {
 
         // If the provided JSON body contains an 'orderBy' tag of type 'string', and the string
         // is a valid table, as defined above, it will order the query by that table.
-        // We have to check whether tables include the tag, otherwise it'll be vulnerable for injection...
-        if (typeof req.body.orderBy === 'string' && tables.includes(req.body.orderBy))
+        // We have to check whether columns include the tag, otherwise it'll be vulnerable for injection...
+        if (typeof req.body.orderBy === 'string' && columns.includes(req.body.orderBy))
             ordered = req.body.orderBy;
 
         // Table selector for final query
         let tableQuery = null;
 
-        // Check if the provided 'tables' object is of type Array
-        if (Array.isArray(req.body.tables)) {
-            // Check whether the content of 'req.body.tables' contains acceptable tables
-            let filtered = req.body.tables.filter((key) => tables.includes(key));
+        // Check if the provided 'columns' object is of type Array
+        if (Array.isArray(req.body.columns)) {
+            // Check whether the content of 'req.body.columns' contains acceptable columns
+            let filtered = req.body.columns.filter((key) => columns.includes(key));
             if (filtered.length > 0)
                 tableQuery = filtered.toString();
 
-            // If the provided 'tables' object contains '*', we want to select all tables, so add it to the query.
-        } else if (req.body.tables === "*")
+            // If the provided 'columns' object contains '*', we want to select all columns, so add it to the query.
+        } else if (req.body.columns === "*")
             tableQuery = "*";
 
-        // Check whether we've received a valid tables
+        // Check whether we've received a valid columns
         if (tableQuery != null) {
 
             // SQL query for looking up things from the database.
-            // When the user provides tables to look up, it will return the table
+            // When the user provides columns to look up, it will return the table
             // If the user provides a limit, it will add "LIMIT x" to the query
             // If the user provides 'orderBy' tag, and then provides an appropriate table, it will sort by that table
             // Type checking is done before inserting them into the SQL query, to prevent injection threats
@@ -435,5 +513,7 @@ app.delete('/*', (req, res) => {
 // Run the API on port 8081
 app.listen(port, () => {
     consoleLog(`API Server started on port ${port}`); // Log the request
+});
 
-});  
+// On startup, create the columns if they don't exist:
+console.error(createTables());

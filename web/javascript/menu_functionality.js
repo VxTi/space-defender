@@ -19,7 +19,7 @@ selectLeaderboardFilter = () => {
     if (element.dataset.filter != null) {
         document.querySelectorAll('.leaderboards-filter')
             .forEach(e => {
-                if (e.)
+
             })
         e.classList.add('selected');
         leaderboardFilter = e.dataset.filter;

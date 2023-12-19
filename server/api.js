@@ -41,6 +41,9 @@ const maxResults = 100;
 // If the request
 const tables = ['name', 'coins', 'time', 'score', 'date'];
 
+// SQL data types for the tables above.
+const tableType = ['varchar(255)', 'int', 'time', 'int', 'date'];
+
 // Kinds of accepted request types in a POST request, for retrieving data
 const RequestType = {
     ALL: "all-data", // Accepts all data from tables
@@ -425,4 +428,5 @@ app.delete('/*', (req, res) => {
 // Run the API on port 8081
 app.listen(port, () => {
     consoleLog(`API Server started on port ${port}`); // Log the request
+
 });  

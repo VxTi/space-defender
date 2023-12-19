@@ -198,3 +198,11 @@ body, html {
 .game-settings-button:hover {
     filter: brightness(90%);
 }
+
+.game-scores {
+    display: block;
+    float: right;
+    font-family: minecraft-font, serif;
+    color: white;
+    font-size: 20px;
+}

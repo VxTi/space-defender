@@ -7,13 +7,14 @@
 > Hiermee moeten wij kwalitatief met zo min mogelijk invloed feedback verkrijgen van gebruikers 
 > om deze non-biased te maken. Dit moeten wij doen door middel van telkens
 > dezelfde vragen te stellen.
-> - [ ] Afgerond
+> - [x] Afgerond
 
 > ### Verkrijg meer feedback 
 > 
 > Dit spreekt voor zich, we moeten meer mensen benaderen om feedback
 > van te verkrijgen.
-> - [ ] Afgerond
+> 
+> ![25%](https://progress-bar.dev/25)
 
 > ### Database uitbreiden 
 > 

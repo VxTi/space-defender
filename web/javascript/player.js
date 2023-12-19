@@ -48,23 +48,25 @@ class Player extends Entity {
         push();
         {
             // Translate draw location to player's screen position
-            translate((this.position.x) * pixelsPerMeter,
-                window.innerHeight - (this.height + this.position.y) * pixelsPerMeter);
+
+            animations['playerAnimation'].animate(
+                (this.position.x - this.width/2) * ppm,
+                window.innerHeight - (this.position.y + this.height/2) * ppm,
+                this.width * ppm, this.height * ppm,
+                Math.abs(this.velocity.x) >= horizontalSpeed * 0.5 ?
+                    Math.floor(timePhase * 5) % 4 : 0
+            )
 
             // Render the player image (animate when walking)
-            animations['playerAnimation'].animate(
-                -10, 0, // since we translated, the player's screen pos is at 0, 0 in the current matrix.
-                this.width * pixelsPerMeter * 2,
-                this.height * pixelsPerMeter,
-                Math.abs(this.velocity.x) > horizontalSpeed * 0.5 ?
-                    Math.floor(timePhase * 5) % 4 : 0);
 
-            drawHealthBar(this.position.x, this.position.y + this.height, this.health, this.maxHealth);
+            drawHealthBar(this.position.x * ppm, window.innerHeight - (this.position.y + this.height) * ppm, this.health, this.maxHealth);
             // And shortly, the outline of the player (AABB)
             if (showBoundingBox) {
                 stroke(255, 0, 0);
                 fill(0, 0, 0, 0);
-                rect(0, 0, this.width * pixelsPerMeter, this.height * pixelsPerMeter);
+                rect((this.position.x - this.width/2) * ppm,
+                    window.innerHeight - (this.position.y + this.height/2) * ppm,
+                    this.width * ppm, this.height * ppm,);
             }
         }
         pop();

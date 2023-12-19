@@ -8,10 +8,6 @@
 class AABB {
 
     // Private fields defining the bounding box
-    #left;
-    #top;
-    #right;
-    #bottom;
     #width;
     #height;
     #x;
@@ -34,7 +30,7 @@ class AABB {
 
     // Returns a copy of this Environment
     get copy() {
-        return new AABB(this.#left, this.#top, this.#width, this.#height);
+        return new AABB(this.#x, this.#y, this.#width, this.#height);
     }
 
     /**
@@ -43,16 +39,12 @@ class AABB {
      */
     translateX(newX) {
         this.#x = newX;
-        this.#left = newX - this.#width * 0.5;
-        this.#right = newX + this.#width * 0.5;
         return this;
     }
 
     // Function for translating the Y coordinate of the Environment
     translateY(newY) {
         this.#y = newY;
-        this.#top = newY - this.#height * 0.5;
-        this.#bottom = newY + this.#height * 0.5;
         return this;
     }
 
@@ -65,7 +57,7 @@ class AABB {
 
     // Function for checking whether a point lies within the specified boundaries
     intersectsPoint(x, y) {
-        return x >= this.#left && x <= this.#right && y >= this.#top && y <= this.#bottom;
+        return x >= this.left && x <= this.right && y >= this.top && y <= this.bottom;
     }
 
     // Function for checking X and Y collisions with `boundingBox`
@@ -76,8 +68,8 @@ class AABB {
         if (!(boundingBox instanceof AABB))
             return false;
 
-        return this.#bottom >= boundingBox.#top && this.#top <= boundingBox.#bottom
-            && this.#right >= boundingBox.#left && this.#left <= boundingBox.#right;
+        return this.bottom >= boundingBox.top && this.top <= boundingBox.bottom
+            && this.right >= boundingBox.left && this.left <= boundingBox.right;
     }
 
     get position() {
@@ -85,14 +77,10 @@ class AABB {
     }
 
     // Getters and setters for edge properties
-    get left() { return this.#left; }
-    set left(value) { this.#left = value; }
-    get top() { return this.#top; }
-    set top(value) { this.#top = value; }
-    get right() { return this.#right; }
-    set right(value) { this.#right = value; }
-    get bottom() { return this.#bottom; }
-    set bottom(value) { this.#bottom = value; }
+    get left() { return this.#x - this.#width * 0.5; }
+    get top() { return this.#y + this.#height * 0.5; }
+    get right() { return this.#x + this.#width * 0.5; }
+    get bottom() { return this.#y - this.#height * 0.5; }
     get x() { return this.#x; }
     get y() { return this.#y; }
 
@@ -100,14 +88,10 @@ class AABB {
     // Getter and setter methods for width and height
     set width(w) {
         this.#width = w;
-        this.#left = this.#x - w / 2;
-        this.#right = this.#x + w / 2;
     }
 
     set height(h) {
         this.#height = h;
-        this.#top = this.#y + h;
-        this.#bottom = h;
     }
 
     get dimensions() { return new Vec2(this.#width, this.#height); }

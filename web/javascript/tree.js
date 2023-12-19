@@ -68,7 +68,10 @@ class QTree {
             x = 2 * x - Math.round(x) * 0.5;
             y = 2 * y - Math.round(y) * 0.5;
             i = Math.round(x) * 2 + Math.round(y);
-            if (node.#nodes == null || (node.#nodes[i] == null && d > 0))
+
+            // If the nodes are null or the child nodes are null,
+            // it's clear that we don't have any data. stop. now.
+            if (node.#nodes == null || node.#nodes[i] == null)
                 return null;
 
             node = node.#nodes[i];

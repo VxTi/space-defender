@@ -8,7 +8,7 @@ var player;                       // Variable containing all information of the 
 
 const entityTick = 1000; // How many milliseconds delay between every entity update
 // Whether to draw outlines around the player(s)
-var showBoundingBox = false;
+var showBoundingBox = true;
 
 /** Dimension related variables (sizes) */
 var windowWidthInMeters;            // Size in game meters

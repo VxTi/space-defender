@@ -11,6 +11,21 @@ let leaderboardData = {};
 
 let currentMenu = null;
 
+selectLeaderboardFilter = () => {
+    if (currentMenu === null)
+        return;
+
+    let element = currentMenu.querySelector('.gamepad-selected');
+    if (element.dataset.filter != null) {
+        document.querySelectorAll('.leaderboards-filter')
+            .forEach(e => {
+                if (e.)
+            })
+        e.classList.add('selected');
+        leaderboardFilter = e.dataset.filter;
+        element['leaderboard-content'].innerHTML = parseLeaderboardData(leaderboardData, leaderboardFilter);
+    }
+}
 
 selectNextMenuItem = (direction = 1) => {
 
@@ -41,6 +56,13 @@ selectNextMenuItem = (direction = 1) => {
 }
 
 function keyTyped() {
+
+    // Pause game key
+    if ((key === 'r' || key === 'Escape') && gameActive) {
+        gameActive = false;
+        showMenu('menu-pause');
+    }
+
     // For controller movement, when user enters 'w' or 'd', select next upper element
     if (key === 'w' || key === 'd')
         selectNextMenuItem(-1);
@@ -68,13 +90,6 @@ function keyTyped() {
 }
 
 (() => {
-
-    document.onkeydown = (event) => {
-        if (event.key === 'Escape' && gameActive) {
-            gameActive = false;
-            showMenu('menu-pause');
-        }
-    }
 
     const elements = [
         'game-settings-button', 'main-difficulty', 'main-play', 'main-leaderboards',

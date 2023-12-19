@@ -76,17 +76,19 @@ getDateString = () => new Date().toLocaleDateString("fr-CA");
 getTimeString = () => new Date().toLocaleTimeString("nl-NL");
 
 // Log requests with formatting:
-consoleLog = (message, ... parameters) => console.log(`[${getDateString()} ${getTimeString()}]: ${message}`, parameters);
+consoleLog = (message, ...parameters) => console.log(`[${getDateString()} ${getTimeString()}]: ${message}`, parameters);
 
 // Check if the given API key is valid:
-isApiKeyInvalid = (apiKey) => {
+function isApiKeyInvalid(apiKey) {
     let fileData = fs.readFileSync(`${__dirname}/keys.json`); // Read the keys from the JSON file
-    let json = JSON.parse(fileData); // Parse the keys
-    const keys = json.key; // Get the valid keys
-    return keys.includes(apiKey);
+    let keys = JSON.parse(fileData); // Parse the keys
+    let validkeys = keys.key; // Get the keys from the JSON file
+    if (!validkeys.includes(apiKey)) {
+        return true;
+    } else {
+        return false;
+    }
 }
-
-
 /* - - - - - - - - - - - - *
  |        API Calls        |
  * - - - - - - - - - - - - */
@@ -101,7 +103,7 @@ app.post('/api/insert', async (req, res) => {
 
     // Get the data from the parsed data:
     let name = parsedData.name;
-    let time =  getTimeString()
+    let time = getTimeString()
     let date = getDateString();
     let score = parsedData.score;
     let coins = parsedData.coins;
@@ -281,11 +283,11 @@ app.delete('/api/deletekey', (req, res) => {
 
     // Authorized, continue with the request:
     // Delete the API key:
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`);
-    let keys = JSON.parse(rawKeys);
-    let index = keys.key.indexOf(key);
-    if (index > -1) {
-        keys.key.splice(index, 1);
+    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`); // Read the keys from the JSON file
+    let keys = JSON.parse(rawKeys); // Parse the keys
+    let index = keys.key.indexOf(key);  // Find the index of the API key
+    if (index > -1) { // index -1 because index starts at 0
+        keys.key.splice(index, 1); // Remove the API key
     }
     let newKeys = JSON.stringify(keys);
     fs.writeFileSync(`${__dirname}/keys.json`, newKeys);
@@ -295,11 +297,6 @@ app.delete('/api/deletekey', (req, res) => {
     const data = [{ message: 'API key deleted' }];
     res.json(data); // Send the response
 });
-
-
-// Default (wrong URL(GET))
-
-
 
 /**
  *  Get request, for users to request specific kinds of data
@@ -320,6 +317,16 @@ app.delete('/api/deletekey', (req, res) => {
  *  }
  */
 app.post('/api/get', (req, res) => {
+
+    consoleLog("POST", "formatted get"); // Log the request
+    
+    // Check if the API key is correct:
+    let postData = JSON.stringify(req.body);
+    let parsedData = JSON.parse(postData);
+    if (isApiKeyInvalid(parsedData.key)) {
+        res.status(401).json([{ message: 'Unauthorized' }]); // Send the response, Status 401: Unauthorized
+        return;
+    }
 
     // Check whether the JSON body has a 'method' parameter. If it doesn't, we'll return an error.
     // Every
@@ -371,12 +378,12 @@ app.post('/api/get', (req, res) => {
                 `SELECT ${tableQuery} FROM userdata${ordered != null ? ` ORDER BY ${ordered} DESC` : ""} ${resultCount < 0 ? "" : `LIMIT ${resultCount}`}`;
         } else {
             // Send a status code 'Unprocessable Entity' with associated error message
-            res.status(422).json([{error: "Provided incorrect table format. Use either '[\"table1\", \"table2\", ...\"]' or '\"*\"'."}])
+            res.status(422).json([{ error: "Provided incorrect table format. Use either '[\"table1\", \"table2\", ...\"]' or '\"*\"'." }])
         }
         // Check for type user-data
     } else if (req.body.requestType === RequestType.USER) {
         if (!req.body.hasOwnProperty('user')) {
-            res.status(402).json([{error: `User must provide parameter 'user' with request-type '${RequestType.USER}'`}]);
+            res.status(402).json([{ error: `User must provide parameter 'user' with request-type '${RequestType.USER}'` }]);
             return;
         }
         // Select the requested data from the provided user.
@@ -391,14 +398,14 @@ app.post('/api/get', (req, res) => {
             let connection = await pool.getConnection();
             await connection.query(sqlQuery)
                 .then(result => res.status(200).json(result[0]))
-                .catch((e) => res.status(400).json([{error: e}]))
+                .catch((e) => res.status(400).json([{ error: e }]))
             connection.release();
         })();
         return;
     }
 
     // Default response when user provides incorrect method type
-    res.status(400).json([{error: `Provided invalid JSON content.`}]);
+    res.status(400).json([{ error: `Provided invalid JSON content.` }]);
 });
 
 

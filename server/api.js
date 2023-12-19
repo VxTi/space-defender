@@ -12,6 +12,8 @@ const cors = require('cors');
 const fs = require('fs');
 const crypto = require("crypto");
 const { error } = require('console');
+const { compileFunction } = require('vm');
+const { get } = require('http');
 
 /*
  * Which port to host the server on.
@@ -25,8 +27,8 @@ const rateLimit = 10;
 
 // Add rate limiting to every request made from Client to Server.
 app.use(require('express-rate-limit')({
-    windowMs: 1000, // Milliseconds per window. (1 second)
-    max: rateLimit,
+    windowMs: 1000, // Milliseconds per window. (1 per second)
+    max: rateLimit, // Maximum amount of requests allowed per window.
     message: '[{"message": "You have exceeded your API rate limit. Please slow down."}]'
 }));
 
@@ -35,30 +37,17 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({ origin: '*' }));
 
-// how many results will be returned by the GET query from the database
-const maxResults = 100;
-
-// The types of columns that are available when users send a GET api request.
-// If the request
-const columns = ['name', 'coins', 'time', 'score', 'date'];
-
 // SQL data types for the columns above.
-const tables = ["highScores", "lastScores", "lastPlayed"]; 
-
-// Kinds of accepted request types in a POST request, for retrieving data
-const RequestType = {
-    ALL: "all-data", // Accepts all data from columns
-    USER: "user-data" // Accepts data from one user
-}
+const tables = ["highScores", "lastScores", "lastPlayed", "userNames"]; 
 
 // Database connection:
 const credentials = {
     user: 'koopenj',
     password: 'pSmwQExG/1rux.',
-    host: 'oege.ie.hva.nl',
+    host: '127.0.0.1',
     port: 3306,
     database: 'zkoopenj',
-    insecureAuth: false,
+    insecureAuth: true,
     ssl: { rejectUnauthorized: false }, // Necessary to connect to the database!!!
     connectionLimit: 10
 };
@@ -70,14 +59,20 @@ const oegePassword = credentials.password // Password for creating a new API key
  |        Functions        |
  * - - - - - - - - - - - - */
 
-// Function for retrieving the right year-month-day format
+// Function for retrieving the right year-month-day format for the database
 getDateString = () => new Date().toLocaleDateString("fr-CA");
 
 // Function for retrieving the right time format
 getTimeString = () => new Date().toLocaleTimeString("nl-NL");
 
+// Function for retrieving the right date format for locale
+getDateStringNL = () => new Date().toLocaleDateString("nl-NL");
+
 // Log requests with formatting:
-consoleLog = (message, ...parameters) => console.log(`[${getDateString()} ${getTimeString()}]: ${message}`, parameters);
+consoleLog = (message, parameters) => {
+    if (parameters == null) {console.log(`[${getTimeString()}, ${getDateStringNL()}]: ${message}`);}
+    else {console.log(`[${getTimeString()}, ${getDateStringNL()}]: ${message}`, parameters);}
+}
 
 // Check if the given API key is valid:
 isApiKeyInvalid = (apiKey) => {
@@ -92,20 +87,20 @@ createTables = async () => {
     const conn = await pool.getConnection(); // Get a connection from the pool
 
     // Create the columns if they don't exist:
-        let sql1 = `CREATE TABLE IF NOT EXISTS highScores (userId varchar(255), maxScore int, maxCoins int);`;
-        let sql2 = `CREATE TABLE IF NOT EXISTS lastScores (userId varchar(255), lastScore int, lastCoins int);`;
-        let sql3 = `CREATE TABLE IF NOT EXISTS lastPlayed (name varchar(255), time time, date date);`;
-        await conn.query(sql1)
-            .then(() => consoleLog("Created table1"))
+        let sql1 = `CREATE TABLE IF NOT EXISTS highScores (userId int, maxScore int, maxCoins int);`;
+        let sql2 = `CREATE TABLE IF NOT EXISTS lastScores (userId int, lastScore int, lastCoins int);`;
+        let sql3 = `CREATE TABLE IF NOT EXISTS lastPlayed (userId int, time time, date date);`;
+        let sql4 = `CREATE TABLE IF NOT EXISTS userData (userId int, name varchar(255), email varchar(255));`;
+        result1 = await conn.query(sql1)
             .catch((err) => consoleLog("Error creating table1", err)); // Execute the query
-        await conn.query(sql2)
-            .then(() => consoleLog("Created table2"))
+        result2 = await conn.query(sql2)
             .catch((err) => consoleLog("Error creating table2", err)); // Execute the query
-        await conn.query(sql3)
-            .then(() => consoleLog("Created table3"))
-            .catch((err) => consoleLog("Error creating table2", err)); // Execute the query
+        result3 = await conn.query(sql3)
+            .catch((err) => consoleLog("Error creating table3", err)); // Execute the query
+        result4 = await conn.query(sql4)
+            .catch((err) => consoleLog("Error creating table4", err)); // Execute the query
         conn.release(); // Release the connection
-        return;
+        return `{result1: ${result1}, result2: ${result2}, result3: ${result3}}`; 
 }
 
 compareLastScores = async (userId) => {
@@ -154,338 +149,413 @@ compareLastScores = async (userId) => {
     }
 }
 
+updateLastScore = async (userId, score, coins) => {
+    try {
+        // Create a connection to the database:
+        const conn = await pool.getConnection(); // Get a connection from the pool
+
+        // Update the last score and coins in the database:
+        let sql = `UPDATE lastScores SET lastScore = ?, lastCoins = ? WHERE userId = ?;`; // SQL query
+        let inserts = [score, coins, userId]; // Using the ? to prevent SQL injection
+        sql = mysql.format(sql, inserts); // Format the SQL query
+        await conn.query(sql); // Execute the query
+
+        conn.release(); // Release the connection
+
+        consoleLog(`Updated last score for userId ${userId}`); // Log the request
+    } catch (err) {
+        consoleLog("Error updating last score", err);
+    }
+}
+
+updateLastPlayed = async (userId) => {
+    try {
+        // Create a connection to the database:
+        const conn = await pool.getConnection(); // Get a connection from the pool
+
+        // Update the last played in the database:
+        let sql = `UPDATE lastPlayed SET time = ?, date = ? WHERE userId = ?;`; // SQL query
+        let inserts = [getTimeString(), getDateString(), userId]; // Using the ? to prevent SQL injection
+        sql = mysql.format(sql, inserts); // Format the SQL query
+        await conn.query(sql); // Execute the query
+
+        conn.release(); // Release the connection
+
+        consoleLog(`Updated last played for userId ${userId}`); // Log the request
+    } catch (err) {
+        consoleLog("Error updating last played", err);
+    }
+}
+
+checkIfUserIdExists = async (userId) => {
+    try {
+        // Create a connection to the database:
+        const conn = await pool.getConnection(); // Get a connection from the pool
+
+        // Check if the user exists in the database:
+        let sql = `SELECT * FROM lastScores WHERE userId = ?;`; // SQL query
+        let inserts = [userId]; // Using the ? to prevent SQL injection
+        sql = mysql.format(sql, inserts); // Format the SQL query
+
+        result = await conn.query(sql); // Execute the query
+
+        conn.release(); // Release the connection
+
+        if (result[0].length == 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    catch (err) {
+        consoleLog("Error checking if user exists", err);
+    }
+}
+
+checkIfUserNameExists = async (name) => {
+    try {
+        // Create a connection to the database:
+        const conn = await pool.getConnection(); // Get a connection from the pool
+
+        // Check if the user exists in the database:
+        let sql = `SELECT * FROM userData WHERE name = ?;`; // SQL query
+        let inserts = [name]; // Using the ? to prevent SQL injection
+        sql = mysql.format(sql, inserts); // Format the SQL query
+
+        result = await conn.query(sql); // Execute the query
+
+        conn.release(); // Release the connection
+
+        if (result[0].length == 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    catch (err) {
+        consoleLog("Error checking if user exists", err);
+    }
+}
+
+
+getUserIdByName = async (name) => {
+    try {
+        // Create a connection to the database:
+        const conn = await pool.getConnection(); // Get a connection from the pool
+
+        // Get the userId from the database:
+        let sql = `SELECT userId FROM userData WHERE name = ?;`; // SQL query
+        let inserts = [name]; // Using the ? to prevent SQL injection
+        sql = mysql.format(sql, inserts); // Format the SQL query
+        
+        result = await conn.query(sql); // Execute the query
+
+        conn.release(); // Release the connection
+
+        return result[0][0].userId;
+    }
+    catch (err) {
+        consoleLog("Error getting userId by name", err);
+    }
+}
+
+createNewUser = async (name, email) => {
+    try {
+        // Create a connection to the database:
+        const conn = await pool.getConnection(); // Get a connection from the pool
+
+        // Get the highest userId from the database:
+        let sql = `SELECT MAX(userId) FROM lastScores;`; // SQL query
+        result = await conn.query(sql); // Execute the query
+
+        // Create a new userId:
+        let userId = result[0][0]["MAX(userId)"] + 1;
+
+        // Create a new user in the database:
+        let sql1 = `INSERT INTO lastScores (userId, lastScore, lastCoins) VALUES (?, ?, ?);`; // SQL query
+        let inserts1 = [userId, 0, 0]; // Using the ? to prevent SQL injection
+        sql1 = mysql.format(sql1, inserts1); // Format the SQL query
+        await conn.query(sql1); // Execute the query
+
+        let sql2 = `INSERT INTO highScores (userId, maxScore, maxCoins) VALUES (?, ?, ?);`; // SQL query
+        let inserts2 = [userId, 0, 0]; // Using the ? to prevent SQL injection
+        sql2 = mysql.format(sql2, inserts2); // Format the SQL query
+        await conn.query(sql2); // Execute the query
+
+        let sql3 = `INSERT INTO lastPlayed (userId, time, date) VALUES (?, ?, ?);`; // SQL query
+        let inserts3 = [userId, getTimeString(), getDateString()]; // Using the ? to prevent SQL injection
+        sql3 = mysql.format(sql3, inserts3); // Format the SQL query
+        await conn.query(sql3); // Execute the query
+
+        let sql4 = `INSERT INTO userData (userId, name, email) VALUES (?, ?, ?);`; // SQL query
+        let inserts4 = [userId, name, email]; // Using the ? to prevent SQL injection
+        sql4 = mysql.format(sql4, inserts4); // Format the SQL query
+        await conn.query(sql4); // Execute the query
+
+        conn.release(); // Release the connection
+
+        consoleLog(`Created new user with userId ${userId}`); // Log the request
+        return userId;
+    } catch (err) {
+        consoleLog("Error creating new user", err);
+    }
+}
+
+getLastScore = async (userId) => {
+    try {
+        // Create a connection to the database:
+        const conn = await pool.getConnection(); // Get a connection from the pool
+
+        // Get the last score and coins from the database:
+        let sql = `SELECT * FROM lastScores WHERE userId = ?;`; // SQL query
+        let inserts = [userId]; // Using the ? to prevent SQL injection
+        sql = mysql.format(sql, inserts); // Format the SQL query
+
+        result = await conn.query(sql); // Execute the query
+
+        conn.release(); // Release the connection
+
+        return result[0][0];
+    } catch (err) {
+        consoleLog("Error getting last score", err);
+    }
+}
+
+getLastPlayed = async (userId) => {
+    try {
+        // Create a connection to the database:
+        const conn = await pool.getConnection(); // Get a connection from the pool
+
+        // Get the last played from the database:
+        let sql = `SELECT * FROM lastPlayed WHERE userId = ?;`; // SQL query
+        let inserts = [userId]; // Using the ? to prevent SQL injection
+        sql = mysql.format(sql, inserts); // Format the SQL query
+
+        result = await conn.query(sql); // Execute the query
+
+        conn.release(); // Release the connection
+
+        return result[0][0];
+    } catch (err) {
+        consoleLog("Error getting last played", err);
+    }
+}
+
+
+
+
+
 
 
 /* - - - - - - - - - - - - *
  |        API Calls        |
  * - - - - - - - - - - - - */
-app.get('/api/lastscore', (req, res) => {
-    // Get the data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let userId = parsedData.userId;
 
-    compareLastScores(userId).then((result) => {
-        res.status(200).json(result);
-    });
-});
+// Create a new API key:
+app.post('/api/createkey', async (req, res) => {
 
+    // Parse the request body:
+    let postData = JSON.parse(JSON.stringify(req.body));
+    let password = postData.password;
+    let key = postData.key;
 
-// Insert user data
-app.post('/api/insert', async (req, res) => {
-
-    // Get the data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let data;
-
-    // Get the data from the parsed data:
-    let name = parsedData.name;
-    let time = getTimeString()
-    let date = getDateString();
-    let score = parsedData.score;
-    let coins = parsedData.coins;
-    let key = parsedData.key;
-
-    consoleLog("POST", `inserting user data for: ${name}`); // Log the request
-
-    // Check if the API key is correct:
+    // Check if the API key is valid:
     if (isApiKeyInvalid(key)) {
-        res.status(401).json([{ message: 'Unauthorized' }]); // Send the response, Status 401: Unauthorized
-        return;
-    }
-
-    // Check if the data is valid:
-    if (name == null || score == null || coins == null) {
-        res.status(400); // HTTP Status 400: Bad Request
-        data = [{ message: 'Bad Request' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Continue with the request:
-    try {
-        // Make a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
-        let sql = `INSERT INTO userdata (name, time, date, score, coins) VALUES (?, ?, ?, ?, ?);`; // SQL query
-        let inserts = [name, time, date, score, coins]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-        await conn.query(sql); // Execute the query
-        conn.release(); // Release the connection
-
-        // Send a response:
-        res.status(201); // HTTP Status 201: Created
-        data = [{ message: 'Data inserted' }];
-    } catch (err) {
-        res.status(500); // HTTP Status 500: Internal Server Error
-        data = [{ message: 'Error' }, { error: err }];
-    }
-    res.json(data); // Send the response
-});
-
-
-
-// Delete user data of a specific user
-app.delete('/api/deleteuser', async (req, res) => {
-
-    // Get the data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-
-    // Get the data from the parsed data:
-    let name = parsedData.name;
-    let key = parsedData.key;
-
-    consoleLog("DELETE", `deleting user data for: ${name}`); // Log the request
-
-    // Check if the API key is correct:
-    if (isApiKeyInvalid(key)) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-
-    // Continue with the request:
-    try {
-        const conn = await pool.getConnection(); // Get a connection from the pool
-        let sql = `DELETE FROM \`userdata\` WHERE name = ?;`; // SQL query
-        let inserts = [name]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-        await conn.query(sql); // Execute the query
-
-        result = [{ message: `User data deleted for user: ${name}` }]
-        conn.release(); // Release the connection
-        res.status(202); // // HTTP Status 202: Accepted
-    } catch (err) {
-        res.status(500); // HTTP Status 500: Internal Server Error
-        result = [{ message: 'Error' }, { error: err }];
-    }
-    res.json(result); // Send the response
-});
-
-
-
-// Test the API
-app.get('/api/test', (req, res) => {
-
-    consoleLog("GET", "test"); // Log the request
-
-    // Get the data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let key = parsedData.key;
-
-    // Check if the API key is correct:
-    if (isApiKeyInvalid(key)) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
-        return;
-    }
-
-    // Authorized, continue with the request:
-    const data = [{ message: 'API Success' }];
-    res.status(200); // HTTP Status 200: OK
-    res.json(data); // Send the response
-});
-
-
-
-// Create a new API key
-app.get('/api/createkey', (req, res) => {
-
-    consoleLog("Creating a new API key", "GET"); // Log the request
-
-    // Get the data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let key = parsedData.key;
-    let password = parsedData.password;
-
-    // Check if the API key is correct:
-    if (isApiKeyInvalid(key)) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
-        return;
+        res.status(401).json([{ message: 'Invalid API key' }]); // Send status 401 with appropriate JSON-body
+        return
     }
 
     // Check if the password is correct:
     if (password != oegePassword) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
+        res.status(401).json([{ message: 'Wrong password' }]); // Send status 401 with appropriate JSON-body
         return;
     }
 
+    // Create a new API key:
+    let newKey = crypto.randomBytes(16).toString("hex"); // Generate a new API key
+    let fileData = fs.readFileSync(`${__dirname}/keys.json`); // Read the keys from the JSON file
+    let keys = JSON.parse(fileData); // Parse the keys
+    let validkeys = keys.key; // Get the keys from the JSON file
+    validkeys.push(newKey); // Add the new key to the list of valid keys
+    keys.key = validkeys; // Update the keys
+    fs.writeFileSync(`${__dirname}/keys.json`, JSON.stringify(keys)); // Write the new keys to the JSON file
 
-    // Authorized, continue with the request:
-    // Generate a new API key:
-    let newKey = crypto.randomBytes(12).toString('hex'); // Generate a new API key
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`); // Read the keys from the JSON file
-
-    // Insert the new key in the JSON file:
-    let keys = JSON.parse(rawKeys); // Parse the keys
-    keys.key.push(newKey); // Add the new key to the list of keys
-    let newKeys = JSON.stringify(keys); // Stringify the new keys
-    fs.writeFileSync(`${__dirname}/keys.json`, newKeys); // Write the new keys to the JSON file
-
-    // Send the response:
-    res.status(201); // HTTP Status 201: Created
-    const data = [{ message: 'API key created', key: key }];
-    res.json(data); // Send the response
+    // Send the new API key to the client:
+    res.status(200).json([{ message: 'New API key created', key: newKey }]); // Send status 200 with appropriate JSON-body
 });
 
+// Delete an API key:
+app.post('/api/deletekey', async (req, res) => {
 
+    // Parse the request body:
+    let postData = JSON.parse(JSON.stringify(req.body));
+    let key = postData.key;
 
-// Delete an API key
-app.delete('/api/deletekey', (req, res) => {
-
-    consoleLog("DELETE", "removing an API key"); // Log the request
-
-    // Get the data from the request:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    let password = parsedData.password;
-    let key = parsedData.key;
-
-    // Check if the password and API key are correct:
-    if ((password != oegePassword) && (!validkeys.includes(key))) {
-        res.status(401); // HTTP Status 401: Unauthorized
-        const data = [{ message: 'Unauthorized' }];
-        res.json(data); // Send the response
+    // Check if the API key is valid:
+    if (isApiKeyInvalid(key)) {
+        res.status(401).json([{ message: 'Invalid API key' }]); // Send status 401 with appropriate JSON-body
         return;
     }
 
-    // Authorized, continue with the request:
     // Delete the API key:
-    let rawKeys = fs.readFileSync(`${__dirname}/keys.json`); // Read the keys from the JSON file
-    let keys = JSON.parse(rawKeys); // Parse the keys
-    let index = keys.key.indexOf(key);  // Find the index of the API key
-    if (index > -1) { // index -1 because index starts at 0
-        keys.key.splice(index, 1); // Remove the API key
-    }
-    let newKeys = JSON.stringify(keys);
-    fs.writeFileSync(`${__dirname}/keys.json`, newKeys);
+    let fileData = fs.readFileSync(`${__dirname}/keys.json`); // Read the keys from the JSON file
+    let keys = JSON.parse(fileData); // Parse the keys
+    let validkeys = keys.key; // Get the keys from the JSON file
+    validkeys = validkeys.filter(item => item !== key); // Remove the key from the list of valid keys
+    keys.key = validkeys; // Update the keys
+    fs.writeFileSync(`${__dirname}/keys.json`, JSON.stringify(keys)); // Write the new keys to the JSON file
 
-    // Send the response:
-    res.status(202); // HTTP Status 202: Accepted
-    const data = [{ message: 'API key deleted' }];
-    res.json(data); // Send the response
+    // Send the new API key to the client:
+    res.status(200).json([{ message: 'API key deleted' }]); // Send status 200 with appropriate JSON-body
 });
 
-/**
- *  Get request, for users to request specific kinds of data
- *  One can provide a body containing request parameters, such as how many objects one wants to retrieve
- *  A JSON request body will look like the following, when requesting all kind of data:
- *  {
- *      "requestType": "all-data",              What kind of data the user wants to retrieve
- *      "apiKey": "key",                        What
- *      "results": 100,                         How many results will be returned
- *      "orderBy": "coins",                     Which table to filter by
- *      "columns": ["name", "coins", "score"],   Which table to select, can also be '*' to be any
- *  }
- * If the user wants to retrieve user-specific data, one must send a request like the following:
- *  {
- *      "requestType": "user-data",
- *      "apiKey": "key",
- *      "user": "name"
- *  }
- */
-app.post('/api/get', (req, res) => {
+// Update the last score and coins:
+app.post('/api/updatescore', async (req, res) => {
 
-    consoleLog("POST", "formatted get"); // Log the request
+    // Parse the request body:
+    let postData = JSON.parse(JSON.stringify(req.body));
+    let key = postData.key;
+    let userId = postData.userId;
+    let score = postData.score;
+    let coins = postData.coins;
+
+    // Check if the API key is valid:
+    if (isApiKeyInvalid(key)) {
+        res.status(401).json([{ message: 'Invalid API key' }]); // Send status 401 with appropriate JSON-body
+        return;
+    }
+
+    // Update the last score and coins:
+    await updateLastScore(userId, score, coins);
+
+    // Update the high score and coins if necessary:
+    await compareLastScores(userId);
+
+    // Update the last played:
+    await updateLastPlayed(userId);
+
+    // Send the new API key to the client:
+    res.status(200).json([{ message: 'Last score updated' }]); // Send status 200 with appropriate JSON-body
+});
+
+// Create a new user:
+app.post('/api/createuser', async (req, res) => {
+
+    // Parse the request body:
+    let postData = JSON.parse(JSON.stringify(req.body));
+    let key = postData.key;
+    let name = postData.name;
+    let email = postData.email;
+
+    // Check if the API key is valid:
+    if (isApiKeyInvalid(key)) {
+        res.status(401).json([{ message: 'Invalid API key' }]); // Send status 401 with appropriate JSON-body
+        return;
+    }
+
+    // Check if the user already exists:
+    if (await checkIfUserNameExists(name)) {
+        res.status(400).json([{ message: 'User already exists' }]); // Send status 401 with appropriate JSON-body
+        return;
+    }
+
+    // Create a new user:
+    userId = await createNewUser(name, email);
+
+    // Send the new API key to the client:
+    res.status(200).json([{ message: 'New user created', userId: userId }]); // Send status 200 with appropriate JSON-body
+});
+
+// Check if a user exists:
+app.post('/api/checkuser', async (req, res) => {
     
-    // Check if the API key is correct:
-    let postData = JSON.stringify(req.body);
-    let parsedData = JSON.parse(postData);
-    if (isApiKeyInvalid(parsedData.key)) {
-        res.status(401).json([{ message: 'Unauthorized' }]); // Send the response, Status 401: Unauthorized
-        return;
-    }
+        // Parse the request body:
+        let postData = JSON.parse(JSON.stringify(req.body));
+        let key = postData.key;
+        let idOrName = postData.idorname;
+        let method = postData.method;
 
-    // Check whether the JSON body has a 'method' parameter. If it doesn't, we'll return an error.
-    // Every
-    if (!req.body.hasOwnProperty('requestType')) {
-        res.status(400).json("{\"error\": \"Faulty request. Add 'requestType' parameter to JSON body.\"}");
-        return;
-    }
-    let sqlQuery = null;
-
-    if (req.body.requestType === RequestType.ALL) {
-
-        let resultCount = maxResults;
-        let ordered = null;
-
-        // If the body contains a 'results' parameter of type 'number', the server
-        // will return that many results from the database.
-        if (typeof req.body.results === 'number')
-            resultCount = req.body.results;
-
-        // If the provided JSON body contains an 'orderBy' tag of type 'string', and the string
-        // is a valid table, as defined above, it will order the query by that table.
-        // We have to check whether columns include the tag, otherwise it'll be vulnerable for injection...
-        if (typeof req.body.orderBy === 'string' && columns.includes(req.body.orderBy))
-            ordered = req.body.orderBy;
-
-        // Table selector for final query
-        let tableQuery = null;
-
-        // Check if the provided 'columns' object is of type Array
-        if (Array.isArray(req.body.columns)) {
-            // Check whether the content of 'req.body.columns' contains acceptable columns
-            let filtered = req.body.columns.filter((key) => columns.includes(key));
-            if (filtered.length > 0)
-                tableQuery = filtered.toString();
-
-            // If the provided 'columns' object contains '*', we want to select all columns, so add it to the query.
-        } else if (req.body.columns === "*")
-            tableQuery = "*";
-
-        // Check whether we've received a valid columns
-        if (tableQuery != null) {
-
-            // SQL query for looking up things from the database.
-            // When the user provides columns to look up, it will return the table
-            // If the user provides a limit, it will add "LIMIT x" to the query
-            // If the user provides 'orderBy' tag, and then provides an appropriate table, it will sort by that table
-            // Type checking is done before inserting them into the SQL query, to prevent injection threats
-            sqlQuery =
-                `SELECT ${tableQuery} FROM userdata${ordered != null ? ` ORDER BY ${ordered} DESC` : ""} ${resultCount < 0 ? "" : `LIMIT ${resultCount}`}`;
-        } else {
-            // Send a status code 'Unprocessable Entity' with associated error message
-            res.status(422).json([{ error: "Provided incorrect table format. Use either '[\"table1\", \"table2\", ...\"]' or '\"*\"'." }])
-        }
-        // Check for type user-data
-    } else if (req.body.requestType === RequestType.USER) {
-        if (!req.body.hasOwnProperty('user')) {
-            res.status(402).json([{ error: `User must provide parameter 'user' with request-type '${RequestType.USER}'` }]);
+    
+        // Check if the API key is valid:
+        if (isApiKeyInvalid(key)) {
+            res.status(401).json([{ message: 'Invalid API key' }]); // Send status 401 with appropriate JSON-body
             return;
         }
-        // Select the requested data from the provided user.
-        sqlQuery = mysql.format('SELECT * FROM userdata WHERE name=? LIMIT 1', req.body.user);
+    
+        // Check if the user exists:
+        if (method == "id") {
+            let exists = await checkIfUserIdExists(idOrName);
+            return exists;
+        } else if (method == "name") {
+            let userId = await getUserIdByName(idOrName);
+            let exists = await checkIfUserIdExists(userId);
+            return exists;
+        }
+    
+        // Send the new API key to the client:
+        res.status(200).json([{ message: 'User exists', exists: exists }]); // Send status 200 with appropriate JSON-body
     }
-    // Check if we've processed a valid query
-    if (sqlQuery != null) {
+);
 
-        // If so, process the query
-        (async () => {
-            // Open connection and make the produced query
-            let connection = await pool.getConnection();
-            await connection.query(sqlQuery)
-                .then(result => res.status(200).json(result[0]))
-                .catch((e) => res.status(400).json([{ error: e }]))
-            connection.release();
-        })();
+// Get the last score and coins:
+app.post('/api/getlastscore', async (req, res) => {
+
+    // Parse the request body:
+    let postData = JSON.parse(JSON.stringify(req.body));
+    let key = postData.key;
+    let userId = postData.userId;
+
+    // Check if the API key is valid:
+    if (isApiKeyInvalid(key)) {
+        res.status(401).json([{ message: 'Invalid API key' }]); // Send status 401 with appropriate JSON-body
         return;
     }
 
-    // Default response when user provides incorrect method type
-    res.status(400).json([{ error: `Provided invalid JSON content.` }]);
+    // Create a connection to the database:
+    const conn = await pool.getConnection(); // Get a connection from the pool
+
+    // Get the last score and coins from the database:
+    let sql = `SELECT * FROM lastScores WHERE userId = ?;`; // SQL query
+    let inserts = [userId]; // Using the ? to prevent SQL injection
+    sql = mysql.format(sql, inserts); // Format the SQL query
+
+    result = await conn.query(sql); // Execute the query
+
+    conn.release(); // Release the connection
+
+    // Send the new API key to the client:
+    res.status(200).json([{ message: 'Last score retrieved', lastScore: result[0][0].lastScore, lastCoins: result[0][0].lastCoins }]); // Send status 200 with appropriate JSON-body
 });
 
+// Get the high score and coins:
+app.post('/api/gethighscore', async (req, res) => {
+
+    // Parse the request body:
+    let postData = JSON.parse(JSON.stringify(req.body));
+    let key = postData.key;
+    let userId = postData.userId;
+
+    // Check if the API key is valid:
+    if (isApiKeyInvalid(key)) {
+        res.status(401).json([{ message: 'Invalid API key' }]); // Send status 401 with appropriate JSON-body
+        return;
+    }
+
+    // Create a connection to the database:
+    const conn = await pool.getConnection(); // Get a connection from the pool
+
+    // Get the last score and coins from the database:
+    let sql = `SELECT * FROM highScores WHERE userId = ?;`; // SQL query
+    let inserts = [userId]; // Using the ? to prevent SQL injection
+    sql = mysql.format(sql, inserts); // Format the SQL query
+
+    result = await conn.query(sql); // Execute the query
+
+    conn.release(); // Release the connection
+
+    // Send the new API key to the client:
+    res.status(200).json([{ message: 'High score retrieved', highScore: result[0][0].maxScore, highCoins: result[0][0].maxCoins }]); // Send status 200 with appropriate JSON-body
+});
 
 app.get('/*', (req, res) => {
     consoleLog("GET", "wrong URL"); // Log the request
@@ -515,4 +585,4 @@ app.listen(port, () => {
 });
 
 // On startup, create the columns if they don't exist:
-console.error(createTables());
+createTables();

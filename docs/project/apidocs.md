@@ -2,7 +2,7 @@
 
 # Hoe gebruik je de API?
 
-De API is te gebruiken door een request te maken naar het adres: `http://oege.ie.hva.nl:8080/api`. 
+De API is te gebruiken door een request te maken naar het adres: `http://oege.ie.hva.nl:8081/api`. 
 
 
 !!! tip "Probeer de API"
@@ -15,7 +15,7 @@ De API is te gebruiken door een request te maken naar het adres: `http://oege.ie
 
 ## API key
 
-De API is beveiligd met een API key. Deze API key is te verkrijgen door een GET request te sturen naar de volgende URL `http://oege.ie.hva.nl:8080/api/createkey`. 
+De API is beveiligd met een API key. Deze API key is te verkrijgen door een GET request te sturen naar de volgende URL `http://oege.ie.hva.nl:8081/api/createkey`. 
 Om een key te creëren heb je het Oege wachtwoord nodig, en een al bestaande API key. Het wachtwoord is niet openbaar, en is alleen te verkrijgen via ons. 
 De API verwacht postData waarin het wachtwoord en een key staan. Het url parameters (query string) ziet er als volgt uit:
 
@@ -84,30 +84,20 @@ De API zal HTTP status codes terugsturen. Deze status codes geven aan als de req
 ## Het verkrijgen van data van de gebruikers
 
 Al wil je data te verkrijgen van één of alle gebruikers dien je een request te sturen naar de volgende url:
-`http://oege.ie.hva.nl:8080/api/get`
+`http://oege.ie.hva.nl:8081/api/get`
 
 Om vervolgens deze data te verkrijgen, is het noodzakelijk om een JSON-object als post data te versturen.
 Dit JSON-object hoort in het volgende formaat aanwezig te zijn:
 ```json
 {
-  "requestType": "user-data",
-  "apiKey": "API-KEY",
-  "user": "NAAM"
+  "key": "KEY", // De API key die je hebt gekregen
+  "requestType": "user-data", // Of "all-data"
+  "user": "NAAM", // Alleen nodig als je data van een specifieke gebruiker wilt, anders niet meegeven
+  "tables": "[score, coins]", // Alleen nodig als je specifieke data wilt, anders "*"
+  "orderBy": "score", // Als je de data wilt sorteren op een bepaalde kolom
 }
 ```
 Dit gaat gepaard met een header met `Content-Type: application/json` op te sturen.
-
-Als dit verzoek in het juiste formaat is opgestuurd, zal de server een JSON-object
-als response sturen. Dit zal er uit zien als volgt:
-
-``` 
-{
-    "requestType": "all-data",
-    "apiKey": "API-KEY"
-    "tables": "*"
-}
-```
-
 Als de gebruiker een correcte API key heeft gegeven gepaard met een correct request formaat, zal
 de server een response geven wat kan lijken op het volgende:
 ``` json
@@ -128,65 +118,16 @@ de server een response geven wat kan lijken op het volgende:
     }
 ]
 ```
+!!! tip "Tip"
 
-!!! note "Errors"
-    Als er een fout is opgetreden, zal de API `HTTP Status 500 (Internal Server Error)` terugsturen, en een JSON-object met de error.
-
-## Verkrijg de data van een specifieke gebruiker
-
-Om de data van een specifieke gebruiker te verkrijgen, stuur je een POST request naar hetzelfde adres als hierboven genoemd: 
-`http://oege.ie.hva.nl:8080/api/get`
-
-Vervolgens dient de gebruiker een header toe te voegen met de volgende content type:
-`Content-Type: application/json`, net zoals in het hierboven genoemde voorbeeld.
-
-Als laatste hoor je een JSON-object als body mee te geven, wat in het volgende formaat dient te zijn:
-
-```json
-{
-    "requestType": "user-data",
-    "apiKey": "API-KEY",
-    "user": "NAAM"
-}
-```
-
-Als dit allemaal in het juiste formaat is geleverd, geeft de server een response wat 
-kan lijken op het volgende:
-
-```json
-[
-  {
-    "name": "VOORBEELD",
-    "time": "12:00:00",
-    "date": "1970-01-01T23:00:00.000Z",
-    "score": 100,
-    "coins": 100
-  }
-]
-```
-
-
-
-De API zal een HTTP status 200 (OK) terugsturen, en een JSON-object met alle data van de specifieke gebruiker. Het JSON-object ziet er als volgt uit:
-
-```json
-[
-    {
-        "name": "VOORBEELD",
-        "time": "12:00:00",
-        "date": "1970-01-01T23:00:00.000Z",
-        "score": 100,
-        "coins": 100
-    }
-]
-```
+    Deze request is vrij universeel en kan gebruikt worden voor meerdere doeleinden. Zo kan je bijvoorbeeld de data van alle gebruikers opvragen, of de data van een specifieke gebruiker.
 
 !!! note "Errors"
     Als er een fout is opgetreden, zal de API `HTTP Status 500 (Internal Server Error)` terugsturen, en een JSON-object met de error.
 
 ## Test de API
 
-Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8080/api/test'. De API verwacht geen postData. De API zal HTTP status 200 (OK) terugsturen, en een JSON-object met de status van de request. Het JSON-object ziet er als volgt uit:
+Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8081/api/test'. De API verwacht enkel jouw API key. De API zal HTTP status 200 (OK) terugsturen, en een JSON-object met de status van de request. Het JSON-object ziet er als volgt uit:
 
 ```json
 [

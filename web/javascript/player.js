@@ -65,7 +65,7 @@ class Player extends Entity {
                 stroke(255, 0, 0);
                 fill(0, 0, 0, 0);
                 rect((this.position.x - this.width/2) * ppm,
-                    window.innerHeight - (this.position.y + this.height/2) * ppm,
+                    window.innerHeight - (this.position.y + this.height) * ppm,
                     this.width * ppm, this.height * ppm,);
             }
         }

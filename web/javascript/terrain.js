@@ -14,7 +14,7 @@ class Terrain {
     static #TREE_DEPTH = 5;
 
     #terrainSize; // Size of the terrain. This will be used in the quad tree containing terrain data.
-    #terrain;     // Quad-tree containing all the blocks of the terrain.
+    #objects;     // Quad-tree containing all the blocks of the terrain.
 
     // List of entities in the world. Since entities are less than blocks we don't need quadtrees
     #entities = [];
@@ -31,7 +31,7 @@ class Terrain {
     constructor(seed, terrainSize) {
         this.#seed = seed | Math.floor((1 << 10) * Math.random());
         this.#terrainSize = Math.max(Math.min(terrainSize, 1 << 20), 1); // make sure [1 <= St <= 2^20]
-        this.#terrain = new QuadTree(Terrain.#TREE_DEPTH, this.#terrainSize);        // Create tree with depth 6 and appropriate size
+        this.#objects = new QuadTree(Terrain.#TREE_DEPTH, this.#terrainSize);        // Create quadtree containing data
     }
 
     /**
@@ -45,16 +45,17 @@ class Terrain {
         /*if (!(blockType instanceof BlockType))
             return false;*/
 
+
         // Make sure they're integer coordinates
         [x, y] = [Math.round(x), Math.round(y)]
 
         // Attempt to get the node at the given location
-        let node = this.#terrain.getNode(x, y);
+        let node = this.#objects.getNode(x, y);
         // If there's no node at the given location yet, add a new array with one block
         if (node == null)
-            this.#terrain.insert(x, y, [new Block(x, y, blockType)]);
+            this.#objects.insert(x, y, new Block(x, y, blockType));
         else // Otherwise, retrieve the array and add the block to it.
-            this.#terrain.get(x, y).push(new Block(x, y, blockType));
+            this.#objects.get(x, y).push(new Block(x, y, blockType));
         return true;
     }
 
@@ -65,15 +66,16 @@ class Terrain {
      * @returns {BlockType} Block type at given coordinate. Returns null when no block is present.
      */
     getBlock(x, y) {
-        let node = this.#terrain.getNode(x, y);
+        [x, y] = [Math.round(x), Math.round(y)];
+        let node = this.#objects.getNode(x, y);
 
         // If no collection of data exists at point [x, y], return null
-        if (node == null || node.getData() == null)
+        if (node == null || node.data == null)
             return null;
 
         // Iterate over all blocks in the data structure and check whether there exists a block at [x, y]
         // If getData doesn't contain an array, it will automatically skip to return null.
-        for (let block of node.getData()) {
+        for (let block of node.data) {
             if (Math.abs(block.x - x) <= 0.01  && Math.abs(block.y - y) <= 0.01)
                 return block;
         }
@@ -132,12 +134,12 @@ class Terrain {
      * @param dT Difference in time since last render call, in seconds
      */
     draw(dT) {
-        for (let element of this.#terrain.iterator())
+        for (let element of this.#objects.iterator())
             element.draw(dT);
         this.#entities.forEach(e => e.draw(dT));
     }
 
-    get terrain() { return this.#terrain; }
+    get objects() { return this.#objects; }
 
     static remove(aabb) {
         for (let i = 0, l = Terrain.boundingBoxes.length; i < l; i++) {

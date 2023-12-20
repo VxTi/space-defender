@@ -1,7 +1,7 @@
 
 /** Player related variables */
 // Variables defining how fast the player moves per second in game meters.
-var horizontalSpeed = 3.5; // Movement speed horizontally in game meters/s
+var horizontalSpeed = 6.5; // Movement speed horizontally in game meters/s
 var verticalSpeed = 6.5;   // Movement speed vertically in game meters/s
 var allowDoubleJump = true;  // Whether the player can double jump against walls
 var player;                       // Variable containing all information of the player.
@@ -95,6 +95,8 @@ function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
     setDifficulty(0);
 
+    frameRate(120);
+
     // Load all block resources
     for (const [key, value] of Object.entries(resources))
         if (typeof BlockType[key] !== null)  BlockType[key] = new Resource(value);
@@ -112,23 +114,9 @@ function setup() {
     player = new Player(5, terrainHeight + 5);
     terrain = new Terrain(seed, 512);
 
-
-
-
     terrain.generate();            // generate environment
     terrain.addEntity(player); // add player to the environment
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
-
-    // Add periodic updates for entities
-    // For example, hostile entity damage, only once per second.
-    /*setInterval(() => {
-        if (!gameActive)
-            return;
-        /!*Terrain.entities.forEach(e => {
-            if (typeof e['onPeriodicUpdate'] === 'function')
-                e['onPeriodicUpdate']();*!/
-        });
-    }, entityTick);*/
 }
 
 // Draw function is called every 1/60th a second.
@@ -185,7 +173,7 @@ function draw() {
  * @param maxHealth The maximum amount of health of the entity
  * @param scale The scale at which to render the health-bar. Default is 1.0
  */
-function drawHealthBar(x, y, health, maxHealth, scale = 1) {
+function drawHealthBar(x, y, health, maxHealth, scale = 0.5) {
     stroke(255);
     text(`${health}/${maxHealth} HP`, x, y);
     for (let i = 1, w = ppm * scale; i <= maxHealth / 2; i++) {
@@ -195,3 +183,5 @@ function drawHealthBar(x, y, health, maxHealth, scale = 1) {
 
     }
 }
+
+

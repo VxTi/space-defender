@@ -17,21 +17,20 @@ De API is te gebruiken door een request te maken naar het adres: `http://oege.ie
 
 De API is beveiligd met een API key. Deze API key is te verkrijgen door een GET request te sturen naar de volgende URL `http://oege.ie.hva.nl:8081/api/createkey`. 
 Om een key te creëren heb je het Oege wachtwoord nodig, en een al bestaande API key. Het wachtwoord is niet openbaar, en is alleen te verkrijgen via ons. 
-De API verwacht postData waarin het wachtwoord en een key staan. Het url parameters (query string) ziet er als volgt uit:
+De API verwacht een JSON waarin het wachtwoord en een key staan. De url parameters (query string) ziet er als volgt uit:
 
-```postData
-key=APIKEY&password=PASSWORD
+```json
+
 ```
 
 Als dit succesvol is, zal de API HTTP status 201 (Created) terugsturen, en een JSON-object waarin staat dat de key succesvol is aangemaakt. 
 Het JSON response ziet er als volgt uit:
 
 ```json
-[
-    {
-        "message": "API key created", "key": "APIKEY" 
-    }
-]
+{
+    "message": "API key created", 
+    "key": "APIKEY" 
+}
 ```
 Als de key en/of het wachtwoord niet overeenkomt, zal de API HTTP status 401 (Unauthorized) terugsturen, en een JSON-object waarin staat dat je niet geautoriseerd bent.
 
@@ -40,20 +39,20 @@ Als de key en/of het wachtwoord niet overeenkomt, zal de API HTTP status 401 (Un
 Naast een unieke API key, heeft de API ook een rate limit. Dit betekent dat je maar een bepaald aantal requests per seconde mag sturen. Als je meer requests stuurt dan het aantal dat is toegestaan, zal de API HTTP status 429 (Too Many Requests) terugsturen, en een JSON-object waarin staat dat je te veel requests hebt gestuurd. 
 Het aantal requests dat je mag sturen per seconde is momenteel tien. 
 Als je meer dan 600 requests per minuut stuurt, zal de API HTTP status 429 (Too Many Requests) terugsturen, en een JSON-object waarin staat dat je te veel requests hebt gestuurd. 
-De rate limit is gebonden aan jouw API key, en is dus niet te omzeilen tenzij je nog een key aanvraagt.
+De rate limit is gebonden aan jouw IP adres. Als je dus met meerdere mensen op hetzelfde netwerk zit, en je stuurt allemaal requests naar de API, dan kan het zijn dat je rate limited wordt.
 
 De rate limit is laag genoeg dat de game er geen last van zal hebben. De game stuurt namelijk maar één request per keer. De game stuurt alleen een request als de gebruiker een nieuw record heeft gezet. Dit zal niet vaak gebeuren, en dus zal de game niet snel de rate limit bereiken. Het is puur en alleen ter beveiliging dat iemand niet zomaar de hele API kan flooden met requests.
 
 Als je ge-rate-limited bent krijg je een JSON-object terug met de volgende informatie:
 
 ```json
-[
-    {
-        "message": "Too many requests"
-    }
-]
+{
+    "message": "Too many requests"
+}
 ```
----
+
+Daarnaast krijg je ook een HTTP status code 429 (Too Many Requests) terug.
+
 ## HTTP Status Sodes
 
 De API zal HTTP status codes terugsturen. Deze status codes geven aan als de request succesvol is, of als er een error is opgetreden. De volgende HTTP status codes kunnen terug gestuurd worden:
@@ -78,115 +77,213 @@ De API zal HTTP status codes terugsturen. Deze status codes geven aan als de req
 
 !!! danger "Status 500: Internal Server Error"
     De request is niet succesvol uitgevoerd. Er is een error opgetreden in de database. De API zal een JSON-object terugsturen met de error.
----
-# Alle API GET requests
 
-## Het verkrijgen van data van de gebruikers
+# Alle API URLs
 
-Al wil je data te verkrijgen van één of alle gebruikers dien je een request te sturen naar de volgende url:
-`http://oege.ie.hva.nl:8081/api/get`
+Alle API requests die je kunt sturen naar de API, moet je sturen als POST request. De API verwacht een JSON-object in de body van de request. De API zal ook een JSON-object terugsturen. In een POST request kun je veel meer data sturen dan in een GET request. Daarom hebben wij gekozen om alle requests als POST request te laten sturen.
 
-Om vervolgens deze data te verkrijgen, is het noodzakelijk om een JSON-object als post data te versturen.
-Dit JSON-object hoort in het volgende formaat aanwezig te zijn:
-```json
-{
-  "key": "KEY", // De API key die je hebt gekregen
-  "requestType": "user-data", // Of "all-data"
-  "user": "NAAM", // Alleen nodig als je data van een specifieke gebruiker wilt, anders niet meegeven
-  "tables": "[score, coins]", // Alleen nodig als je specifieke data wilt, anders "*"
-  "orderBy": "score", // Als je de data wilt sorteren op een bepaalde kolom
-}
-```
-Dit gaat gepaard met een header met `Content-Type: application/json` op te sturen.
-Als de gebruiker een correcte API key heeft gegeven gepaard met een correct request formaat, zal
-de server een response geven wat kan lijken op het volgende:
-``` json
-[
+??? note "/api/createkey"
+    Deze URL is bedoeld om een API key te creëren. Je moet een JSON-object sturen met de key en het wachtwoord. De API zal een JSON-object terugsturen met de status van de request. De URL is als volgt: `http://oege.ie.hva.nl:8081/api/createkey`. De API verwacht de volgende header: `Content-Type: application/json` en de volgende data als JSON object:
+
+    ```json
     {
-        "name": "VOORBEELD",
-        "time": "12:00:00",
-        "date": "1970-01-01T23:00:00.000Z",
-        "score": 100,
-        "coins": 100
-    },
-    {
-        "name": "VOORBEELD2",
-        "time": "12:00:00",
-        "date": "1970-01-01T23:00:00.000Z",
-        "score": 100,
-        "coins": 100
+    "key": "APIKEY",
+    "password": "WACHTWOORD"
     }
-]
-```
-!!! tip "Tip"
+    ```
+    Als de key en/of het wachtwoord niet overeenkomt, zal de API HTTP status 401 (Unauthorized) terugsturen, en een JSON-object waarin staat dat je niet geautoriseerd bent.
+    Als je wel de juiste data stuurt, zal de API HTTP status 201 (Created) terugsturen, en een JSON-object waarin staat dat de key succesvol is aangemaakt. Deze ziet er als volgt uit:
 
-    Deze request is vrij universeel en kan gebruikt worden voor meerdere doeleinden. Zo kan je bijvoorbeeld de data van alle gebruikers opvragen, of de data van een specifieke gebruiker.
-
-!!! note "Errors"
-    Als er een fout is opgetreden, zal de API `HTTP Status 500 (Internal Server Error)` terugsturen, en een JSON-object met de error.
-
-## Test de API
-
-Om de API te testen, stuur je een GET request naar de volgende URL: '127.0.0.1:8081/api/test'. De API verwacht enkel jouw API key. De API zal HTTP status 200 (OK) terugsturen, en een JSON-object met de status van de request. Het JSON-object ziet er als volgt uit:
-
-```json
-[
+    ```json
     {
-        "message": "API Success"
+        "message": "New API key created",
+        "key": "NIEUWE APIKEY"
     }
-]
-```
+    ```
 
-!!! tip "Test de API"
-    Het is verstandig om deze functie te gebruiken als je even snel wilt weten als de verbinding met de API wel werkt.
+??? note "/api/deletekey"
+    Deze URL is bedoeld om een API key te verwijderen. Je moet een JSON-object sturen met de key en het wachtwoord. De API zal een JSON-object terugsturen met de status van de request. De URL is als volgt: `http://oege.ie.hva.nl:8081/api/deletekey`. De API verwacht de volgende header: `Content-Type: application/json` en de volgende data als JSON object:
 
-# Alle API POST requests
-
-## Creeër data voor een gebruiker
-
-Om data voor een gebruiker te creeëren, stuur je een POST request naar de volgende URL: `http://oege.ie.hva.nl/api/insert`. De API verwacht postData met jouw API key en alle gegevens die je wilt opsturen naar de database dat er als volgt uit ziet:
-
-```
-name=NAAM&score=100&coins=100&key=APIKEY
-```
-
-De API zal HTTP status 202 (Accepted) terugsturen, en een JSON-object met de status van de request. Het JSON-object ziet er als volgt uit:
-
-```json
-[
+    ```json
     {
-        "message": "Data inserted"
+        "key": "APIKEY"
     }
-]
-```
+    ```
 
-!!! note "Errors"
-    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON-object met de error.
+    Als de key niet overeenkomt, zal de API HTTP status 401 (Unauthorized) terugsturen, en een JSON-object waarin staat dat je niet geautoriseerd bent.
+    Als de key wel overeenkomt, zal de API HTTP status 202 (Accepted) terugsturen, en een JSON-object waarin staat dat de ingevulde key succesvol is verwijderd. Deze ziet er als volgt uit:
 
-# Alle API DELETE requests
+    ```json
+    {
+        "message": "API key deleted"
+    }
+    ```
 
-## Verwijder een gebruiker
+??? note "/api/updatescore"
+    Deze URL is bedoeld om de score van een gebruiker te updaten naar de meegeleverde waarde. Je moet een JSON-object sturen met de key, de userId van wie je de score gaat aanpassen, de nieuwe score en de nieuwe coins. De API zal een JSON-object terugsturen met de status van de request. De URL is als volgt: `http://oege.ie.hva.nl:8081/api/updatescore`. De API verwacht de volgende header: `Content-Type: application/json` en de volgende data als JSON object:
 
-Om een gebruiker te verwijderen, stuur je een DELETE request naar de volgende URL: `http://oege.ie.hva.nl/api/deleteuser`. De API verwacht postData met de gebruiker die jij wilt verwijderen, en jouw API key, dat er als volgt uit ziet:
+    ```json
+    {
+        "key": "APIKEY",
+        "userId": "USERID",
+        "score": "SCORE",
+        "coins": "COINS"
+    }
+    ```
 
-```
-name=VOORBEELD&key=APIKEY
-```
+    Als de key niet overeenkomt, zal de API HTTP status 401 (Unauthorized) terugsturen, en een JSON-object waarin staat dat je niet geautoriseerd bent.
+    Als de key wel overeenkomt, zal de API HTTP status 201 (Created) terugsturen, en een JSON-object waarin staat dat de ingevulde key succesvol is verwijderd. Deze ziet er als volgt uit:
 
-De API zal HTTP status 202 (Accepted) terugsturen, en een JSON-object met de status van de request. Het JSON-object ziet er als volgt uit:
+    ```json
+    {
+        "message": "Last score updated"
+    }
+    ```
 
-```json
-[
-    [
-        {
-            "message": "User data deleted for user: NAAM"
-        }
-    ]
-]
-```
+    Daarnaast zal de backend server na het updaten van de laatste score meteen checken als deze hoger is dan de highscore van de gegeven speler. Als deze nieuwe score hoger is dan de vorige score zal deze automatisch aangepast worden in de database.
 
-!!! note "Errors"
-    Als er een fout is opgetreden, zal de API HTTP status 500 (Internal Server Error) terugsturen, en een JSON-object met de error.
+??? note "/api/createuser"
+    Deze URL is bedoeld om een nieuwe gebruiker aan te maken in de database. Je moet een JSON-object sturen met de key, de naam en het emailadres van de nieuwe gebruiker. De API zal een JSON-object terugsturen met de status van de request. De URL is als volgt: `http://oege.ie.hva.nl:8081/api/createuser`. De API verwacht de volgende header: `Content-Type: application/json` en de volgende data als JSON object:
+    
+    ```json
+    {
+        "key": "APIKEY",
+        "name": "NAAM",
+        "email": "EMAIL"
+    }
+    ```
 
-!!! danger "Waarschuwing"
-    Met deze actie zal alle data van de gebruiker verwijderd worden. Deze actie kan niet ongedaan gemaakt worden. Wees hier dus voorzichtig mee.
+    Als de key niet overeenkomt, zal de API HTTP status 401 (Unauthorized) terugsturen, en een JSON-object waarin staat dat je niet geautoriseerd bent.
+    Als de key wel overeenkomt, zal de API HTTP status 201 (Created) terugsturen, en een JSON-object waarin staat dat de ingevulde key succesvol is verwijderd. Deze ziet er als volgt uit:
+
+    ```json
+    {
+        "message": "New user created",
+        "userId": "USERID"
+    }
+    ```
+    Als de gebruiker al bestaat, zal de API HTTP status 400 (Bad request) terugsturen, en een JSON-object waarin staat dat de gebruiker al bestaat. Deze ziet er als volgt uit:
+
+    ```json
+    {
+        "message": "User already exists"
+    }
+    ```
+
+??? note "/api/checkuser"
+    Deze URL is bedoeld om te checken als een gebruiker al bestaat in de database. Je moet een JSON-object sturen met de key en een naam of userId. De API zal een JSON-object terugsturen met de status van de request. De URL is als volgt: `http://oege.ie.hva.nl:8081/api/deletekey`. De API verwacht de volgende header: `Content-Type: application/json` en de volgende data als JSON object:
+    
+    ```json
+    {
+        "key": "APIKEY",
+        "idOrName": "USERID of NAAM"
+    }
+    ```
+
+    Als de key niet overeenkomt, zal de API HTTP status 401 (Unauthorized) terugsturen, en een JSON-object waarin staat dat je niet geautoriseerd bent.
+    Als de key wel overeenkomt, zal de API HTTP status 200 (OK) terugsturen, en een JSON-object waarin staat dat de ingevulde key succesvol is verwijderd. Deze ziet er als volgt uit:
+
+    ```json
+    {
+        "message": "User exists",
+        "exists": "TRUE of FALSE"
+    }
+    ```
+
+??? note "/api/getlastscore"
+    Deze URL is bedoeld om de laatste score van een gebruiker op te vragen. Je moet een JSON-object sturen met de key en de userId van wie je de laatste score wilt krijgen. De API zal een JSON-object terugsturen met de status van de request. De URL is als volgt: `http://oege.ie.hva.nl:8081/api/getlastscore`. De API verwacht de volgende header: `Content-Type: application/json` en de volgende data als JSON object:
+    
+    ```json
+    {
+        "key": "APIKEY",
+        "userId": "USERID"
+    }
+    ```
+
+    Als de key niet overeenkomt, zal de API HTTP status 401 (Unauthorized) terugsturen, en een JSON-object waarin staat dat je niet geautoriseerd bent.
+    Als de key wel overeenkomt, zal de API HTTP status 200 (OK) terugsturen, en een JSON-object waarin staat dat de ingevulde key succesvol is verwijderd. Deze ziet er als volgt uit:
+
+    ```json
+    {
+        "message": "Last score retrieved",
+        "lastScore": {
+            "userId": "USERID",
+            "userName": "NAAM",
+            "lastScore": "LAATSTE SCORE",
+            "lastCoins": "LAATSTE COINS"
+        } 
+    }
+    ```
+
+    Als de gebruiker niet bestaat zal de geneste JSON `lastScore` leeg zijn.
+
+??? note "/api/gethighscore"
+    Deze URL is bedoeld om de highscore van een gebruiker op te vragen. Je moet een JSON-object sturen met de key en de userId van wie je de highscore wilt krijgen. De API zal een JSON-object terugsturen met de status van de request. De URL is als volgt: `http://oege.ie.hva.nl:8081/api/gethighscore`. De API verwacht de volgende header: `Content-Type: application/json` en de volgende data als JSON object:
+    
+    ```json
+    {
+        "key": "APIKEY",
+        "userId": "USERID"
+    }
+    ```
+
+    Als de key niet overeenkomt, zal de API HTTP status 401 (Unauthorized) terugsturen, en een JSON-object waarin staat dat je niet geautoriseerd bent.
+    Als de key wel overeenkomt, zal de API HTTP status 200 (OK) terugsturen, en een JSON-object waarin staat dat de ingevulde key succesvol is verwijderd. Deze ziet er als volgt uit:
+
+    ```json
+    {
+        "message": "High score retrieved",
+        "highScore": {
+            "userId": "USERID",
+            "userName": "NAAM",
+            "maxScore": "HIGHSCORE",
+            "maxCoins": "HIGHCOINS"
+        } 
+    }
+    ```
+
+    Als de gebruiker niet bestaat zal de geneste JSON `highScore` leeg zijn.
+
+??? note "/api/getleaderboards"
+    Deze URL is bedoeld om de leaderboards op te vragen. Je moet een JSON-object sturen met de key, het gene waar je op wilt sorteren, en  het maximaal aantal resultaten. De API zal een JSON-object terugsturen met de status van de request. De URL is als volgt: `http://oege.ie.hva.nl:8081/api/getleaderboards`. De API verwacht de volgende header: `Content-Type: application/json` en de volgende data als JSON object:
+    
+    ```json
+    {
+        "key": "APIKEY",
+        "sortBy": "SCORE of COINS",
+        "maxResults": "AANTAL"
+    }
+    ```
+
+    Als de key niet overeenkomt, zal de API HTTP status 401 (Unauthorized) terugsturen, en een JSON-object waarin staat dat je niet geautoriseerd bent.
+    Als de key wel overeenkomt, zal de API HTTP status 200 (OK) terugsturen, en een JSON-object waarin staat dat de ingevulde key succesvol is verwijderd. Deze ziet er als volgt uit:
+
+    ```json
+    {
+        "message": "Leaderboards retrieved",
+        "leaderboards": [
+            {
+                "userId": "USERID",
+                "userName": "NAAM",
+                "maxScore": "HIGHSCORE",
+                "maxCoins": "HIGHCOINS"
+            },
+            {
+                "userId": "USERID",
+                "userName": "NAAM",
+                "maxScore": "HIGHSCORE",
+                "maxCoins": "HIGHCOINS"
+            },
+            {
+                "userId": "USERID",
+                "userName": "NAAM",
+                "maxScore": "HIGHSCORE",
+                "maxCoins": "HIGHCOINS"
+            }
+        ]
+    }
+    ```
+
+    Als er geen gebruikers zijn zal de geneste JSON `leaderboards` leeg zijn.
+
+Einde.

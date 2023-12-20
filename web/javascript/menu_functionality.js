@@ -92,7 +92,7 @@ function keyTyped() {
 (() => {
 
     const elements = [
-        'game-settings-button', 'main-difficulty', 'main-play', 'main-leaderboards',
+        'game-settings-button', 'main-play', 'main-leaderboards',
         'pause-main-menu', 'pause-settings', 'pause-resume', 'pause-statistics',
         'main-information', 'leaderboard-content'
     ];
@@ -121,7 +121,6 @@ function keyTyped() {
         });
 
     element['game-settings-button'].onclick = () => showMenu('menu-pause');
-    element['main-difficulty'].onclick = () => setDifficulty(difficulty + 1);
 
     // If any of the menu buttons have a tag named 'data-menu' with a valid menu assigned,
     // when interacted, it'll go to that menu.

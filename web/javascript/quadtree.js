@@ -16,12 +16,12 @@ class QuadTree {
      * @param {number} depth The depth of the tree.
      * Defines how many children this tree instance has. When depth = 0,
      * this tree would be considered a leaf and will contain the necessary data.
-     * @param {number} [scale = 1] The scale of this tree.
+     * @param {number} [size = 1] The scale of this tree.
      * This represents the coordinate space size of this tree.
      */
-    constructor(depth, scale = 1) {
+    constructor(depth, size = 1) {
         this.#depth = depth;
-        this.#scale = scale;
+        this.#scale = size;
     }
 
     /**
@@ -31,34 +31,55 @@ class QuadTree {
      * @param {number} y y-coordinate to convert
      * @returns {number[]} an array containing the next coordinates.
      */
-    #nextCoordinates(x, y) { return [2 * x - Math.round(x) * 0.5, 2 * y - Math.round(y) * 0.5]; }
+    #nextCoordinates(x, y) {
+        return [
+            (x - Math.round(x / this.#scale) * 0.5 * this.#scale) * 2,
+            (y - Math.round(y / this.#scale) * 0.5 * this.#scale) * 2
+        ];
+    }
+
+    next(x, y) { return this.#nextCoordinates(x, y); }
 
     /**
-     * Method for converting coordinates to appropriate coordinate space.
-     * Input parameters are of default size
-     * @param {number} x x-coordinate to convert
-     * @param {number} y y-coordinate to convert
-     * @returns {number[]} Array object containing converted x and y coordinates in appropriate sizes.
+     * Method for checking whether the coordinates are within range of this tree
+     * @param {number} x x-coordinate to check
+     * @param {number} y y-coordinate to check
+     * @returns {boolean} Whether or not the coordinates lie within this tree
      */
-    #toCoordinateSpace(x, y) { return [x / this.#scale, y / this.#scale]; }
+    #isWithinRange(x, y) { return x >= 0 && y >= 0 && x <= this.#scale && y <= this.#scale; }
+
+
+    /**
+     * Method for retrieving indices for next child node, based on this tree scale
+     * @param {number} x x-coordinate [0 <= x <= scale]
+     * @param {number} y y-coordinate [0 <= y <= scale]
+     * @returns {number} index for next child node. [0 <= i <= 3]
+     */
+    #getIndices(x, y) {
+        return Math.floor(x / this.#scale) * 2 + Math.floor(y / this.#scale);
+    }
 
     /**
      * Method for inserting data in a given point. Data can be of any kind.
      * @param {number} x X coordinate to insert data at ( 0 <= x <= 1 )
      * @param {number} y Y coordinate to insert data at ( 0 <= y <= 1 )
      * @param {any} data The data to insert at the given location
+     * @returns {boolean} Whether the insertion was successful or not.
      */
     insert(x, y, data) {
         let node = this, i, d;
 
-        [x, y] = this.#toCoordinateSpace(x, y);
+        if (!this.#isWithinRange(x, y))
+            return false
 
         for (d = this.#depth - 1; d >= 0; d--) {
             [x, y] = this.#nextCoordinates(x, y);
-            i = Math.round(x) * 2 + Math.round(y);
+            i = this.#getIndices(x, y);
+
             if (node.#nodes == null) {
-                node.#nodes = Array(4);
-                for (let k = 0; k < 4; k++) node.#nodes = new QuadTree(node.#depth - 1);
+                node.#nodes = Array(4).fill(null);
+                for (let k = 0; k < 4; k++)
+                    node.#nodes = new QuadTree(node.#depth - 1);
             }
 
             // Generate a new branch if it doesn't exist.
@@ -67,7 +88,11 @@ class QuadTree {
 
             node = node.#nodes[i];
         }
-        node.#data = data;
+        // If no data exists, add a new array with the data
+        if (node.#data == null)
+            node.#data = [data];
+        else node.#data.push(data); // Otherwise, add it to the existing one
+        return true;
     }
 
     /**
@@ -77,7 +102,9 @@ class QuadTree {
      * @returns {any | null} Data from given point. Returns null when no data is present.
      */
     get(x, y) {
-        [x, y] = this.#toCoordinateSpace(x, y);  // Convert to appropriate coordinates
+        // If the coordinates aren't within range of this tree, return null
+        if (!this.#isWithinRange(x, y))
+            return null;
         return this.getNode(x, y).#data ?? null; // Returns null when getNode(x, y) returns null.
     }
 
@@ -89,12 +116,13 @@ class QuadTree {
      */
     getNode(x, y) {
         let node = this, i, d;
-        [x, y] = this.#toCoordinateSpace(x, y);
+        if (!this.#isWithinRange(x, y))
+            return null;
 
         // Branch down to the lowest leaf
         for (d = this.#depth - 1; d >= 0; d--) {
             [x, y] = this.#nextCoordinates(x, y);
-            i = Math.round(x) * 2 + Math.round(y);
+            i = this.#getIndices(x, y);
 
             // If the nodes are null or the child nodes are null,
             // it's clear that we don't have any data. stop. now.
@@ -125,7 +153,23 @@ class QuadTree {
         }
     }
 
-    isLeaf() { return this.#depth === 0; }
-    getData() { return this.#data; }
+    /**
+     * Getter for the child nodes of this tree. Only returns valid data when
+     * there's data contained in one of the child nodes.
+     * @returns {QuadTree[] | null} Returns child nodes if there's data and D > 0.
+     * Returns null when no data is present
+     */
+    get nodes() { return this.#nodes ?? null; }
 
+    /**
+     * Method for checking whether this QuadTree instance is a leaf (d == 0)
+     * @returns {boolean} Whether or not this is a leaf
+     */
+    isLeaf() { return this.#depth === 0; }
+
+    /**
+     *
+     * @returns {*}
+     */
+    get data() { return this.#data; }
 }

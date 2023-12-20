@@ -16,8 +16,8 @@ class Entity extends AABB {
 
     static collisionThreshold = 0.05; // Detection threshold in meters
 
-    constructor(posX, posY, maxHealth, width, height, movementSpeed) {
-        super(posX, posY, width, height);
+    constructor(posX, posY, maxHealth, movementSpeed) {
+        super(posX, posY, 0.9, 1.8);
         this.#movementSpeed = movementSpeed;
         this.#direction = new Vec2(0, 0);
         this.#position  = new Vec2(posX, posY);
@@ -153,7 +153,7 @@ class Entity extends AABB {
         this.velocity.x *= 0.8;
 
         // Limit falling to bottom screen so the player doesn't randomly disappear.
-        this.position.y = Math.max(this.position.y, this.height / 2);
+        this.position.y = Math.max(this.position.y, 0);
 
         // Update the AABB position
         this.translate(this.position.x, this.position.y);
@@ -166,19 +166,21 @@ class Entity extends AABB {
      */
     #checkCollision(dT) {
         let [dx, dy] = [this.#velocity.x, this.#velocity.y];
+        let [Sx, Sy] = [Math.sign(dx), Math.sign(dy)];
+
         // x-axis checks
-        if (terrain.getBlock(this.x + this.#velocity.x, this.y) != null) {
+        if (terrain.getBlock(this.x + Sx * this.width * 0.5 + dx, this.y) != null) {
             dx = 0;//Math.sign(this.#velocity.x) * (1 - Math.abs(this.#velocity.x * dT));
-            this.#colliding.x = Math.sign(this.#velocity.x);
+            this.#colliding.x = Sx;
         }
 
         // y-axis checks
-        if (terrain.getBlock(this.x, this.y + this.#velocity.y) != null) {
+        if (terrain.getBlock(this.x, this.y + Sy * this.height * 0.5 + dy) != null) {
             dy = 0;//Math.sign(this.#velocity.y) * (1 - Math.abs(this.#velocity.y * dT));
-            this.#colliding.y = Math.sign(this.#velocity.y);
+            this.#colliding.y = Sy;
         }
 
-        this.#velocity.translate(dx, dy);
+        this.velocity.translate(dx, dy);
     }
 
     /**

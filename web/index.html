@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <head>
-    <title>Game test</title>
+    <title>Defender</title>
     <link rel="stylesheet" href="styles/styles.css">
     <script src="javascript/scriptloader.js"></script>
     <link rel="icon" href="assets/website_icon.png" type="image/icon type">
@@ -8,12 +8,15 @@
 <body>
     <div class="overlay">
 
+        <div class="game-intro"></div>
+
         <div class="menu">
             <!-- Settings icon -->
             <img class="game-settings-button" src="assets/settings_icon.png" alt="Settings"/>
+
             <div class="game-scores">
-                <div class="game-score-points">Score: <span class="game-score-points-value">0pt</span></div>
-                <div class="game-score-coins">Coins: <span class="game-score-coins-value">0</span></div>
+                <div class="game-scores-element">Score <span class="game-score-value game-score-points-value">0</span></div>
+                <div class="game-scores-element">Kills <span class="game-score-value game-score-coins-value">0</span></div>
             </div>
 
             <!--
@@ -22,13 +25,9 @@
             <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-start">
                 <div class="bg">
                     <div class="frame-title">Menu</div>
-                    <div class="menu-button main-information gamepad-selectable" data-menu="menu-information">How to play</div>
-                    <div class="menu-button main-difficulty gamepad-selectable" data-onload="incrementDifficulty">
-                        <span style="float: left; width: 50%; margin: auto; ">Difficulty</span>
-                        <span class="difficulty-title" style="float: right; width: 50%; margin: auto">Easy</span>
-                    </div>
-                    <div class="menu-button main-leaderboards gamepad-selectable" data-menu="menu-leaderboards">Leaderboards</div>
                     <div class="menu-button main-play gamepad-selectable" data-menu="">Play</div>
+                    <div class="menu-button main-leaderboards gamepad-selectable" data-menu="menu-leaderboards">Scores</div>
+                    <div class="menu-button main-information gamepad-selectable" data-menu="menu-information">How to play</div>
                 </div>
             </div>
 
@@ -37,10 +36,9 @@
             -->
             <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-pause">
                 <div class="bg">
-                    <div class="menu-button pause-main-menu gamepad-selectable" data-menu="menu-start">Return to menu</div>
-                    <div class="menu-button pause-settings gamepad-selectable" data-menu="menu-settings">Settings</div>
-                    <div class="menu-button pause-statistics gamepad-selectable" data-menu="menu-statistics">Statistics</div>
                     <div class="menu-button pause-resume gamepad-selectable" data-menu="">Resume</div>
+                    <div class="menu-button pause-settings gamepad-selectable" data-menu="menu-settings">Settings</div>
+                    <div class="menu-button pause-main-menu gamepad-selectable" data-menu="menu-start">Return to menu</div>
                 </div>
             </div>
 
@@ -76,20 +74,6 @@
             </div>
 
             <!--
-            Section: In-game Statistics
-            -->
-            <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-statistics">
-                <div class="bg">
-                    <div class="button-menu gamepad-selectable" data-menu="menu-pause"><</div>
-                    <div class="frame-title">Statistics</div>
-                    <div class="menu-text-content">
-                        <!-- TODO: Put statistics content here -->
-                        put statistics here
-                    </div>
-                </div>
-            </div>
-
-            <!--
             Section: How to play
             -->
             <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-information">
@@ -98,10 +82,12 @@
                     <div class="frame-title">How to play</div>
                     <div class="menu-text-content">
                         Hello beginning user! <br>
-                        Welcome to <b>a game with no name!</b> <br>
-                        To start, one must first select a difficulty. <br>
-                        Once selected, you can then press <b>Play</b> <br>
-                        To move the player, one can use the following keys:
+                        Welcome to <b>Defender!</b> <br>
+                        Before pressing <b>Play</b>, one must first know the controls.<br>
+                        First, get on thy spaceship. Once aboard, one can move the ship by <br>
+                        either occupying the wireless or wired controller<br>
+                        If you're using the wireless one, the controls are as followed: <br>
+                        To move left, use <img
                         <b>A</b> to move left, <b>D</b> to move right and <b>SPACE</b> to jump. <br>
                         Your goal is to
                     </div>

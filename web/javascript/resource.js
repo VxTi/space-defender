@@ -46,4 +46,6 @@ class Resource {
             this.#partHeight * Math.floor(animationIndex / this.#horizontal));
     }
 
+    get image() { return this.#image; }
+
 }

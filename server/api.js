@@ -11,9 +11,6 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
 const crypto = require("crypto");
-const { error } = require('console');
-const { compileFunction } = require('vm');
-const { get } = require('http');
 
 /*
  * Which port to host the server on.
@@ -23,13 +20,13 @@ const { get } = require('http');
 const port = 8081;
 
 // Maximum amount of requests allowed per time-frame (window size is 1000ms / 1s)
-const rateLimit = 10;
+const rateLimit = 1;
 
 // Add rate limiting to every request made from Client to Server.
 app.use(require('express-rate-limit')({
     windowMs: 1000, // Milliseconds per window. (1 per second)
     max: rateLimit, // Maximum amount of requests allowed per window.
-    message: '[{"message": "You have exceeded your API rate limit. Please slow down."}]'
+    message: '{"message": "You have exceeded your API rate limit. Please slow down."}' // Message to send when rate limit is exceeded.
 }));
 
 // Parse JSON and URL-encoded data
@@ -37,8 +34,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({ origin: '*' }));
 
-// SQL data types for the columns above.
-const tables = ["highScores", "lastScores", "lastPlayed", "userNames"];
 
 // Database connection:
 const credentials = {
@@ -336,6 +331,41 @@ createNewUser = async (name, email) => {
     }
 }
 
+// Delete a user:
+deleteUser = async (userId) => {
+    try {
+        // Create a connection to the database:
+        const conn = await pool.getConnection(); // Get a connection from the pool
+
+        // Delete the user from the database:
+        let inserts = [userId]; // Using the ? to prevent SQL injection
+        let sql1 = `DELETE FROM lastScores WHERE userId = ?;`; // SQL query
+        let sql2 = `DELETE FROM highScores WHERE userId = ?;`; // SQL query
+        let sql3 = `DELETE FROM lastPlayed WHERE userId = ?;`; // SQL query
+        let sql4 = `DELETE FROM userData WHERE userId = ?;`; // SQL query
+
+        // Format the SQL queries:
+        sql1 = mysql.format(sql1, inserts);
+        sql2 = mysql.format(sql2, inserts);
+        sql3 = mysql.format(sql3, inserts);
+        sql4 = mysql.format(sql4, inserts);
+
+        // Execute the queries:
+        await conn.query(sql1);
+        await conn.query(sql2);
+        await conn.query(sql3);
+        await conn.query(sql4);
+
+        conn.release(); // Release the connection
+
+        consoleLog("RES", `Deleted user with userId ${userId}`); // Log the request
+    }
+    catch (err) {
+        consoleLog("ERR", "Error deleting user", err);
+    }
+}
+
+
 // Get the last score and coins:
 getLastScore = async (userId) => {
     try {
@@ -429,16 +459,8 @@ app.post('/api/createkey', async (req, res) => {
     // Parse the request body:
     let postData = JSON.parse(JSON.stringify(req.body));
     let password = postData.password;
-    let key = postData.key;
 
     consoleLog("REQ", `Got a create key request.`); // Log the request
-
-    // Check if the API key is valid:
-    if (isApiKeyInvalid(key)) {
-        res.status(401).json({ message: 'Invalid API key' }); // Send status 401 with appropriate JSON-body
-        consoleLog("RES", "Invalid API key");
-        return;
-    }
 
     // Check if the password is correct:
     if (password != oegePassword) {
@@ -616,6 +638,38 @@ app.post('/api/checkuser', async (req, res) => {
     consoleLog("RES", `User ${idOrName} exists: ${exists}`); // Log the request
 }
 );
+
+// Delete a user:
+app.post('/api/deleteuser', async (req, res) => {
+
+    // Parse the request body:
+    let postData = JSON.parse(JSON.stringify(req.body));
+    let key = postData.key;
+    let userId = postData.userId;
+
+    consoleLog("REQ", `Got a delete user request for userId ${userId}`); // Log the request
+
+    // Check if the API key is valid:
+    if (isApiKeyInvalid(key)) {
+        res.status(401).json({ message: 'Invalid API key' }); // Send status 401 with appropriate JSON-body
+        consoleLog("RES", "Invalid API key");
+        return;
+    }
+
+    // Check if the data is valid:
+    if (userId == null) {
+        res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
+        consoleLog("RES", "Invalid data");
+        return;
+    }
+
+    // Delete the user:
+    await deleteUser(userId);
+
+    // Send the result to the client:
+    res.status(200).json({ message: 'User deleted' }); // Send status 200 with appropriate JSON-body
+});
+
 
 // Get the last score and coins:
 app.post('/api/getlastscore', async (req, res) => {

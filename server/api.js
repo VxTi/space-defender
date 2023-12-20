@@ -2,6 +2,8 @@
 |Global variables, settings|
 \*========================*/
 
+// TODO: CHARACTER LIMIT OP alle inputs
+
 
 // Libraries
 const express = require('express');

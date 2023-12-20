@@ -23,6 +23,8 @@ const port = 8081;
 
 // Maximum amount of requests allowed per time-frame (window size is 1000ms / 1s)
 const rateLimit = 10;
+// Maximum amount of characters allowed in a request
+const characterLimit = 128;
 
 // Add rate limiting to every request made from Client to Server.
 app.use(require('express-rate-limit')({
@@ -69,35 +71,31 @@ getDateStringNL = () => new Date().toLocaleDateString("nl-NL");
 function consoleLog(type, message, parameters) {
     switch (true) {
         case type === "REQ" && parameters === undefined:
-            console.log(`[${getTimeString()}, ${getDateStringNL()}][C -----> S]: ${message}`);
+            console.log(`[${getTimeString()}, ${getDateStringNL()}][C -REQ-> S]: ${message}`);
             break;
         case type === "RES" && parameters === undefined:
-            console.log(`[${getTimeString()}, ${getDateStringNL()}][C <----- S]: ${message}`);
+            console.log(`[${getTimeString()}, ${getDateStringNL()}][C <-RES- S]: ${message}`);
             break;
         case type === "ERR" && parameters === undefined:
-            console.log(`[${getTimeString()}, ${getDateStringNL()}][C <--X-- S]: ${message}`);
+            console.log(`[${getTimeString()}, ${getDateStringNL()}][C <-ERR- S]: ${message}`);
             break;
         case type === "REQ" && parameters !== undefined:
-            console.log(`[${getTimeString()}, ${getDateStringNL()}][C -----> S]: ${message}`, parameters);
+            console.log(`[${getTimeString()}, ${getDateStringNL()}][C -REQ-> S]: ${message}`, parameters);
             break;
         case type === "RES" && parameters !== undefined:
-            console.log(`[${getTimeString()}, ${getDateStringNL()}][C <----- S]: ${message}`, parameters);
+            console.log(`[${getTimeString()}, ${getDateStringNL()}][C <-RES- S]: ${message}`, parameters);
             break;
         case type === "ERR" && parameters !== undefined:
-            console.log(`[${getTimeString()}, ${getDateStringNL()}][C <--X-- S]: ${message}`, parameters);
+            console.log(`[${getTimeString()}, ${getDateStringNL()}][C <-ERR- S]: ${message}`, parameters);
             break;
         case type === "RUN":
-            console.log(`[${getTimeString()}, ${getDateStringNL()}][C <----> S]: ${message}`);
+            console.log(`[${getTimeString()}, ${getDateStringNL()}][C <-RUN- S]: ${message}`);
             break;
         default:
             console.log(`[${getTimeString()}, ${getDateStringNL()}][C <-??-> S]: ${message}`, parameters);
             break;
     }
 }
-/*{
-    if (parameters == null) { console.log(`[${getTimeString()}, ${getDateStringNL()}][${type}]: ${message}`); }
-    else { console.log(`[${getTimeString()}, ${getDateStringNL()}][${type}]: ${message}`, parameters); }
-}*/
 
 // Check if the given API key is valid:
 isApiKeyInvalid = (apiKey) => {
@@ -105,6 +103,17 @@ isApiKeyInvalid = (apiKey) => {
     let keys = JSON.parse(fileData); // Parse the keys
     let validkeys = keys.key; // Get the keys from the JSON file
     return !validkeys.includes(apiKey); // Check if the API key is valid
+}
+
+isDataTooLong = (data) => {
+    if (data == undefined) {
+        return false;
+    }
+    if (data.length > characterLimit) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 // Create the tables if they don't exist:
@@ -305,7 +314,7 @@ createNewUser = async (name, email) => {
 
         // Create a new user in the database:
         let sql1 = `INSERT INTO lastScores (userId, userName, lastScore, lastCoins) VALUES (?, ?, ?, ?);`; // SQL query
-        let inserts1 = [userId, name,0, 0]; // Using the ? to prevent SQL injection
+        let inserts1 = [userId, name, 0, 0]; // Using the ? to prevent SQL injection
         sql1 = mysql.format(sql1, inserts1); // Format the SQL query
         await conn.query(sql1); // Execute the query
 
@@ -464,6 +473,13 @@ app.post('/api/createkey', async (req, res) => {
 
     consoleLog("REQ", `Got a create key request.`); // Log the request
 
+    // Check the length of the password:
+    if (isDataTooLong(password)) {
+        res.status(401).json({ message: 'Bad request' }); // Send status 400 with appropriate JSON-body
+        consoleLog("RES", "Too many characters in request");
+        return;
+    }
+
     // Check if the password is correct:
     if (password != oegePassword) {
         res.status(401).json({ message: 'Wrong password' }); // Send status 401 with appropriate JSON-body
@@ -493,6 +509,13 @@ app.post('/api/deletekey', async (req, res) => {
     let key = postData.key;
 
     consoleLog("REQ", `Got a delete key request.`); // Log the request
+
+    // Check if the request data is too long:
+    if (isDataTooLong(key)) {
+        res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
+        consoleLog("RES", "Too many characters in request");
+        return;
+    }
 
     // Check if the API key is valid:
     if (isApiKeyInvalid(key)) {
@@ -525,6 +548,13 @@ app.post('/api/updatescore', async (req, res) => {
     let coins = postData.coins;
 
     consoleLog("REQ", `Got an update score request for userId ${userId} with score ${score} and coins ${coins}`); // Log the request
+
+    // Check if the request data is too long:
+    if (isDataTooLong(key) || isDataTooLong(userId) || isDataTooLong(score) || isDataTooLong(coins)) {
+        res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
+        consoleLog("RES", "Too many characters in request");
+        return;
+    }
 
     // Check if the API key is valid:
     if (isApiKeyInvalid(key)) {
@@ -565,6 +595,13 @@ app.post('/api/createuser', async (req, res) => {
 
     consoleLog("REQ", `Got a create user request for name ${name} and email ${email}`); // Log the request
 
+    // Check if the request data is too long:
+    if (isDataTooLong(key) || isDataTooLong(name) || isDataTooLong(email)) {
+        res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
+        consoleLog("RES", "Too many characters in request");
+        return;
+    }
+
     // Check if the API key is valid:
     if (isApiKeyInvalid(key)) {
         res.status(401).json({ message: 'Invalid API key' }); // Send status 401 with appropriate JSON-body
@@ -603,6 +640,13 @@ app.post('/api/checkuser', async (req, res) => {
     let idOrName = postData.idorname;
 
     consoleLog("REQ", `Got a check user request for id or name ${idOrName}`); // Log the request
+
+    // Check if the request data is too long:
+    if (isDataTooLong(key) || isDataTooLong(idOrName)) {
+        res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
+        consoleLog("RES", "Too many characters in request");
+        return;
+    }
 
     // Check if the API key is valid:
     if (isApiKeyInvalid(key)) {
@@ -651,6 +695,13 @@ app.post('/api/deleteuser', async (req, res) => {
 
     consoleLog("REQ", `Got a delete user request for userId ${userId}`); // Log the request
 
+    // Check if the request data is too long:
+    if (isDataTooLong(key) || isDataTooLong(userId)) {
+        res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
+        consoleLog("RES", "Too many characters in request");
+        return;
+    }
+
     // Check if the API key is valid:
     if (isApiKeyInvalid(key)) {
         res.status(401).json({ message: 'Invalid API key' }); // Send status 401 with appropriate JSON-body
@@ -689,6 +740,13 @@ app.post('/api/getlastscore', async (req, res) => {
     let userId = postData.userId;
 
     consoleLog("REQ", `Got a get lastscore request for userId ${userId}`); // Log the request
+
+    // Check if request data is too long:
+    if (isDataTooLong(key) || isDataTooLong(userId)) {
+        res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
+        consoleLog("RES", "Too many characters in request");
+        return;
+    }
 
     // Check if the API key is valid:
     if (isApiKeyInvalid(key)) {

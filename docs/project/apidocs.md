@@ -1,5 +1,3 @@
-# API Documentatie
-
 # Hoe gebruik je de API?
 
 !!! success "Gebruikswijze"
@@ -32,7 +30,7 @@
 
 ??? warning "SQL formatting"
     ## Beveiliging tegen SQL injection
-    
+
     De API is beveiligd tegen SQL injection. Dit betekent dat je geen SQL code kunt uitvoeren door middel van de API. Dit is gedaan door middel van prepared statements. Dit betekent dat de SQL code die wordt uitgevoerd, niet wordt uitgevoerd met de data die je meestuurt in de request. De data wordt eerst gecontroleerd, en daarna pas wordt de SQL code uitgevoerd. Hierdoor is het niet mogelijk om SQL code uit te voeren door middel van de API.
 
 # Alle API URLs
@@ -216,7 +214,8 @@
 
     Als de gebruiker niet bestaat zal de geneste JSON `highScore` leeg zijn.
 
-??? note "/api/getleaderboards"
+??? note "Verkrijg de leaderboards"
+    ## Verkrijg de leaderboards aan de hand van een sortBy en een maxResults
     Deze URL is bedoeld om de leaderboards op te vragen. Je moet een JSON-object sturen met de key, het gene waar je op wilt sorteren, en  het maximaal aantal resultaten. De API zal een JSON-object terugsturen met de status van de request. De URL is als volgt: `http://oege.ie.hva.nl:8081/api/getleaderboards`. De API verwacht de volgende header: `Content-Type: application/json` en de volgende data als JSON object:
     
     ```json

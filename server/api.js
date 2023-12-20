@@ -20,7 +20,7 @@ const crypto = require("crypto");
 const port = 8081;
 
 // Maximum amount of requests allowed per time-frame (window size is 1000ms / 1s)
-const rateLimit = 1;
+const rateLimit = 10;
 
 // Add rate limiting to every request made from Client to Server.
 app.use(require('express-rate-limit')({
@@ -660,6 +660,13 @@ app.post('/api/deleteuser', async (req, res) => {
     if (userId == null) {
         res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
         consoleLog("RES", "Invalid data");
+        return;
+    }
+
+    // Check if the user exists:
+    if (!await checkIfUserIdExists(userId)) {
+        res.status(400).json({ message: 'User does not exist' }); // Send status 400 with appropriate JSON-body
+        consoleLog("RES", `Delete user failed, user ${userId} does not exist`); // Log the request
         return;
     }
 

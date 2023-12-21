@@ -21,7 +21,7 @@
 > Meer tabellen toevoegen, deze aan elkaar linken. <br>
 > Ook moeten de tabellen aangemaakt worden als de server start, indien
 > deze nog niet aanwezig zijn.
-> - [ ] Afgerond
+> - [X] Afgerond
 
 > ### Documentatie uitbreiden 
 > 

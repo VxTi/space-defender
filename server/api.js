@@ -334,8 +334,6 @@ createNewUser = async (name, email) => {
         await conn.query(sql4); // Execute the query
 
         conn.release(); // Release the connection
-
-        consoleLog("RES", `Created new user with userId ${userId}`); // Log the request
         return userId;
     } catch (err) {
         consoleLog("ERR", "Error creating new user", err);

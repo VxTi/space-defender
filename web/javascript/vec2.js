@@ -7,7 +7,7 @@ class Vec2 {
     #y;
 
     // Constructor to initialize the vector with x and y coordinates
-    constructor(x, y) {
+    constructor(x = 0, y = 0) {
         this.x = x; // Setting the x coordinate
         this.y = y; // Setting the y coordinate
     }

@@ -1,6 +1,5 @@
 
-let score = 0;
-let kills = 0;
+let playerScore = 0;
 
 const horizontalSpeed = 20;
 const verticalSpeed = 10;
@@ -27,6 +26,8 @@ let resources = {}; // Here are all images stored as Resource objects
 
 let entities = [];
 
+let stars;
+
 let shootFrequency = 10; // How many bullets the spaceship can shoot each second
 let lastMissileTime = 0;
 
@@ -48,7 +49,8 @@ function setup() {
     resources['sky'] = new Resource(_resources['sky']);
 
     pixelPerCm = document.querySelector('.pixel-size').clientWidth;
-    mapWidth = 100 * pixelPerCm; // 1 physical meter wide.
+    mapWidth = 200 * pixelPerCm; // 1 physical meter wide.
+    mapHeight = window.innerHeight - mapTop;
 
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
 
@@ -63,17 +65,35 @@ function setup() {
         }
     })
 
-    /*setInterval(() => {
-        if (gameActive)
-            entities.push(new Alien(Math.random() * 1000, Math.random() * 100 + window.innerHeight / 2))
-    }, 1000);*/
+    let starCount = 100;
+    stars = Array(starCount);
+    for (let i = 0; i < starCount; i++) {
+        stars[i] = [0, Math.random() * window.innerWidth, Math.random() * window.innerHeight, Math.floor(Math.random() * 0xFFFFFF)];
+    }
+
+    let scoreText = document.querySelector('.game-scores-element');
+    let hueDeg = 0;
+
+    /** -- FUNCTIONALITY -- CHANGE COLOR OF SCORE BAR -- **/
+    setInterval(() => {
+        scoreText.style.color = `hsl(${hueDeg}deg, 100%, 50%)`;
+        hueDeg = (hueDeg + 50) % 360;
+    }, 500);
+
+    /** -- FUNCTIONALITY -- FILTER OUT DEAD ENTITIES. -- **/
+    setInterval(() => {
+        if (gameActive) {
+            if (entities.length < 100)
+                entities.push(new Alien(-mapWidth / 2 + Math.random() * mapWidth, Math.random() * mapHeight));
+            entities = entities.filter(e => e.alive || e === ship);
+        }
+    }, 1000);
 }
 
 function draw() {
 
     background(0);
 
-    resources['sky'].draw(0, 0, window.innerWidth, window.innerHeight);
     if (!gameActive || !document.hasFocus())
         return;
 
@@ -83,38 +103,74 @@ function draw() {
     msElapsed += deltaTime;
     let dT = deltaTime / 1000;
 
-    /** -- SECTION -- RENDERING LIVES -- **/
-
-    for (let i = 0; i < ship.lives; i++)
-        resources['spritesheet'].animate(mapTop + 50 * i, 5, 60, 60, 0);
-
 
     /** -- SECTION -- RENDERING INNER MAP -- **/
-    let innerSize = mapTop - innerMapTop;
 
     // middle screen line
     drawLine(0, mapTop, window.innerWidth, mapTop, 0xff, 4);
 
+    let mapCoordinateFrac = innerMapWidth / mapWidth;
+    let innerSize = mapTop - innerMapTop;
+    let midX = window.innerWidth/2;
+    let innerMapRad = innerMapWidth/2;
+
     // enclosing lines for inner map
-    drawLine(window.innerWidth/2 - innerMapWidth/2, innerMapTop, window.innerWidth/2 + innerMapWidth/2, innerMapTop, 0xff, 4);
-    drawLine(window.innerWidth/2 - innerMapWidth/2, innerMapTop, window.innerWidth/2 - innerMapWidth/2, mapTop, 0xff, 4);
-    drawLine(window.innerWidth/2 + innerMapWidth/2, innerMapTop, window.innerWidth/2 + innerMapWidth/2, mapTop, 0xff, 4);
+    drawLine(midX - innerMapRad, innerMapTop, midX + innerMapRad, innerMapTop, 0xff, 4);
+    drawLine(midX - innerMapRad, innerMapTop, midX - innerMapRad, mapTop, 0xff, 4);
+    drawLine(midX + innerMapRad, innerMapTop, midX + innerMapRad, mapTop, 0xff, 4);
 
-    resources['spritesheet'].drawSection(window.innerWidth/2 + (ship.pos.x) * innerMapWidth / mapWidth - innerSize/2, innerMapTop - 1, innerSize, innerSize, 0, 2)
+    resources['spritesheet'].drawSection(midX + (ship.pos.x) * mapCoordinateFrac - innerSize/2, innerMapTop - 1, innerSize, innerSize, 0, 2)
 
-    let frac = window.innerWidth / windowSegments;
+    /** -- SECTION -- RENDERING LIVES -- **/
+    for (let i = 0; i < ship.health; i++)
+        resources['spritesheet'].animate(mapTop + 50 * i, 5, 50, 50, 0);
 
     /** -- SECTION -- RENDERING HILLS BELOW -- **/
-    for (let i = 0; i < windowSegments; i++) {
+    for (let i = 0, frac = window.innerWidth / windowSegments; i < windowSegments; i++) {
         drawSegmentedLine(frac * i, window.innerHeight - GNoise(i - screenOffsetX / frac),
             frac * (i + 1), window.innerHeight - GNoise(i + 1 - screenOffsetX / frac),
             5, 0xff0000
         );
     }
 
+    for (let star of stars) {
+        drawRect(star[0], star[2], 5, 5, star[3]);
+        star[0] = (star[1] * 4 + ship.pos.x * 0.5 + window.innerWidth) % window.innerWidth;
+    }
+
     translate(screenOffsetX, 0);
 
-    entities.forEach(e => e.update(dT));
+    entities.forEach(e => {
+        if (e.MINIMAP_SPRITE_INDEX != null && typeof e.MINIMAP_SPRITE_INDEX === 'object')
+            resources['spritesheet'].drawSection(
+                midX + e.pos.x * mapCoordinateFrac - screenOffsetX,
+                innerMapTop + e.pos.y / (window.innerHeight - mapTop) * innerSize, 30, 30,
+                e.MINIMAP_SPRITE_INDEX[0], e.MINIMAP_SPRITE_INDEX[1]);
+        e.update(dT)
+    });
+}
+
+/**
+ * Function for setting the score of the user
+ * @param {number} score new score
+ */
+function setScore(score) {
+    playerScore = score;
+}
+
+/**
+ * Function for adding score of the player
+ * @param {number} score How much score to add
+ */
+function addScore(score) {
+    playerScore += Math.abs(score);
+    document.querySelector('.game-score-value').innerText = `${playerScore}`;
+}
+
+function drawRect(x, y, width, height, rgb) {
+    fill((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
+    noStroke();
+    rect(x, y, width, height);
 }
 
 /**

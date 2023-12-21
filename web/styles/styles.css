@@ -6,14 +6,14 @@
 }
 @font-face {
     font-family: arcade;
-    src: url('../assets/arcade.ttf');
+    src: url('../assets/arcade.ttf') format('truetype');
 }
 
 :root {
     --background-color: #414141;
     --button-width: 700px;
     --button-height: 50px;
-    --font-size: 30px;
+    --font-size: 35px;
     --border-radius: 8px;
     --color-button-static: #606060;
     --color-button-hover: #505050;
@@ -93,15 +93,13 @@ body, html {
     background-color: var(--color-button-press);
 }
 
-.gamepad-selected {
-    border: #ffffff 1px solid;
-}
 
 .frame-title {
-    font-family: minecraft-font, serif;
+    font-family: arcade, serif;
     color: white;
     text-align: center;
-    font-size: var(--font-size);
+    font-size: 50px;
+    letter-spacing: 2px;
 }
 
 .leaderboards-filter-container {
@@ -173,10 +171,12 @@ body, html {
     margin: 5px;
     border-radius: 3px;
     color: white;
-    font-family: minecraft-font, serif;
+    font-family: arcade, serif;
     font-size: var(--font-size);
     background-color: var(--color-button-static);
     cursor: pointer;
+    word-spacing: 10px;
+    letter-spacing: 3px;
 }
 
 .menu-button:hover {
@@ -220,12 +220,12 @@ body, html {
 
 .game-score-value {
     width: 40px;
-    padding: 20px 0;
+    padding-left: 20px;
     text-align: center;
 }
 
 .game-scores-element {
-    width: 120px;
+    width: 200px;
 }
 
 .game-intro {
@@ -250,4 +250,53 @@ body, html {
     100% {
         display: none;
     }
+}
+
+.gamepad-selected:not(.menu-button) {
+    border: white 1px solid;
+}
+
+.menu-button.gamepad-selected {
+    /*margin: 10px 0;*/
+    overflow: hidden;
+    text-align: center;
+    width: 100%;
+}
+
+.menu-button.gamepad-selected:before, .menu-button.gamepad-selected:after {
+    background-color: #ff0000;
+    content: "";
+    display: inline-block;
+    height: 4px;
+    position: relative;
+    vertical-align: middle;
+    width: 50%;
+}
+
+.menu-button.gamepad-selected:before {
+    right: 0.5em;
+    margin-left: -50%;
+}
+
+.menu-button.gamepad-selected:after {
+    left: 0.5em;
+    margin-right: -50%;
+}
+
+.game-wave-indicator {
+    display: flex;
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    flex-flow: column nowrap;
+    align-content: center;
+    justify-content: center;
+}
+
+.wave-indicator-content {
+    text-align: center;
+    font-family: arcade, serif;
+    letter-spacing: 2px;
+    color: white;
+    font-size: 50px;
 }

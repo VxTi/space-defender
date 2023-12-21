@@ -11,14 +11,13 @@ class Spaceship extends Entity {
     // The size of the ship, in pixels
     static SHIP_SIZE = 80;
 
-    static DAMAGE_REACH = 20;
-
     // Position of the weapon, in relative fractions
     static WEAPON_OFFSET = new Vec2(Spaceship.SHIP_SIZE * 0.55, Spaceship.SHIP_SIZE*0.57);
 
 
     constructor(x, y, health) {
         super(x, y, health, Spaceship.SHIP_SIZE);
+        this.deathAnimations = true;
     }
 
     move(x, y) {
@@ -29,8 +28,6 @@ class Spaceship extends Entity {
     }
 
     update(dT) {
-        if (!this.alive)
-            return;
 
         resources['spritesheet'].drawSection(this.pos.x, this.pos.y, this.size, this.size, this.#facing < 0 ? 1  : 0, 0);
 
@@ -54,14 +51,6 @@ class Spaceship extends Entity {
     shoot() {
         let rocket = new Rocket(this);
         entities.push(rocket);
-    }
-
-    damage(amount) {
-        super.damage(amount);
-        if (!this.alive) {
-            for (let i = 0; i < 100; i++)
-                entities.push(new DeathParticle(this, 10, Math.random(), 5));
-        }
     }
 
     get facing() { return this.#facing; }

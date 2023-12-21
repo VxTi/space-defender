@@ -7,7 +7,7 @@
     // These have to be loaded in the right order.
     const scripts = [
         'p5', 'resource', 'vec2', 'entity', 'ship/spaceship', 'ship/rocket', 'alien',
-        'game_replica', 'ship/deathParticle', 'menu_functionality defer'
+        'game_replica', 'ship/particle', 'menu_functionality defer'
     ];
     let head = document.getElementsByTagName('head')[0];
 

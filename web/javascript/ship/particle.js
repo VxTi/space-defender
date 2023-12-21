@@ -1,4 +1,4 @@
-class DeathParticle extends Entity {
+class Particle extends Entity {
 
     #weight;
     #lifetime;

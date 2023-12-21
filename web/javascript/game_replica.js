@@ -141,6 +141,8 @@ function draw() {
     translate(screenOffsetX, 0);
 
     entities.forEach(e => {
+        if (!e.alive)
+            return;
         if (e.MINIMAP_SPRITE_INDEX != null && typeof e.MINIMAP_SPRITE_INDEX === 'object')
             resources['spritesheet'].drawSection(
                 midX + e.pos.x * mapCoordinateFrac - screenOffsetX,

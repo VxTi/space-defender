@@ -24,8 +24,6 @@ class Rocket extends Entity {
     }
 
     update(dT) {
-        if (!this.#alive)
-            return;
         this.#alive = (this.#trailX >= -mapWidth/2 && this.#trailX <= mapWidth / 2 && !this.#targetHit);
 
         this.pos.addX(Rocket.ROCKET_SPEED * dT * this.#facing);
@@ -42,7 +40,7 @@ class Rocket extends Entity {
                 continue;
 
             let dSq = (this.pos.x - e.pos.x) * (this.pos.x - e.pos.x) + (this.pos.y - e.pos.y) * (this.pos.y - e.pos.y);
-            if (dSq <= Rocket.ROCKET_REACH * Rocket.ROCKET_REACH) {
+            if (dSq <= Rocket.ROCKET_REACH * Rocket.ROCKET_REACH && ship.alive) {
                 e.damage(e.health);
                 this.#alive = false;
                 addScore(250);

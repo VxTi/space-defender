@@ -8,6 +8,8 @@ class Entity {
 
     MINIMAP_SPRITE_INDEX = null;
 
+    #doDeathAnimation = false;
+
     constructor(x, y, health, size = 20) {
         this.#position = new Vec2(x, y);
         this.#velocity = new Vec2();
@@ -34,11 +36,25 @@ class Entity {
 
     get alive() { return this.#health > 0; }
 
+    set deathAnimations(state) { this.#doDeathAnimation = state; }
+
     /**
      * Function for damaging this
      */
     damage(amount) {
+        // If already dead, stop
+        if (!this.alive)
+            return;
+
+        // do the harm >:)
         this.#health = Math.max(0, this.#health - amount);
+
+        // then check if it's dead and animations are present
+        if (!this.alive && this.#doDeathAnimation) {
+            console.log("Death: ", this);
+            for (let i = 0; i < this.#size * 2; i++)
+                entities.push(new Particle(this, this.#size/2, Math.random(), this.#size/10));
+        }
 
         if (typeof this['onDamage'] === 'function')
             this['onDamage']();

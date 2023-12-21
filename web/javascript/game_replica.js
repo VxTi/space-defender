@@ -2,10 +2,18 @@
 let score = 0;
 let kills = 0;
 
-const horizontalSpeed = 10;
-const verticalSpeed = 5;
+const horizontalSpeed = 20;
+const verticalSpeed = 10;
 
 let windowSegments = 70;
+
+let pixelPerCm;  // How many pixels a physical centimeter occupy.
+
+let mapWidth;              // Size of the map in pixels
+let mapHeight;             // Height of the map. This is mapTop - mapBottom(x)
+let mapTop = 150; // Top of the map, in pixels.
+let innerMapWidth = 600; // Width of the inner map in pixels
+let innerMapTop = 50;    // Top of the inner map
 
 let ship;
 
@@ -35,20 +43,30 @@ function preload() {
 function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
     window.addEventListener('resize', () => resizeCanvas(window.innerWidth, window.innerHeight));
+
     resources['spritesheet'] = new Resource(_resources['spritesheet'], 10, 10);
     resources['sky'] = new Resource(_resources['sky']);
+
+    pixelPerCm = document.querySelector('.pixel-size').clientWidth;
+    mapWidth = 100 * pixelPerCm; // 1 physical meter wide.
+
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
-    strokeWeight(4);
 
     ship = new Spaceship(100, window.innerHeight/2, 5);
     entities.push(ship);
 
     document.addEventListener('keydown', (event) => {
+        // Check if we've hit the space-bar (shoot) and if there's enough time elapsed
         if (event.key === ' ' && msElapsed - lastMissileTime >= 1000 / shootFrequency) {
-            entities.push(new Rocket(ship));
+            ship.shoot();
             lastMissileTime = msElapsed;
         }
     })
+
+    /*setInterval(() => {
+        if (gameActive)
+            entities.push(new Alien(Math.random() * 1000, Math.random() * 100 + window.innerHeight / 2))
+    }, 1000);*/
 }
 
 function draw() {
@@ -65,12 +83,24 @@ function draw() {
     msElapsed += deltaTime;
     let dT = deltaTime / 1000;
 
-    drawLine(0, 120, window.innerWidth, 120, 0x0000ff, 4);
-
     /** -- SECTION -- RENDERING LIVES -- **/
-    for (let i = 0; i < ship.lives; i++) {
-        resources['spritesheet'].animate(200 + 50 * i, 10, 60, 60, 0);
-    }
+
+    for (let i = 0; i < ship.lives; i++)
+        resources['spritesheet'].animate(mapTop + 50 * i, 5, 60, 60, 0);
+
+
+    /** -- SECTION -- RENDERING INNER MAP -- **/
+    let innerSize = mapTop - innerMapTop;
+
+    // middle screen line
+    drawLine(0, mapTop, window.innerWidth, mapTop, 0xff, 4);
+
+    // enclosing lines for inner map
+    drawLine(window.innerWidth/2 - innerMapWidth/2, innerMapTop, window.innerWidth/2 + innerMapWidth/2, innerMapTop, 0xff, 4);
+    drawLine(window.innerWidth/2 - innerMapWidth/2, innerMapTop, window.innerWidth/2 - innerMapWidth/2, mapTop, 0xff, 4);
+    drawLine(window.innerWidth/2 + innerMapWidth/2, innerMapTop, window.innerWidth/2 + innerMapWidth/2, mapTop, 0xff, 4);
+
+    resources['spritesheet'].drawSection(window.innerWidth/2 + (ship.pos.x) * innerMapWidth / mapWidth - innerSize/2, innerMapTop - 1, innerSize, innerSize, 0, 2)
 
     let frac = window.innerWidth / windowSegments;
 

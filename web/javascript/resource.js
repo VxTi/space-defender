@@ -36,6 +36,20 @@ class Resource {
         image(this.#image, x, y, width, height, dx, dy, dw, dh);
     }
 
+    /**
+     * Method for drawing a subsection of the image.
+     * This method only works if this resouce has a Horizontal or Vertical sub image count > 1
+     * @param x Screen x-coordinate to draw at
+     * @param y Screen y-coordinate to draw at
+     * @param width Width of the image to draw
+     * @param height Height of the image to draw
+     * @param horizontalIndex Horizontal index of the sub-image to draw
+     * @param verticalIndex Vertical index of the sub-image to draw
+     */
+    drawSection(x, y, width, height, horizontalIndex = 0, verticalIndex = 0) {
+        image(this.#image, x, y, width, height, this.#partWidth * horizontalIndex, this.#partHeight * verticalIndex, this.#partWidth, this.#partHeight);
+    }
+
     // Function that allows the user to animate different sections of a provided resource.
     // If a provided resource has multiple horizontal and vertical sections and the user provided these in the
     // constructor with 'horizontalCount' and 'verticalCount' (h, v) > 0

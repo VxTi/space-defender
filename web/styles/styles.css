@@ -27,9 +27,9 @@ body, html {
 }
 
 .overlay {
+    position: absolute;
     width: 100vw;
     height: 100vh;
-    position: absolute;
     display: block;
 }
 
@@ -214,7 +214,7 @@ body, html {
     font-family: arcade, serif;
     color: white;
     font-size: 30px;
-    padding-top: 20px;
+    padding-top: 10px;
     width: 100vw;
 }
 
@@ -230,7 +230,8 @@ body, html {
 
 .game-intro {
     position: absolute;
-    animation: game-intro-animation 1s normal forwards cubic-bezier(1,.03,.79,.12);
+    animation: game-intro-animation 1.2s normal forwards cubic-bezier(1,.03,.79,.12);
+    animation-iteration-count: 1;
     width: 100vw;
     height: 100vh;
     display: block;
@@ -243,7 +244,7 @@ body, html {
     0% {
         opacity: 1;
     }
-    99% {
+    95% {
         opacity: 0;
     }
     100% {

@@ -39,7 +39,6 @@ const uint8_t pinData[BUTTON_COUNT][2] = {
 };
 
 bool useBluetooth = false; // False = Serial communication, True = BLE communication.
-bool debugMode = false;
 
 // Set all used pins to their used mode
 void configurePins()
@@ -55,28 +54,6 @@ void configurePins()
   pinMode(PIN_BATTERY, INPUT);
 }
 
-// Checks if both buttons B and OPT are pressed on startup, if so debug mode will be toggled
-void toggleDebugMode()
-{
-  if (digitalRead(PIN_BUTTON_B) && digitalRead(PIN_BUTTON_OPT))
-  {
-    
-    debugMode = true;
-    Serial.println("Debug mode enabled!");
-    digitalWrite(PIN_LED, HIGH);
-    delay(100);
-    digitalWrite(PIN_LED, LOW);
-    delay(100);
-    digitalWrite(PIN_LED, HIGH);
-    delay(100);
-    digitalWrite(PIN_LED, LOW);
-    delay(100);
-    digitalWrite(PIN_LED, HIGH);
-    delay(600);
-    digitalWrite(PIN_LED, LOW);
-  }
-}
-
 // Forward declarations
 void bluetoothTask(void*);
 void write(const char* text);
@@ -87,7 +64,16 @@ bool isBleConnected = false;
 
 void setup() {
     Serial.begin(115200);
-    configurePins();
+    
+    pinMode(PIN_LED, OUTPUT);
+    pinMode(PIN_BUTTON_A, INPUT);
+    pinMode(PIN_BUTTON_B, INPUT);
+    pinMode(PIN_BUTTON_UP, INPUT);
+    pinMode(PIN_BUTTON_LEFT, INPUT);
+    pinMode(PIN_BUTTON_RIGHT, INPUT);
+    pinMode(PIN_BUTTON_DOWN, INPUT);
+    pinMode(PIN_BUTTON_OPT, INPUT);
+    pinMode(PIN_BATTERY, INPUT);
 
     // start Bluetooth task
     xTaskCreate(bluetoothTask, "bluetooth", 20000, NULL, 5, NULL);
@@ -213,10 +199,8 @@ class BleKeyboardCallbacks : public BLEServerCallbacks {
 
 // Function for reading battery level via the selected PIN
 void readBatteryLevel(){
-    int batteryLevel = analogRead(PIN_BATTERY);
-    float batteryPercentage = (batteryLevel / 4095.0) * 100.0; // From 0-4095 to 0-100%
-    batteryLevel = round(batteryPercentage);
-    hid->setBatteryLevel((uint8_t)batteryLevel); // Set option to battery level
+    // Set battery level, read from battery pin. Input value is converted from 0-4095 to 0-100 range
+    hid->setBatteryLevel((uint8_t) ((float) analogRead(PIN_BATTERY) * 100.0 / 4095.0));
 }
 
 void bluetoothTask(void*) {

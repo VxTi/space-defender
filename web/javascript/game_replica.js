@@ -14,6 +14,11 @@ let mapTop = 150; // Top of the map, in pixels.
 let innerMapWidth = 600; // Width of the inner map in pixels
 let innerMapTop = 50;    // Top of the inner map
 
+// Method for mapping a value from one range to another
+const map = (x, min1, max1, min2, max2) => ((x - min1) / (max1 - min1) * (max2 - min2) + min2);
+
+const DEFAULT_HEALTH = 5;
+
 let ship;
 
 let screenOffsetX = 0;
@@ -32,6 +37,8 @@ let shootFrequency = 10; // How many bullets the spaceship can shoot each second
 let lastMissileTime = 0;
 
 let msElapsed = 0;
+
+
 
 // Noise function for the bottom of the screen
 GNoise = (x) => noise(x / 3) * 200;
@@ -53,6 +60,7 @@ function setup() {
     mapHeight = window.innerHeight - mapTop;
 
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
+    pixelDensity(1);
 
     ship = new Spaceship(100, window.innerHeight/2, 5);
     entities.push(ship);
@@ -153,6 +161,16 @@ function draw() {
 }
 
 /**
+ * Method for showing a death animation for given entity.
+ * @param {Entity} entity The entity in question that's died.
+ */
+function showDeathAnimation(entity) {
+
+    for (let i = 0; i < entity.size * 2; i++)
+        entities.push(new Particle(entity, entity.size/4, Math.random(), entity.size/20.0));
+}
+
+/**
  * Function for setting the score of the user
  * @param {number} score new score
  */
@@ -169,6 +187,14 @@ function addScore(score) {
     document.querySelector('.game-score-value').innerText = `${playerScore}`;
 }
 
+/**
+ * Method for drawing a rectangle onto the screen with provided color values
+ * @param {number} x screen x-coordinate
+ * @param {number} y screen y-coordinate
+ * @param {number} width width of the rectangle
+ * @param {number} height height of the rectangle
+ * @param {number} rgb Color value. Can be provided as '0xRRGGBB' where [R, G, B] are in base-16
+ */
 function drawRect(x, y, width, height, rgb) {
     fill((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
     noStroke();

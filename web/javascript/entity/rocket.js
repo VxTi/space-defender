@@ -26,28 +26,41 @@ class Rocket extends Entity {
     update(dT) {
         this.#alive = (this.#trailX >= -mapWidth/2 && this.#trailX <= mapWidth / 2 && !this.#targetHit);
 
-        this.pos.addX(Rocket.ROCKET_SPEED * dT * this.#facing);
-        this.#trailX += Rocket.ROCKET_SPEED * dT * 0.8 * this.#facing;
-
         stroke(0x61, 0x35, 0x83); // purple
-        strokeWeight(3);
+        strokeWeight(4);
         line(this.#trailX, this.pos.y, this.pos.x, this.pos.y);
         stroke(255);
         line(this.pos.x - this.#facing * 5, this.pos.y, this.pos.x, this.pos.y);
 
         for (let e of entities) {
-            if (e instanceof Spaceship || e instanceof Rocket)
+            // Check if it's a hit-able entity. If not, continue to the next.
+            if (e instanceof Spaceship || e instanceof Rocket || !e.alive)
                 continue;
 
-            let dSq = (this.pos.x - e.pos.x) * (this.pos.x - e.pos.x) + (this.pos.y - e.pos.y) * (this.pos.y - e.pos.y);
-            if (dSq <= Rocket.ROCKET_REACH * Rocket.ROCKET_REACH && ship.alive) {
+            // Check if the rocket collides with the entity in its path
+            if (
+                // Y position must be within range
+                this.pos.y + 1 >= e.pos.y - e.size / 2 &&
+                this.pos.y - 1 <= e.pos.y + e.size / 2 &&
+                ((
+                    this.#facing < 0 &&
+                    this.pos.x >= e.pos.x - e.size / 2 &&
+                    this.pos.x + Rocket.ROCKET_SPEED * dT * this.#facing <= e.pos.x + e.size / 2
+                ) || (
+                    this.#facing > 0 &&
+                    this.pos.x <= e.pos.x + e.size / 2 &&
+                    this.pos.x + Rocket.ROCKET_SPEED * dT * this.#facing >= e.pos.x - e.size / 2
+                ))
+
+            ) {
                 e.damage(e.health);
                 this.#alive = false;
-                addScore(250);
-                break;
+                addScore(e.ENTITY_SCORE);
+                return;
             }
         }
-
+        this.pos.addX(Rocket.ROCKET_SPEED * dT * this.#facing);
+        this.#trailX += Rocket.ROCKET_SPEED * dT * 0.8 * this.#facing;
     }
 
     get alive() { return this.#alive; }

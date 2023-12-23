@@ -5,9 +5,10 @@ class Entity {
     #acceleration;
     #health;
     #size;
+    #damage_cooldown;
 
     MINIMAP_SPRITE_INDEX = null;
-
+    ENTITY_SCORE = 200;
     #doDeathAnimation = false;
 
     constructor(x, y, health, size = 20) {
@@ -16,11 +17,10 @@ class Entity {
         this.#acceleration = new Vec2();
         this.#health = health;
         this.#size = size;
+        this.#damage_cooldown = 0;
     }
     update(dT) {
-        this.#velocity.add(this.#acceleration.x, this.#acceleration.y);
-        this.#position.add(this.#velocity.x, this.#velocity.y);
-        this.#velocity.translate(0, 0);
+        this.#damage_cooldown = Math.max(0, this.#damage_cooldown - dT);
     }
 
 
@@ -38,26 +38,37 @@ class Entity {
 
     set deathAnimations(state) { this.#doDeathAnimation = state; }
 
+    get damageCooldown() { return this.#damage_cooldown; }
+
+    get canDamage() { return this.#damage_cooldown <= 0; }
+
     /**
      * Function for damaging this
      */
     damage(amount) {
         // If already dead, stop
-        if (!this.alive)
+        if (!this.alive || !this.canDamage)
             return;
 
         // do the harm >:)
         this.#health = Math.max(0, this.#health - amount);
+        this.#damage_cooldown = 0.5;
 
-        // then check if it's dead and animations are present
-        if (!this.alive && this.#doDeathAnimation) {
-            console.log("Death: ", this);
-            for (let i = 0; i < this.#size * 2; i++)
-                entities.push(new Particle(this, this.#size/2, Math.random(), this.#size/10));
-        }
-
+        // For when the entity is hurt and is still alive,
+        // call the 'onDamage' method (if present)
         if (typeof this['onDamage'] === 'function')
-            this['onDamage']();
-    }
+            this['onDamage'](amount);
 
+        // If the entity has died from the damage, do some other checks
+        if (!this.alive) {
+
+            // Check if an 'onDeath' function exists, if so, call it.
+            if (typeof this['onDeath'] === 'function')
+                this['onDeath']();
+
+            // then check if it's dead and animations are present
+            if (this.#doDeathAnimation)
+                showDeathAnimation(this);
+        }
+    }
 }

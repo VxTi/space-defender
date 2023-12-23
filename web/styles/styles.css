@@ -293,7 +293,7 @@ body, html {
     justify-content: center;
 }
 
-.wave-indicator-content {
+.game-event-indicator {
     text-align: center;
     font-family: arcade, serif;
     letter-spacing: 2px;

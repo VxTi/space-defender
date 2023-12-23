@@ -105,16 +105,7 @@ isApiKeyInvalid = (apiKey) => {
     return !validkeys.includes(apiKey); // Check if the API key is valid
 }
 
-isDataTooLong = (data) => {
-    if (data == undefined) {
-        return false;
-    }
-    if (data.length > characterLimit) {
-        return true;
-    } else {
-        return false;
-    }
-}
+isDataTooLong = (data) => data !== undefined &&  data.length > characterLimit;
 
 // Create the tables if they don't exist:
 createTables = async () => {
@@ -240,11 +231,7 @@ checkIfUserIdExists = async (userId) => {
 
         conn.release(); // Release the connection
 
-        if (result[0].length == 0) {
-            return false;
-        } else {
-            return true;
-        }
+        return result[0].length !== 0;
     }
     catch (err) {
         consoleLog("ERR", "Error checking if user exists", err);
@@ -262,15 +249,10 @@ checkIfUserNameExists = async (name) => {
         let inserts = [name]; // Using the ? to prevent SQL injection
         sql = mysql.format(sql, inserts); // Format the SQL query
 
-        result = await conn.query(sql); // Execute the query
+        let result = await conn.query(sql); // Execute the query
 
         conn.release(); // Release the connection
-
-        if (result[0].length == 0) {
-            return false;
-        } else {
-            return true;
-        }
+        return result[0].length !== 0;
     }
     catch (err) {
         consoleLog("ERR", "Error checking if user exists", err);
@@ -288,7 +270,7 @@ getUserIdByName = async (name) => {
         let inserts = [name]; // Using the ? to prevent SQL injection
         sql = mysql.format(sql, inserts); // Format the SQL query
 
-        result = await conn.query(sql); // Execute the query
+        let result = await conn.query(sql); // Execute the query
 
         conn.release(); // Release the connection
 
@@ -307,7 +289,7 @@ createNewUser = async (name, email) => {
 
         // Get the highest userId from the database:
         let sql = `SELECT MAX(userId) FROM lastScores;`; // SQL query
-        result = await conn.query(sql); // Execute the query
+        let result = await conn.query(sql); // Execute the query
 
         // Create a new userId:
         let userId = result[0][0]["MAX(userId)"] + 1;
@@ -670,9 +652,9 @@ app.post('/api/checkuser', async (req, res) => {
 
     // Check if the user exists:
     let exists;
-    if (method == "id") {
+    if (method === "id") {
         exists = await checkIfUserIdExists(idOrName);
-    } else if (method == "name") {
+    } else if (method === "name") {
         let userId = await getUserIdByName(idOrName);
         exists = await checkIfUserIdExists(userId);
     }
@@ -826,7 +808,7 @@ app.post('/api/getleaderboards', async (req, res) => {
     }
 
     // Check if the sortBy is valid:
-    if (sortBy != "score" && sortBy != "coins") {
+    if (sortBy !== "score" && sortBy !== "coins") {
         res.status(400).json({ message: 'Invalid sortBy, must be either score or coins' }); // Send status 400 with appropriate JSON-body
         consoleLog("RES", "Invalid sortBy");
         return;
@@ -836,7 +818,7 @@ app.post('/api/getleaderboards', async (req, res) => {
     let leaderboards = await getLeaderboards(sortBy, maxResults); // Get the leaderboards from the database
 
     // Send the result to the client:
-    res.status(200).json({ message: 'Leaderboards retrieved', leaderboards: leaderboards }); // Send status 200 with appropriate JSON-body
+    res.status(200).json(leaderboards); // Send status 200 with appropriate JSON-body
     consoleLog("RES", `Leaderboards retrieved sorted by ${sortBy} with max results of ${maxResults}`); // Log the request
 });
 

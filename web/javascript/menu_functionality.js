@@ -1,5 +1,6 @@
 
-const serverAddress = "http://localhost:8081/api/get";//"http://oege.ie.hva.nl:8081/api/get";
+const apiKey = 'dcdc91a618b4c9830fcc2e20';
+const serverAddress = "http://localhost:8081/api/getleaderboards";//"http://oege.ie.hva.nl:8081/api/get";
 
 let element = {};
 
@@ -158,6 +159,10 @@ function publishScore(obj) {
 
 }
 
+function returnMain() {
+    ship.health = DEFAULT_HEALTH;
+}
+
 /**
  * Method that retrieves the leaderboard information by sending a post request to the
  * server. The server then returns a body containing all the leaderboard information,
@@ -175,10 +180,9 @@ function retrieveLeaderboards() {
             "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            requestType: "all-data",
-            tables: ["name", "coins", "score"],
-            results: maxScores,
-            orderBy: leaderboardFilter
+            key: apiKey,
+            maxResults: 10,
+            sortBy: 'score'
         })
     })
         .then(result => result.json())
@@ -186,7 +190,10 @@ function retrieveLeaderboards() {
             leaderboardData = result;
             content = parseLeaderboardData(leaderboardData, leaderboardFilter);
         })
-        .catch(() => content = "Failed to load leaderboard statistics")
+        .catch((e) => {
+            content = "Failed to load leaderboard statistics";
+            console.error(e)
+        })
         .finally(() => element['leaderboard-content'].innerHTML = content);
 }
 
@@ -200,9 +207,9 @@ function retrieveLeaderboards() {
  * */
 function parseLeaderboardData(data, filter) {
     let content = '';
-    data = data.sort((a, b) => b[filter] - a[filter])
+    console.log(data)
     Object.entries(data).forEach(([key, object]) => {
-        content += `<span class="leaderboard-data">${object.name}</span> <span class="leaderboard-data" style="color: #a29b06">${object.coins} coins</span> <span class="leaderboard-data" style="color: #3245d5">${object.score} pt</span><br>\n`;
+        content += `<span class="leaderboard-data">${object.userName}</span> <span class="leaderboard-data" style="color: #a29b06">${object.maxScore} coins</span><br>\n`;
     })
     return content;
 }

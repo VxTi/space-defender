@@ -6,6 +6,8 @@ class Vec2 {
     #x;
     #y;
 
+    static ZERO = new Vec2();
+
     // Constructor to initialize the vector with x and y coordinates
     constructor(x = 0, y = 0) {
         this.x = x; // Setting the x coordinate
@@ -89,7 +91,7 @@ class Vec2 {
     distSq(other) {
         if (!(other instanceof Vec2))
             return 0;
-        return (this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y);
+        return Math.pow(this.x - other.x, 2) + Math.pow(this.y - other.y, 2);
     }
 
     // measures distance to the other vector

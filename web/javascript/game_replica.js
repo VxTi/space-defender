@@ -14,6 +14,8 @@ let mapTop = 150; // Top of the map, in pixels.
 let innerMapWidth = 600; // Width of the inner map in pixels
 let innerMapTop = 50;    // Top of the inner map
 
+let hostileEntityCount = 0;
+
 // Method for mapping a value from one range to another
 const map = (x, min1, max1, min2, max2) => ((x - min1) / (max1 - min1) * (max2 - min2) + min2);
 
@@ -33,7 +35,8 @@ let entities = [];
 
 let stars;
 
-let shootFrequency = 10; // How many bullets the spaceship can shoot each second
+let shotsFired = 0;
+let shootFrequency = 5; // How many bullets the spaceship can shoot each second
 let lastMissileTime = 0;
 
 let msElapsed = 0;
@@ -67,8 +70,9 @@ function setup() {
 
     document.addEventListener('keydown', (event) => {
         // Check if we've hit the space-bar (shoot) and if there's enough time elapsed
-        if (event.key === ' ' && msElapsed - lastMissileTime >= 1000 / shootFrequency) {
+        if (event.key === ' ' && shotsFired + 1 < shootFrequency) {
             ship.shoot();
+            shotsFired++;
             lastMissileTime = msElapsed;
         }
     })
@@ -91,9 +95,7 @@ function setup() {
     /** -- FUNCTIONALITY -- FILTER OUT DEAD ENTITIES. -- **/
     setInterval(() => {
         if (gameActive) {
-            if (entities.length < 100)
-                entities.push(new Alien(-mapWidth / 2 + Math.random() * mapWidth, Math.random() * mapHeight));
-            entities = entities.filter(e => e.alive || e === ship);
+            entities.push(new Alien(-mapWidth / 2 + Math.random() * mapWidth, Math.random() * mapHeight));
         }
     }, 1000);
 }
@@ -111,6 +113,7 @@ function draw() {
     msElapsed += deltaTime;
     let dT = deltaTime / 1000;
 
+    shotsFired = Math.max(0, shotsFired - shootFrequency * dT);
 
     /** -- SECTION -- RENDERING INNER MAP -- **/
 
@@ -118,20 +121,25 @@ function draw() {
     drawLine(0, mapTop, window.innerWidth, mapTop, 0xff, 4);
 
     let mapCoordinateFrac = innerMapWidth / mapWidth;
-    let innerSize = mapTop - innerMapTop;
+    let innerMapHeight = mapTop - innerMapTop;
     let midX = window.innerWidth/2;
-    let innerMapRad = innerMapWidth/2;
+    let innerMapRadius = innerMapWidth/2;
 
     // enclosing lines for inner map
-    drawLine(midX - innerMapRad, innerMapTop, midX + innerMapRad, innerMapTop, 0xff, 4);
-    drawLine(midX - innerMapRad, innerMapTop, midX - innerMapRad, mapTop, 0xff, 4);
-    drawLine(midX + innerMapRad, innerMapTop, midX + innerMapRad, mapTop, 0xff, 4);
+    drawLine(midX - innerMapRadius, innerMapTop, midX + innerMapRadius, innerMapTop, 0xff, 4);
+    drawLine(midX - innerMapRadius, innerMapTop, midX - innerMapRadius, mapTop, 0xff, 4);
+    drawLine(midX + innerMapRadius, innerMapTop, midX + innerMapRadius, mapTop, 0xff, 4);
 
-    resources['spritesheet'].drawSection(midX + (ship.pos.x) * mapCoordinateFrac - innerSize/2, innerMapTop - 1, innerSize, innerSize, 0, 2)
+    resources['spritesheet'].drawSection(midX + (ship.pos.x) * mapCoordinateFrac - innerMapHeight/2, innerMapTop - 1, innerMapHeight, innerMapHeight, 0, 2)
 
     /** -- SECTION -- RENDERING LIVES -- **/
-    for (let i = 0; i < ship.health; i++)
-        resources['spritesheet'].animate(mapTop + 50 * i, 5, 50, 50, 0);
+    for (let i = 0, s = 200/DEFAULT_HEALTH; i < ship.health; i++)
+        resources['spritesheet'].animate(midX - innerMapRadius - 215 + s * i, mapTop - 22 - s, s, s, 0);
+
+
+    drawRect(midX - innerMapRadius - 215, mapTop - 20, 204, 15, 0x404040);
+    drawRect(midX - innerMapRadius - 213, mapTop - 18, 200 * (1.0 - shotsFired/shootFrequency), 11, 0xff);
+
 
     /** -- SECTION -- RENDERING HILLS BELOW -- **/
     for (let i = 0, frac = window.innerWidth / windowSegments; i < windowSegments; i++) {
@@ -148,16 +156,22 @@ function draw() {
 
     translate(screenOffsetX, 0);
 
-    entities.forEach(e => {
-        if (!e.alive)
-            return;
-        if (e.MINIMAP_SPRITE_INDEX != null && typeof e.MINIMAP_SPRITE_INDEX === 'object')
-            resources['spritesheet'].drawSection(
-                midX + e.pos.x * mapCoordinateFrac - screenOffsetX,
-                innerMapTop + e.pos.y / (window.innerHeight - mapTop) * innerSize, 30, 30,
-                e.MINIMAP_SPRITE_INDEX[0], e.MINIMAP_SPRITE_INDEX[1]);
+    // Update all entity positions and remove ones that aren't alive.
+    for (let i = entities.length - 1; i >= 0; i--) {
+        let e = entities[i];
+        if (!e.alive && e !== ship)
+            entities.splice(i, 1);
+        else {
+            if (e.MINIMAP_SPRITE_INDEX != null && typeof e.MINIMAP_SPRITE_INDEX === 'object')
+                resources['spritesheet'].drawSection(
+                    midX + e.pos.x * mapCoordinateFrac - screenOffsetX,
+                    innerMapTop + (e.pos.y - mapTop) / (window.innerHeight - mapTop) * innerMapHeight, 30, 30,
+                    e.MINIMAP_SPRITE_INDEX[0], e.MINIMAP_SPRITE_INDEX[1]
+                );
+        }
         e.update(dT)
-    });
+    }
+
 }
 
 /**

@@ -8,13 +8,12 @@ class Spaceship extends Entity {
 
     MINIMAP_SPRITE_INDEX = [0, 1];
 
-    damage_cooldown = 0;
+
 
     // The size of the entity, in pixels
     static SHIP_SIZE = 80;
     static MOVEMENT_SPEED = new Vec2(20, 10);
     static WEAPON_OFFSET = new Vec2(Spaceship.SHIP_SIZE * 0.55, Spaceship.SHIP_SIZE*0.57);  // Position of the weapon, in relative fractions
-
 
     constructor(x, y, health) {
         super(x, y, health, Spaceship.SHIP_SIZE);
@@ -30,6 +29,8 @@ class Spaceship extends Entity {
 
     update(dT) {
         super.update(dT);
+        if (!this.alive)
+            return;
         resources['spritesheet'].drawSection(this.pos.x, this.pos.y, this.size, this.size, this.#facing < 0 ? 1  : 0, 0);
 
         this.#movingAnimation = (this.#movingAnimation + dT * 10) % 4;
@@ -62,7 +63,11 @@ class Spaceship extends Entity {
     onDeath() {
         let element = document.querySelector('.game-event-indicator');
         element.innerText = 'Game over';
-        setTimeout(() => element.innerText = '', 3000);
+        setTimeout(() => {
+            element.innerText = '';
+            this.health = DEFAULT_HEALTH;
+            this.pos.translate(window.innerWidth / 2, window.innerHeight / 2);
+        }, 3000);
     }
 
 }

@@ -21,6 +21,8 @@ class Entity {
     }
     update(dT) {
         this.#damage_cooldown = Math.max(0, this.#damage_cooldown - dT);
+        this.pos.x = Math.max(Math.min(this.pos.x, mapWidth / 2), -mapWidth / 2);
+        this.pos.y = Math.max(Math.min(this.pos.y, window.innerHeight), mapTop);
     }
 
 
@@ -32,6 +34,7 @@ class Entity {
     get vel() { return this.#velocity; }
     get health() { return this.#health; }
     get size() { return this.#size; }
+    set health(a) { this.#health = a; }
     get acceleration() { return this.#acceleration; }
 
     get alive() { return this.#health > 0; }

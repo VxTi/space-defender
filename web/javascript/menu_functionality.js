@@ -191,7 +191,7 @@ function retrieveLeaderboards() {
             content = parseLeaderboardData(leaderboardData, leaderboardFilter);
         })
         .catch((e) => {
-            content = "Failed to load leaderboard statistics";
+            content = "<br>Failed to load leaderboard statistics. <br> Please try again later. <br> ";
             console.error(e)
         })
         .finally(() => element['leaderboard-content'].innerHTML = content);

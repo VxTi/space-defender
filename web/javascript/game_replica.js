@@ -1,8 +1,5 @@
 
-let playerScore = 0;
-
-const horizontalSpeed = 20;
-const verticalSpeed = 10;
+const apiKey = 'dcdc91a618b4c9830fcc2e20';
 
 let windowSegments = 70;
 
@@ -14,14 +11,16 @@ let mapTop = 150; // Top of the map, in pixels.
 let innerMapWidth = 600; // Width of the inner map in pixels
 let innerMapTop = 50;    // Top of the inner map
 
-let hostileEntityCount = 0;
+const defaultPlayerName = 'Guest';
+let playerName = defaultPlayerName;
 
 // Method for mapping a value from one range to another
 const map = (x, min1, max1, min2, max2) => ((x - min1) / (max1 - min1) * (max2 - min2) + min2);
 
 const DEFAULT_HEALTH = 5;
 
-let ship;
+let player;
+let playerScore = 0;
 
 let screenOffsetX = 0;
 
@@ -40,6 +39,26 @@ let shootFrequency = 5; // How many bullets the spaceship can shoot each second
 let lastMissileTime = 0;
 
 let msElapsed = 0;
+
+const scoreUpdater = async () => {
+    // Check if the player has selected a name, if not, don't update the score.
+    if (playerName === defaultPlayerName || !gameActive)
+        return;
+
+    let res = await fetch('http://localhost:8081/api/checkuser', {
+        method: 'POST',
+        cors: 'no-cors',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            key: apiKey,
+            idorname: playerName
+        })
+    })
+    .then(res => console.log(res.json()))
+        .catch((e) => console.error(e));
+}
 
 
 
@@ -65,13 +84,13 @@ function setup() {
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
     pixelDensity(1);
 
-    ship = new Spaceship(100, window.innerHeight/2, 5);
-    entities.push(ship);
+    player = new Spaceship(100, window.innerHeight/2, 5);
+    entities.push(player);
 
     document.addEventListener('keydown', (event) => {
         // Check if we've hit the space-bar (shoot) and if there's enough time elapsed
         if (event.key === ' ' && shotsFired + 1 < shootFrequency) {
-            ship.shoot();
+            player.shoot();
             shotsFired++;
             lastMissileTime = msElapsed;
         }
@@ -83,12 +102,12 @@ function setup() {
         stars[i] = [0, Math.random() * window.innerWidth, Math.random() * window.innerHeight, Math.floor(Math.random() * 0xFFFFFF)];
     }
 
-    let scoreText = document.querySelector('.game-scores-element');
+    let scoreContainer = document.querySelector('.game-scores');
     let hueDeg = 0;
 
     /** -- FUNCTIONALITY -- CHANGE COLOR OF SCORE BAR -- **/
     setInterval(() => {
-        scoreText.style.color = `hsl(${hueDeg}deg, 100%, 50%)`;
+        scoreContainer.style.color = `hsl(${hueDeg}deg, 100%, 50%)`;
         hueDeg = (hueDeg + 50) % 360;
     }, 500);
 
@@ -107,7 +126,7 @@ function draw() {
     if (!gameActive || !document.hasFocus())
         return;
 
-    ship.move((-keyIsDown(65) + keyIsDown(68)), (-keyIsDown(87) + keyIsDown(83)));
+    player.move((-keyIsDown(65) + keyIsDown(68)), (-keyIsDown(87) + keyIsDown(83)));
 
 
     msElapsed += deltaTime;
@@ -130,10 +149,10 @@ function draw() {
     drawLine(midX - innerMapRadius, innerMapTop, midX - innerMapRadius, mapTop, 0xff, 4);
     drawLine(midX + innerMapRadius, innerMapTop, midX + innerMapRadius, mapTop, 0xff, 4);
 
-    resources['spritesheet'].drawSection(midX + (ship.pos.x) * mapCoordinateFrac - innerMapHeight/2, innerMapTop - 1, innerMapHeight, innerMapHeight, 0, 2)
+    resources['spritesheet'].drawSection(midX + (player.pos.x) * mapCoordinateFrac - innerMapHeight/2, innerMapTop - 1, innerMapHeight, innerMapHeight, 0, 2)
 
     /** -- SECTION -- RENDERING LIVES -- **/
-    for (let i = 0, s = 200/DEFAULT_HEALTH; i < ship.health; i++)
+    for (let i = 0, s = 200/DEFAULT_HEALTH; i < player.health; i++)
         resources['spritesheet'].animate(midX - innerMapRadius - 215 + s * i, mapTop - 22 - s, s, s, 0);
 
 
@@ -151,7 +170,7 @@ function draw() {
 
     for (let star of stars) {
         drawRect(star[0], star[2], 5, 5, star[3]);
-        star[0] = (star[1] * 4 + ship.pos.x * 0.5 + window.innerWidth) % window.innerWidth;
+        star[0] = (star[1] * 4 + player.pos.x * 0.5 + window.innerWidth) % window.innerWidth;
     }
 
     translate(screenOffsetX, 0);
@@ -159,7 +178,7 @@ function draw() {
     // Update all entity positions and remove ones that aren't alive.
     for (let i = entities.length - 1; i >= 0; i--) {
         let e = entities[i];
-        if (!e.alive && e !== ship)
+        if (!e.alive && e !== player)
             entities.splice(i, 1);
         else {
             if (e.MINIMAP_SPRITE_INDEX != null && typeof e.MINIMAP_SPRITE_INDEX === 'object')
@@ -171,8 +190,20 @@ function draw() {
         }
         e.update(dT)
     }
-
 }
+
+
+function startGame() {
+    entities = [];
+    entities.push(player);
+    let nameInput = document.getElementById('menu-start-name-input').value;
+    playerName = nameInput.length >= 3 ? nameInput : defaultPlayerName;
+    console.log("Starting game...");
+    playerScore = 0;
+    setInterval(scoreUpdater, 5000);
+}
+
+
 
 /**
  * Method for showing a death animation for given entity.
@@ -181,7 +212,7 @@ function draw() {
 function showDeathAnimation(entity) {
 
     for (let i = 0; i < entity.size * 2; i++)
-        entities.push(new Particle(entity, entity.size/4, Math.random(), entity.size/20.0));
+        entities.push(new Particle(entity, entity.size/6, Math.random(), entity.size/20.0));
 }
 
 /**

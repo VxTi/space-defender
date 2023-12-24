@@ -1,5 +1,4 @@
 
-const apiKey = 'dcdc91a618b4c9830fcc2e20';
 const serverAddress = "http://localhost:8081/api/getleaderboards";//"http://oege.ie.hva.nl:8081/api/get";
 
 let element = {};
@@ -58,6 +57,9 @@ selectNextMenuItem = (direction = 1) => {
 
 function keyTyped() {
 
+    if (document.activeElement === document.querySelector('.menu-text-input'))
+        return;
+
     // Pause game key
     if ((key === 'r' || key === ESCAPE) && gameActive) {
         gameActive = false;
@@ -81,11 +83,10 @@ function keyTyped() {
             // Check if it has a menu to go to
             if (selected.dataset.menu != null) {
                 showMenu(selected.dataset.menu);
-
-                // Check if it has a function to perform when interacted with
-            } else if (selected.dataset.onload != null && typeof this[selected.dataset.onload] === 'function') {
-                this[selected.dataset.onload]();
             }
+            // Check if it has a function to perform when interacted with
+            if (selected.dataset.onload != null && typeof window[selected.dataset.onload] === 'function')
+                window[selected.dataset.onload]();
         }
     }
 }
@@ -127,7 +128,11 @@ function keyTyped() {
     // when interacted, it'll go to that menu.
     document.querySelectorAll('.menu-button').forEach(obj => {
         if (typeof obj.dataset.menu !== 'undefined')
-            obj.onclick = () => showMenu(obj.dataset.menu);
+            obj.onclick = () => {
+                showMenu(obj.dataset.menu);
+                if (typeof obj.dataset.onload !== 'undefined' && typeof window[obj.dataset.onload] === 'function')
+                    window[obj.dataset.onload]();
+            }
     });
 
     showMenu("menu-start");
@@ -144,23 +149,13 @@ function showMenu(element = null) {
     if (element != null && element.length > 1) {
         currentMenu = document.querySelector(`.${element}`);
         currentMenu.style.visibility = 'visible';
-        // Check if the element has an onload function in its dataset, defined as 'data-onload=".."'
-        // If it does, call the function.
-        if (typeof currentMenu.dataset.onload !== 'undefined' && typeof this[currentMenu.dataset.onload] === 'function')
-            this[currentMenu.dataset.onload]();
-
     }
     gameActive = element === "" || element == null;
 
 }
 
-function publishScore(obj) {
-    // TODO: add functionality
-
-}
-
 function returnMain() {
-    ship.health = DEFAULT_HEALTH;
+    player.health = DEFAULT_HEALTH;
 }
 
 /**

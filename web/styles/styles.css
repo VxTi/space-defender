@@ -300,3 +300,20 @@ body, html {
     color: white;
     font-size: 50px;
 }
+
+.menu-text-input {
+    display: block;
+    position: relative;
+    border: none;
+    width: var(--button-width);
+    height: var(--button-height);
+    margin: 5px;
+    border-radius: 3px;
+    color: white;
+    font-family: arcade, serif;
+    font-size: var(--font-size);
+    background-color: var(--color-button-static);
+    cursor: pointer;
+    word-spacing: 10px;
+    letter-spacing: 3px;
+}

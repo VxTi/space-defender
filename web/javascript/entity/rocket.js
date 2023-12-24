@@ -26,7 +26,7 @@ class Rocket extends Entity {
 
         for (let i = 0; i < 6; i++)
         {
-            let len = (1 + i % 3) * 10;
+            let len = (1 + (i + this.pos.x) % 4) * 5;
             drawLine(this.pos.x - i * len * this.#facing, this.pos.y, this.pos.x - (i + 1) * len * this.#facing, this.pos.y, 0x613583, 4);
         }
        // drawLine(this.#trailX, this.pos.y, this.pos.x, this.pos.y, 0x613583, 4);

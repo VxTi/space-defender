@@ -33,6 +33,9 @@ app.use(require('express-rate-limit')({
     message: '{"message": "You have exceeded your API rate limit. Please slow down."}' // Message to send when rate limit is exceeded.
 }));
 
+// Regular expression for checking email validity
+const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/
+
 // Parse JSON and URL-encoded data
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -50,6 +53,33 @@ const credentials = {
     ssl: { rejectUnauthorized: false }, // Necessary to connect to the database!!!
     connectionLimit: 10
 };
+
+/**
+ * Tables required for the SQL database.
+ * These tables will be created on startup if they don't exist.
+ * Child objects in the 'tables' object are the columns of the table.
+ * The children of the column objects are the column name and the column type.
+ */
+const tables = {
+    highScores: {
+        userId: 'int',
+        userName: 'varchar(255)',
+        maxScore: 'int',
+        level: 'int'
+    },
+    lastPlayed: {
+        userId: 'int',
+        userName: 'varchar(255)',
+        time: 'time',
+        date: 'date'
+    },
+    lastScores: {
+        userId: 'int',
+        userName: 'varchar(255)',
+        lastScore: 'int',
+        lastLevel: 'int'
+    }
+}
 
 const pool = mysql.createPool(credentials);
 const oegePassword = credentials.password // Password for creating a new API key
@@ -107,27 +137,6 @@ isApiKeyInvalid = (apiKey) => {
 
 isDataTooLong = (data) => data !== undefined &&  data.length > characterLimit;
 
-// Create the tables if they don't exist:
-createTables = async () => {
-    // Create a connection to the database:
-    const conn = await pool.getConnection(); // Get a connection from the pool
-
-    // Create the columns if they don't exist:
-    let sql1 = `CREATE TABLE IF NOT EXISTS highScores (userId int, userName varchar(255), maxScore int, maxCoins int);`;
-    let sql2 = `CREATE TABLE IF NOT EXISTS lastScores (userId int, userName varchar(255), lastScore int, lastCoins int);`;
-    let sql3 = `CREATE TABLE IF NOT EXISTS lastPlayed (userId int, userName varchar(255), time time, date date);`;
-    let sql4 = `CREATE TABLE IF NOT EXISTS userData (userId int, userName varchar(255), email varchar(255));`;
-    result1 = await conn.query(sql1)
-        .catch((err) => consoleLog("ERR", "Error creating table1", err)); // Execute the query
-    result2 = await conn.query(sql2)
-        .catch((err) => consoleLog("ERR", "Error creating table2", err)); // Execute the query
-    result3 = await conn.query(sql3)
-        .catch((err) => consoleLog("ERR", "Error creating table3", err)); // Execute the query
-    result4 = await conn.query(sql4)
-        .catch((err) => consoleLog("ERR", "Error creating table4", err)); // Execute the query
-    conn.release(); // Release the connection
-    return `{result1: ${result1}, result2: ${result2}, result3: ${result3}}`;
-}
 
 // Compare the last score and coins with the high score and coins:
 compareLastScores = async (userId) => {
@@ -281,6 +290,26 @@ getUserIdByName = async (name) => {
     }
 }
 
+/**
+ * Method for getting all data from a user.
+ * Combines data from all tables into one object.
+ * @param {number} userId The ID of the user to retrieve the data from
+ * @returns {Object} An object containing all data from the user
+ */
+getUserData = async (userId) => {
+    let connection = await pool.getConnection();
+    return connection
+        .query(mysql.format(
+            'SELECT * FROM userData ' +
+                'RIGHT JOIN lastScores ON lastScores.userId = userData.userId ' +
+                'RIGHT JOIN lastPlayed ON lastPlayed.userId = userData.userId ' +
+                'RIGHT JOIN highScores ON highScores.userId = userData.userId ' +
+                'WHERE userData.userId = ?', userId))
+        .then(res => res[0][0] || {})
+        .catch(e => console.error('Error occurred whilst attempting to retrieve user-data', e))
+        .finally(() => connection.release());
+}
+
 // Create a new user:
 createNewUser = async (name, email) => {
     try {
@@ -324,58 +353,33 @@ createNewUser = async (name, email) => {
 
 // Delete a user:
 deleteUser = async (userId) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
 
-        // Delete the user from the database:
-        let inserts = [userId]; // Using the ? to prevent SQL injection
-        let sql1 = `DELETE FROM lastScores WHERE userId = ?;`; // SQL query
-        let sql2 = `DELETE FROM highScores WHERE userId = ?;`; // SQL query
-        let sql3 = `DELETE FROM lastPlayed WHERE userId = ?;`; // SQL query
-        let sql4 = `DELETE FROM userData WHERE userId = ?;`; // SQL query
+    const connection = await pool.getConnection(); // Get a connection from the pool
 
-        // Format the SQL queries:
-        sql1 = mysql.format(sql1, inserts);
-        sql2 = mysql.format(sql2, inserts);
-        sql3 = mysql.format(sql3, inserts);
-        sql4 = mysql.format(sql4, inserts);
+    // Iterate over all tables and then delete user-data from that table
+    Object.entries(tables).forEach(([tableName]) => {
+        connection.query(mysql.format('DELETE FROM ?? WHERE userId = ?', [tableName, userId]))
+            .catch(e => console.error(`An error occurred whilst attempting to delete user-data from table ${tableName}`, e));
+    });
 
-        // Execute the queries:
-        await conn.query(sql1);
-        await conn.query(sql2);
-        await conn.query(sql3);
-        await conn.query(sql4);
+    connection.release();
 
-        conn.release(); // Release the connection
-
-        consoleLog("RES", `Deleted user with userId ${userId}`); // Log the request
-    }
-    catch (err) {
-        consoleLog("ERR", "Error deleting user", err);
-    }
+    consoleLog("RES", `Deleted user with userId ${userId}`);
 }
 
 
-// Get the last score and coins:
+/**
+ * Method for retrieving last published data from a user.
+ * @param {} userId
+ * @returns {Promise<void>}
+ */
 getLastScore = async (userId) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
 
-        // Get the last score and coins from the database:
-        let sql = `SELECT * FROM lastScores WHERE userId = ?;`; // SQL query
-        let inserts = [userId]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-
-        result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-
-        return result[0][0];
-    } catch (err) {
-        consoleLog("ERR", "Error getting last score", err);
-    }
+    const connection = await pool.getConnection();
+    return await connection.query(mysql.format('SELECT * FROM lastScores WHERE userId = ?', userId))
+        .then(result => result[0][0])
+        .catch(e => console.error('An error occurred whilst attempting to retrieve last score', e))
+        .finally(() => connection.release());
 }
 
 // Get the last played:
@@ -846,9 +850,18 @@ app.delete('/*', (req, res) => {
 
 
 // Run the API on port 8081
-app.listen(port, () => {
+app.listen(port, async () => {
     consoleLog("RUN", `API Server started on port ${port}`); // Log the request
-});
 
-// On startup, create the columns if they don't exist:
-createTables();
+    // Check whether tables exist, if they don't, create them.
+    let connection = await pool.getConnection();
+
+    // Iterate over all tables, then check whether the table exists.
+    // If they don't, create them.
+    Object.entries(tables).forEach(([tableName, table]) => {
+        connection
+            .query(`CREATE TABLE IF NOT EXISTS ${tableName} (${Object.entries(table).map(([key, value]) => `${key} ${value}`).join(', ')})`)
+            .catch((e) => console.error(e));
+    })
+    getUserData(1).then(k => console.log(k))
+});

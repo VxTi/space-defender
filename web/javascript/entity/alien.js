@@ -20,10 +20,10 @@ class Alien extends Entity {
     update(dT) {
         super.update(dT);
         resources['spritesheet'].animate(this.pos.x - this.#size/2, this.pos.y - this.#size/2, this.#size, this.#size, Alien.#SPRITE_INDEX);
-        let [Dx, Dy] = [Math.sign(ship.pos.x - this.pos.x), Math.sign(ship.pos.y - this.pos.y)];
+        let [Dx, Dy] = [Math.sign(player.pos.x - this.pos.x), Math.sign(player.pos.y - this.pos.y)];
 
-        if (this.pos.distSq(ship.pos) <= Math.pow(ship.size / 2 + this.size / 2 + Alien.#DAMAGE_REACH, 2) && ship.alive && ship.canDamage)
-            ship.damage(1);
+        if (this.pos.distSq(player.pos) <= Math.pow(player.size / 2 + this.size / 2 + Alien.#DAMAGE_REACH, 2) && player.alive && player.canDamage)
+            player.damage(1);
 
         this.vel.add(Dx * dT, Dy * dT);
         this.pos.add(this.vel.x, this.vel.y);

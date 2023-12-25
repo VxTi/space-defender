@@ -21,6 +21,7 @@
             <div class="game-scores">
                 <div class="game-scores-element">Wave <span class="game-score-value game-score-wave-value">0</span></div>
                 <div class="game-scores-element">Score <span class="game-score-value game-score-points-value">0</span></div>
+                <div class="game-scores-element">Highscore <span class="game-score-value game-score-high-value">0</span></div>
             </div>
 
             <!--
@@ -33,7 +34,7 @@
                         <input type="text" placeholder="Play as..." class="menu-text-input" id="menu-start-name-input" minlength="3" maxlength="10">
                     </label>
                     <div class="menu-button main-play gamepad-selectable" data-menu="" data-onload="startGame">Play</div>
-                    <div class="menu-button main-leaderboards gamepad-selectable" data-menu="menu-leaderboards">Scores</div>
+                    <div class="menu-button main-leaderboards gamepad-selectable" data-menu="menu-leaderboards" data-onload="retrieveLeaderboards">Scores</div>
                     <div class="menu-button main-information gamepad-selectable" data-menu="menu-information">How to play</div>
                 </div>
             </div>
@@ -54,7 +55,7 @@
             <!--
             Section: Leaderboards
             -->
-            <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-leaderboards" data-onload="retrieveLeaderboards">
+            <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-leaderboards">
                 <div class="bg">
                     <div class="button-menu gamepad-selectable" data-menu="menu-start"><</div>
                     <div class="frame-title">Leaderboards</div>

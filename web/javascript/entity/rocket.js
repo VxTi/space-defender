@@ -44,7 +44,7 @@ class Rocket extends Entity {
                 this.pos.x + Rocket.ROCKET_SPEED * dT / 2 >= e.pos.x - e.size / 2 &&
                 this.pos.x - Rocket.ROCKET_SPEED * dT / 2 <= e.pos.x + e.size / 2
             ) {
-                e.damage(e.health);
+                e.damage(1);
                 this.health = 0;
                 addScore(e.ENTITY_SCORE);
                 return;

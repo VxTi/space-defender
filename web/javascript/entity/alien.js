@@ -11,7 +11,7 @@ class Alien extends Entity {
 
 
     constructor(x, y, size = 50) {
-        super(x, y, 1);
+        super(x, y, 2);
         this.#size = size;
         this.deathAnimations = true;
     }

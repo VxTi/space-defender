@@ -77,7 +77,11 @@ const tables = {
         userId: 'int NOT NULL',
         userName: 'varchar(255) NOT NULL',
         lastScore: 'int DEFAULT 0',
-        lastLevel: 'int DEFAULT 0'
+        lastCoins: 'int DEFAULT 0'
+    },
+    userData: {
+        userId: 'int NOT NULL',
+        userName: 'varchar(255) NOT NULL',
     }
 }
 
@@ -127,14 +131,14 @@ function consoleLog(type, message, parameters) {
 }
 
 // Check if the given API key is valid:
-isApiKeyInvalid = (apiKey) => {
+function isApiKeyInvalid(apiKey) {
     let fileData = fs.readFileSync(`${__dirname}/keys.json`); // Read the keys from the JSON file
     let keys = JSON.parse(fileData); // Parse the keys
     let validkeys = keys.key; // Get the keys from the JSON file
     return !validkeys.includes(apiKey); // Check if the API key is valid
 }
 
-isDataTooLong = (data) => data !== undefined &&  data.length > characterLimit;
+isDataTooLong = (data) => data !== undefined && data.length > characterLimit;
 
 
 // Compare the last score and coins with the high score and coins:
@@ -184,44 +188,31 @@ compareLastScores = async (userId) => {
     }
 }
 
-// Update the last score and coins:
-updateLastScore = async (userId, score, coins) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
+/**
+ * Method for updating the last scores of the player in the 'lastScores' table
+ * @param {number} userId The user-id to change the data of
+ * @param {number} score New score
+ * @param {number} coins New coins value
+ */
+async function updateLastScore(userId, score, coins) {
 
-        // Update the last score and coins in the database:
-        let sql = `UPDATE lastScores SET lastScore = ?, lastCoins = ? WHERE userId = ?;`; // SQL query
-        let inserts = [score, coins, userId]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-        await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-
-        consoleLog("RES", `Updated last score for userId ${userId}`); // Log the request
-    } catch (err) {
-        consoleLog("ERR", "Error updating last score", err);
-    }
+    const connection = await pool.getConnection(); // Get a connection from the pool
+    await connection.query(mysql.format('UPDATE lastScores SET lastScore = ?, lastCoins = ? WHERE userId = ?', [score, coins, userId]))
+        .catch(e => console.error('An error occurred whilst attempting to update last score', e))
+        .finally(() => connection.release())
 }
 
-// Update the last played:
-updateLastPlayed = async (userId) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
+/**
+ * Method for updating the last played time and date of the player in the 'lastPlayed' table
+ * @param {number} userId The user to update the data for
+ */
+async function updateLastPlayed(userId) {
 
-        // Update the last played in the database:
-        let sql = `UPDATE lastPlayed SET time = ?, date = ? WHERE userId = ?;`; // SQL query
-        let inserts = [getTimeString(), getDateString(), userId]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-        await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-
-        consoleLog("RES", `Updated last played for userId ${userId}`); // Log the request
-    } catch (err) {
-        consoleLog("ERR", "Error updating last played", err);
-    }
+    const connection = await pool.getConnection();
+    await connection.query(mysql.format('UPDATE lastPlayed SET time = (CURRENT_TIME), date = (CURRENT_DATE) WHERE userId = ?', userId))
+        .then(() => consoleLog("RES", `Updated last played for userId ${userId}`))
+        .catch(e => console.error('An error occurred whilst attempting to update last played', e))
+        .finally(() => connection.release());
 }
 
 /**
@@ -229,9 +220,9 @@ updateLastPlayed = async (userId) => {
  * @param {number} userId The ID of the user to check
  * @returns {Promise<void>}
  */
-userIdExists = async (userId) => {
+async function userIdExists(userId){
     const connection = await pool.getConnection(); // Get a connection from the pool
-    return await connection.query(mysql.format('SELECT * FROM userData WHERE userId = ?', userId))
+    return await connection.query(mysql.format('SELECT * FROM userData WHERE userId = ?', [userId]))
         .then(res => res[0].length > 0)
         .catch(e => console.error('Error occurred whilst attempting to check if user exists', e))
         .finally(() => connection.release());
@@ -242,7 +233,7 @@ userIdExists = async (userId) => {
  * @param {string} userName
  * @returns {Promise<boolean | void>}
  */
-userNameExists = async (userName) => {
+async function userNameExists(userName) {
     const connection = await pool.getConnection(); // Get a connection from the pool
     return connection.query(mysql.format('SELECT * FROM userData WHERE userName = ?', userName))
         .then(res => res[0].length > 0)
@@ -250,48 +241,26 @@ userNameExists = async (userName) => {
         .finally(() => connection.release());
 }
 
-
-// Check if a user exists using their name:
-checkIfUserNameExists = async (name) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
-
-        // Check if the user exists in the database:
-        let sql = `SELECT * FROM userData WHERE userName = ?;`; // SQL query
-        let inserts = [name]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-
-        let result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-        return result[0].length !== 0;
-    }
-    catch (err) {
-        consoleLog("ERR", "Error checking if user exists", err);
-    }
+/**
+ * Method for retrieving the userId by name
+ * @param {string} name Name of the user to retrieve the ID from
+ * @returns {Promise<number | null | void>} The ID of the user, or undefined if the user doesn't exist
+ */
+async function getUserIdFromName(name){
+    const connection = await pool.getConnection();
+    return await connection.query(mysql.format('SELECT userId FROM userData WHERE userName = ?', name))
+        .then(res => res[0][0]?.userId || null)
+        .catch(e => console.error('Error occurred whilst attempting to retrieve userId by name', e))
+        .finally(() => connection.release());
 }
 
-// Get the userId by name:
-getUserIdByName = async (name) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
-
-        // Get the userId from the database:
-        let sql = `SELECT userId FROM userData WHERE userName = ?;`; // SQL query
-        let inserts = [name]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-
-        let result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-
-        return result[0][0].userId;
-    }
-    catch (err) {
-        consoleLog("ERR", "Error getting userId by name", err);
-    }
+/**
+ * Method for retrieving user-data from a username
+ * @param {string} userName
+ * @returns {Promise<void>}
+ */
+async function getUserDataFromName(userName) {
+    return await getUserDataFromId(await getUserIdFromName(userName));
 }
 
 /**
@@ -300,7 +269,7 @@ getUserIdByName = async (name) => {
  * @param {number} userId The ID of the user to retrieve the data from
  * @returns {Promise<Object | void>} An object containing all data from the user
  */
-getUserData = async (userId) => {
+async function getUserDataFromId(userId) {
     let connection = await pool.getConnection();
     return await connection
         .query(mysql.format(
@@ -314,49 +283,36 @@ getUserData = async (userId) => {
         .finally(() => connection.release());
 }
 
-// Create a new user:
-createNewUser = async (name, email) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
+/**
+ * Method for creating a new user in the database.
+ * Only works if the userdata isn't already present.
+ * @param {string} name Name of the user
+ */
+async function createNewUser(name) {
 
-        // Get the highest userId from the database:
-        let sql = `SELECT MAX(userId) FROM lastScores;`; // SQL query
-        let result = await conn.query(sql); // Execute the query
+    const connection = await pool.getConnection(); // Get a connection from the pool
 
-        // Create a new userId:
-        let userId = result[0][0]["MAX(userId)"] + 1;
+    // Retrieve last userId from the database and increment it by 1
+    let userId = await connection.query('SELECT MAX(userId) FROM userData')
+        .then(res => (res[0][0]['MAX(userId)'] || 0) + 1)
+        .catch(e => console.error('Error occurred whilst attempting to retrieve last userId', e));
 
-        // Create a new user in the database:
-        let sql1 = `INSERT INTO lastScores (userId, userName, lastScore, lastCoins) VALUES (?, ?, ?, ?);`; // SQL query
-        let inserts1 = [userId, name, 0, 0]; // Using the ? to prevent SQL injection
-        sql1 = mysql.format(sql1, inserts1); // Format the SQL query
-        await conn.query(sql1); // Execute the query
+    // Insert the new user into all tables
+    for (const [tableName, tableColumns] of Object.entries(tables)) {
 
-        let sql2 = `INSERT INTO highScores (userId, userName, maxScore, maxCoins) VALUES (?, ?, ?, ?);`; // SQL query
-        let inserts2 = [userId, name, 0, 0]; // Using the ? to prevent SQL injection
-        sql2 = mysql.format(sql2, inserts2); // Format the SQL query
-        await conn.query(sql2); // Execute the query
-
-        let sql3 = `INSERT INTO lastPlayed (userId, userName, time, date) VALUES (?, ?, ?, ?);`; // SQL query
-        let inserts3 = [userId, name, getTimeString(), getDateString()]; // Using the ? to prevent SQL injection
-        sql3 = mysql.format(sql3, inserts3); // Format the SQL query
-        await conn.query(sql3); // Execute the query
-
-        let sql4 = `INSERT INTO userData (userId, userName, email) VALUES (?, ?, ?);`; // SQL query
-        let inserts4 = [userId, name, email]; // Using the ? to prevent SQL injection
-        sql4 = mysql.format(sql4, inserts4); // Format the SQL query
-        await conn.query(sql4); // Execute the query
-
-        conn.release(); // Release the connection
-        return userId;
-    } catch (err) {
-        consoleLog("ERR", "Error creating new user", err);
+        // Since tables have default values, we don't have to insert them upon creation.
+        // This is why we only insert the userId and userName.
+        await connection.query('INSERT INTO ?? (userId, userName) VALUES (?, ?)', [tableName, userId, name])
+            .catch(e => console.error(`An error occurred whilst attempting to create new user ${name} in table ${tableName}`, e));
     }
+    // Release the connection
+    connection.release();
+
+    return userId;
 }
 
 // Delete a user:
-deleteUser = async (userId) => {
+async function deleteUser(userId) {
 
     const connection = await pool.getConnection(); // Get a connection from the pool
 
@@ -377,7 +333,7 @@ deleteUser = async (userId) => {
  * @param {number} userId
  * @returns {Promise<object>}
  */
-getLastScore = async (userId) => {
+async function getLastScore(userId)  {
     const connection = await pool.getConnection();
     return await connection.query(mysql.format('SELECT * FROM lastScores WHERE userId = ?', userId))
         .then(result => result[0][0])
@@ -386,7 +342,7 @@ getLastScore = async (userId) => {
 }
 
 // Get the last played:
-getLastPlayed = async (userId) => {
+async function getLastPlayed(userId){
     const connection = await pool.getConnection();
     return await connection.query(mysql.format('SELECT * FROM lastPlayed WHERE userId = ?', userId))
         .then(result => result[0][0])
@@ -547,12 +503,11 @@ app.post('/api/createuser', async (req, res) => {
     let postData = JSON.parse(JSON.stringify(req.body));
     let key = postData.key;
     let name = postData.name;
-    let email = postData.email;
 
-    consoleLog("REQ", `Got a create user request for name ${name} and email ${email}`); // Log the request
+    consoleLog("REQ", `Got a create user request for name ${name}`); // Log the request
 
     // Check if the request data is too long:
-    if (isDataTooLong(key) || isDataTooLong(name) || isDataTooLong(email)) {
+    if (isDataTooLong(key) || isDataTooLong(name) || name == null) {
         res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
         consoleLog("RES", "Too many characters in request");
         return;
@@ -565,26 +520,53 @@ app.post('/api/createuser', async (req, res) => {
         return;
     }
 
-    // Check if the data is valid:
-    if (name == null || email == null) {
-        res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
-        consoleLog("RES", "Invalid data");
-        return;
-    }
-
     // Check if the user already exists:
-    if (await checkIfUserNameExists(name)) {
+    if (await userNameExists(name)) {
         res.status(400).json({ message: 'User already exists' }); // Send status 401 with appropriate JSON-body
         consoleLog("RES", `Create new user failed, user ${name} already exists`); // Log the request
         return;
     }
 
     // Create a new user:
-    userId = await createNewUser(name, email);
+    let userId = await createNewUser(name);
 
     // Send the result to the client:
     res.status(200).json({ message: 'New user created', userId: userId }); // Send status 200 with appropriate JSON-body
     consoleLog("RES", `New user ${name} created with userId ${userId}`); // Log the request
+});
+
+/**
+ * POST Request handler for retrieving data from a username
+ * Request requires the following parameters:
+ * 'key': API key
+ * 'name': Name of the user to retrieve the data from
+ * 'userId': ID of the user to retrieve the data from
+ * If either userId or name are present, then we'll return the appropriate data
+ * from the database, if the user exists.
+ */
+app.post('/api/getuser', async (req, res) => {
+    if (isApiKeyInvalid(req.body.key)) {
+        res.status(401).json({ message: 'Invalid API key' });
+        return;
+    }
+
+    // If the parameters 'name' and 'userId' are bot not present, the request will fail.
+    if (!req.body.hasOwnProperty('name') && !req.body.hasOwnProperty('userId')) {
+        res.status(400).json({ message: 'Invalid data' });
+        return;
+    }
+
+    // Check whether the user exists
+    if (!await userNameExists(req.body.name) && !await userIdExists(req.body.userId))
+        res.status(400).json({ message: 'User does not exist' });
+
+    // Retrieve data from the user based on the provided parameters
+    let userData = req.body.hasOwnProperty('userId') ?
+        await getUserDataFromId(req.body.userId) :
+        await getUserDataFromName(req.body.name);
+
+    // Return appropriate response.
+    res.status(200).json({ message: 'User data retrieved', userData: userData });
 });
 
 // Check if a user exists:
@@ -631,8 +613,11 @@ app.post('/api/checkuser', async (req, res) => {
     if (method === "id") {
         exists = await userIdExists(idOrName);
     } else if (method === "name") {
-        let userId = await getUserIdByName(idOrName);
-        exists = await userIdExists(userId);
+        let userId = await getUserIdFromName(idOrName);
+        if (userId === undefined)
+            exists = false;
+        else
+            exists = await userIdExists(userId);
     }
 
     // Send the result to the client:

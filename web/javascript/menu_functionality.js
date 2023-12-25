@@ -151,7 +151,6 @@ function returnMain() {
  */
 function retrieveLeaderboards() {
     let content = "Waiting for leaderboard data...";
-
     fetch(serverAddress, {
         method: "POST",
         contentType: "application/json",

@@ -65,8 +65,7 @@ class Spaceship extends Entity {
         element.innerText = 'Game over';
         setTimeout(() => {
             element.innerText = '';
-            this.health = DEFAULT_HEALTH;
-            this.pos.translate(window.innerWidth / 2, window.innerHeight / 2);
+            respawn();
         }, 3000);
     }
 

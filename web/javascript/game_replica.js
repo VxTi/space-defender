@@ -13,14 +13,14 @@ let innerMapTop = 50;    // Top of the inner map
 
 const defaultPlayerName = 'Guest';
 let playerName = defaultPlayerName;
+let player;
+let playerScore = 0;
+let playerId = -1;
 
 // Method for mapping a value from one range to another
 const map = (x, min1, max1, min2, max2) => ((x - min1) / (max1 - min1) * (max2 - min2) + min2);
 
 const DEFAULT_HEALTH = 5;
-
-let player;
-let playerScore = 0;
 
 let screenOffsetX = 0;
 
@@ -45,19 +45,8 @@ const scoreUpdater = async () => {
     if (playerName === defaultPlayerName || !gameActive)
         return;
 
-    let res = await fetch('http://localhost:8081/api/checkuser', {
-        method: 'POST',
-        cors: 'no-cors',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            key: apiKey,
-            idorname: playerName
-        })
-    })
-    .then(res => console.log(res.json()))
-        .catch((e) => console.error(e));
+   await requestApi('updatescore', {userId: playerId, score: playerScore, coins: 0})
+       .catch(e => console.error(e));
 }
 
 
@@ -193,14 +182,67 @@ function draw() {
 }
 
 
+/**
+ * Method for starting the game and configuring the right variables
+ */
 function startGame() {
-    entities = [];
-    entities.push(player);
-    let nameInput = document.getElementById('menu-start-name-input').value;
-    playerName = nameInput.length >= 3 ? nameInput : defaultPlayerName;
-    console.log("Starting game...");
+    entities = [player];
+    let nameInput = document.getElementById('menu-start-name-input');
+    playerName = nameInput.value.length >= nameInput.minLength ? nameInput.value : defaultPlayerName;
+    console.log("Starting game as " + playerName);
     playerScore = 0;
-    setInterval(scoreUpdater, 5000);
+
+    // If the player decided to use a name, then we'll check whether the user exists,
+    if (playerName !== defaultPlayerName) {
+        (async () => {
+
+            let exists = await requestApi('checkuser', {idorname: playerName}).then(res => res.exists);
+
+            // If the user doesn't exist, request a new user to be created.
+            if (!exists)
+                await requestApi('createuser', {name: playerName}).then(res => playerId = res.userId)
+                    .then(() => console.log(playerId));
+            else
+                await requestApi('getuser', {name: playerName}).then(res => playerId = res.userData.userId)
+                    .then(() => console.log(playerId));
+
+            setInterval(scoreUpdater, 5000);
+
+        })();
+    }
+}
+
+/**
+ * Method for making an API request to the server.
+ * @param {string} param The appropriate URL parameter for the request
+ * @param {object} content The content to send to the server
+ * @returns {Promise<Object>}
+ */
+async function requestApi(param, content) {
+    return fetch(`http://localhost:8081/api/${param}`, {
+        method: 'POST',
+        cors: 'no-cors',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            key: apiKey,
+            ...content
+        })
+    })
+        .then(res => res.json())
+        .catch(e => console.error(e));
+}
+
+/**
+ * Method for respawning the player and resetting some variables.
+ */
+function respawn() {
+    player.health = DEFAULT_HEALTH;
+    player.pos.translate(window.innerWidth/2, window.innerHeight/2);
+    player.vel.translate(0, 0);
+    entities = [player];
+    setScore(0);
 }
 
 
@@ -221,6 +263,7 @@ function showDeathAnimation(entity) {
  */
 function setScore(score) {
     playerScore = score;
+    document.querySelector('.game-score-value').innerText = `${playerScore}`;
 }
 
 /**
@@ -228,8 +271,7 @@ function setScore(score) {
  * @param {number} score How much score to add
  */
 function addScore(score) {
-    playerScore += Math.abs(score);
-    document.querySelector('.game-score-value').innerText = `${playerScore}`;
+    setScore(playerScore += Math.abs(score));
 }
 
 /**

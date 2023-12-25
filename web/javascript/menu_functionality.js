@@ -11,21 +11,6 @@ let leaderboardData = {};
 
 let currentMenu = null;
 
-selectLeaderboardFilter = () => {
-    if (currentMenu === null)
-        return;
-
-    let element = currentMenu.querySelector('.gamepad-selected');
-    if (element.dataset.filter != null) {
-        document.querySelectorAll('.leaderboards-filter')
-            .forEach(e => {
-
-            })
-        e.classList.add('selected');
-        leaderboardFilter = e.dataset.filter;
-        element['leaderboard-content'].innerHTML = parseLeaderboardData(leaderboardData, leaderboardFilter);
-    }
-}
 
 selectNextMenuItem = (direction = 1) => {
 

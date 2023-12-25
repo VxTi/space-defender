@@ -62,27 +62,26 @@ const credentials = {
  */
 const tables = {
     highScores: {
-        userId: 'int',
-        userName: 'varchar(255)',
-        maxScore: 'int',
-        level: 'int'
+        userId: 'int NOT NULL',
+        userName: 'varchar(255) NOT NULL',
+        maxScore: 'int DEFAULT 0',
+        level: 'int DEFAULT 0'
     },
     lastPlayed: {
-        userId: 'int',
-        userName: 'varchar(255)',
-        time: 'time',
-        date: 'date'
+        userId: 'int NOT NULL',
+        userName: 'varchar(255) NOT NULL',
+        time: 'TIME DEFAULT (CURRENT_TIME)',
+        date: 'DATE DEFAULT (CURRENT_DATE)'
     },
     lastScores: {
-        userId: 'int',
-        userName: 'varchar(255)',
-        lastScore: 'int',
-        lastLevel: 'int'
+        userId: 'int NOT NULL',
+        userName: 'varchar(255) NOT NULL',
+        lastScore: 'int DEFAULT 0',
+        lastLevel: 'int DEFAULT 0'
     }
 }
 
 const pool = mysql.createPool(credentials);
-const oegePassword = credentials.password // Password for creating a new API key
 
 /* - - - - - - - - - - - - *
  |        Functions        |
@@ -147,7 +146,7 @@ compareLastScores = async (userId) => {
         // Get the last score and coins from the database:
         let sql1 = `SELECT * FROM lastScores WHERE userId = ?;`; // SQL query
         let inserts1 = [userId]; // Using the ? to prevent SQL injection
-        sql1 = mysql.format(sql1, inserts1); // Format the SQL query
+        sql1 = mysql.format(sql1, inserts1); // Format the SQL quer
 
         let result1 = await conn.query(sql1); // Execute the query
 
@@ -225,27 +224,32 @@ updateLastPlayed = async (userId) => {
     }
 }
 
-// Check if a user exists:
-checkIfUserIdExists = async (userId) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
-
-        // Check if the user exists in the database:
-        let sql = `SELECT * FROM lastScores WHERE userId = ?;`; // SQL query
-        let inserts = [userId]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-
-        result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-
-        return result[0].length !== 0;
-    }
-    catch (err) {
-        consoleLog("ERR", "Error checking if user exists", err);
-    }
+/**
+ * Method for checking whether the database contains a specified user or not
+ * @param {number} userId The ID of the user to check
+ * @returns {Promise<void>}
+ */
+userIdExists = async (userId) => {
+    const connection = await pool.getConnection(); // Get a connection from the pool
+    return await connection.query(mysql.format('SELECT * FROM userData WHERE userId = ?', userId))
+        .then(res => res[0].length > 0)
+        .catch(e => console.error('Error occurred whilst attempting to check if user exists', e))
+        .finally(() => connection.release());
 }
+
+/**
+ * Method for checking whether a username exists in the database or not
+ * @param {string} userName
+ * @returns {Promise<boolean | void>}
+ */
+userNameExists = async (userName) => {
+    const connection = await pool.getConnection(); // Get a connection from the pool
+    return connection.query(mysql.format('SELECT * FROM userData WHERE userName = ?', userName))
+        .then(res => res[0].length > 0)
+        .catch(e => console.error('Error occurred whilst attempting to check if user exists', e))
+        .finally(() => connection.release());
+}
+
 
 // Check if a user exists using their name:
 checkIfUserNameExists = async (name) => {
@@ -294,11 +298,11 @@ getUserIdByName = async (name) => {
  * Method for getting all data from a user.
  * Combines data from all tables into one object.
  * @param {number} userId The ID of the user to retrieve the data from
- * @returns {Object} An object containing all data from the user
+ * @returns {Promise<Object | void>} An object containing all data from the user
  */
 getUserData = async (userId) => {
     let connection = await pool.getConnection();
-    return connection
+    return await connection
         .query(mysql.format(
             'SELECT * FROM userData ' +
                 'RIGHT JOIN lastScores ON lastScores.userId = userData.userId ' +
@@ -370,11 +374,10 @@ deleteUser = async (userId) => {
 
 /**
  * Method for retrieving last published data from a user.
- * @param {} userId
- * @returns {Promise<void>}
+ * @param {number} userId
+ * @returns {Promise<object>}
  */
 getLastScore = async (userId) => {
-
     const connection = await pool.getConnection();
     return await connection.query(mysql.format('SELECT * FROM lastScores WHERE userId = ?', userId))
         .then(result => result[0][0])
@@ -384,64 +387,33 @@ getLastScore = async (userId) => {
 
 // Get the last played:
 getLastPlayed = async (userId) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
-
-        // Get the last played from the database:
-        let sql = `SELECT * FROM lastPlayed WHERE userId = ?;`; // SQL query
-        let inserts = [userId]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-
-        result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-
-        return result[0][0];
-    } catch (err) {
-        consoleLog("ERR", "Error getting last played", err);
-    }
+    const connection = await pool.getConnection();
+    return await connection.query(mysql.format('SELECT * FROM lastPlayed WHERE userId = ?', userId))
+        .then(result => result[0][0])
+        .catch(e => console.error('An error occurred whilst attempting to retrieve last played', e))
+        .finally(() => connection.release());
 }
 
-// Get the high score and coins:
+/**
+ * Method for retrieving highscores of a provided user
+ * @param {number} userId
+ * @returns {Promise<Object | void>}
+ */
 getHighScore = async (userId) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
-
-        // Get the high score and coins from the database:
-        let sql = `SELECT * FROM highScores WHERE userId = ?;`; // SQL query
-        let inserts = [userId]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-
-        result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-
-        return result[0][0];
-    } catch (err) {
-        consoleLog("ERR", "Error getting high score", err);
-    }
+    const connection = await pool.getConnection();
+    return await connection.query(mysql.format('SELECT * FROM highScores WHERE userId = ?', userId))
+        .then(result => result[0][0])
+        .catch(e => console.error('An error occurred whilst attempting to retrieve high-scores', e))
+        .finally(() => connection.release());
 }
 
 // Get leaderboards:
 getLeaderboards = async (sortBy, maxResults) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
-
-        let sql = `SELECT * FROM highScores ORDER BY ? DESC LIMIT ?;`; // SQL query
-        let inserts = [sortBy, maxResults]; // Using the ? to prevent SQL injection
-        sql = mysql.format(sql, inserts); // Format the SQL query
-
-        result = await conn.query(sql); // Execute the query
-
-        conn.release(); // Release the connection
-
-        return result[0];
-    } catch (err) {
-        consoleLog("ERR", "Error getting leaderboards", err);
-    }
+    const connection = await pool.getConnection();
+    return await connection.query(mysql.format('SELECT * FROM highScores ORDER BY ? DESC LIMIT ?', [sortBy, maxResults]))
+        .then(result => result[0])
+        .catch(e => console.error('An error occurred whilst attempting to retrieve leaderboards', e))
+        .finally(() => connection.release());
 }
 
 /* - - - - - - - - - - - - *
@@ -465,7 +437,7 @@ app.post('/api/createkey', async (req, res) => {
     }
 
     // Check if the password is correct:
-    if (password != oegePassword) {
+    if (password !== credentials.password) {
         res.status(401).json({ message: 'Wrong password' }); // Send status 401 with appropriate JSON-body
         consoleLog("RES", "Invalid password");
         return;
@@ -657,10 +629,10 @@ app.post('/api/checkuser', async (req, res) => {
     // Check if the user exists:
     let exists;
     if (method === "id") {
-        exists = await checkIfUserIdExists(idOrName);
+        exists = await userIdExists(idOrName);
     } else if (method === "name") {
         let userId = await getUserIdByName(idOrName);
-        exists = await checkIfUserIdExists(userId);
+        exists = await userIdExists(userId);
     }
 
     // Send the result to the client:
@@ -701,7 +673,7 @@ app.post('/api/deleteuser', async (req, res) => {
     }
 
     // Check if the user exists:
-    if (!await checkIfUserIdExists(userId)) {
+    if (!await userIdExists(userId)) {
         res.status(400).json({ message: 'User does not exist' }); // Send status 400 with appropriate JSON-body
         consoleLog("RES", `Delete user failed, user ${userId} does not exist`); // Log the request
         return;
@@ -789,6 +761,7 @@ app.post('/api/gethighscore', async (req, res) => {
 // Get the leaderboards:
 app.post('/api/getleaderboards', async (req, res) => {
 
+    console.log('got request')
     // Parse the request body:
     let postData = JSON.parse(JSON.stringify(req.body));
     let key = postData.key;
@@ -819,7 +792,8 @@ app.post('/api/getleaderboards', async (req, res) => {
     }
 
     // Get the leaderboards:
-    let leaderboards = await getLeaderboards(sortBy, maxResults); // Get the leaderboards from the database
+    let leaderboards = await getLeaderboards(sortBy, maxResults).then(r => r); // Get the leaderboards from the database
+    console.log(leaderboards)
 
     // Send the result to the client:
     res.status(200).json(leaderboards); // Send status 200 with appropriate JSON-body
@@ -848,7 +822,6 @@ app.delete('/*', (req, res) => {
     res.status(404).json({ message: 'Wrong URL' }); // Send status 404 with appropriate JSON-body
 });
 
-
 // Run the API on port 8081
 app.listen(port, async () => {
     consoleLog("RUN", `API Server started on port ${port}`); // Log the request
@@ -863,5 +836,4 @@ app.listen(port, async () => {
             .query(`CREATE TABLE IF NOT EXISTS ${tableName} (${Object.entries(table).map(([key, value]) => `${key} ${value}`).join(', ')})`)
             .catch((e) => console.error(e));
     })
-    getUserData(1).then(k => console.log(k))
 });

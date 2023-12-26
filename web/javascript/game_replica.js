@@ -14,8 +14,17 @@ let innerMapTop = 50;    // Top of the inner map
 const defaultPlayerName = 'Guest';
 let playerName = defaultPlayerName;
 let player;
-let playerScore = 0;
-let playerId = -1;
+
+/**
+ * Object containing all the scores of the player.
+ * @type {{WAVE: number, SCORE: number, HIGH_SCORE: number, PLAYER_ID: number}}
+ */
+const PlayerData = {
+    HIGH_SCORE: 0,
+    SCORE: 1,
+    WAVE: 0,
+    PLAYER_ID: -1
+}
 
 // Method for mapping a value from one range to another
 const map = (x, min1, max1, min2, max2) => ((x - min1) / (max1 - min1) * (max2 - min2) + min2);
@@ -39,17 +48,6 @@ let shootFrequency = 5; // How many bullets the spaceship can shoot each second
 let lastMissileTime = 0;
 
 let msElapsed = 0;
-
-const scoreUpdater = async () => {
-    // Check if the player has selected a name, if not, don't update the score.
-    if (playerName === defaultPlayerName || !gameActive)
-        return;
-
-   await requestApi('updatescore', {userId: playerId, score: playerScore, coins: 0})
-       .catch(e => console.error(e));
-}
-
-
 
 // Noise function for the bottom of the screen
 GNoise = (x) => noise(x / 3) * 200;
@@ -181,6 +179,15 @@ function draw() {
     }
 }
 
+function scoreUpdater() {
+    // Check if the player has selected a name, if not, don't update the score.
+    if (playerName === defaultPlayerName || !gameActive)
+        return;
+
+    requestApi('updatescore', {userId: PlayerData.PLAYER_ID, score: PlayerData.SCORE, coins: 0})
+        .catch(e => console.error(e));
+}
+
 
 /**
  * Method for starting the game and configuring the right variables
@@ -190,7 +197,7 @@ function startGame() {
     let nameInput = document.getElementById('menu-start-name-input');
     playerName = nameInput.value.length >= nameInput.minLength ? nameInput.value : defaultPlayerName;
     console.log("Starting game as " + playerName);
-    playerScore = 0;
+    PlayerData.WAVE = 1;
 
     // If the player decided to use a name, then we'll check whether the user exists,
     if (playerName !== defaultPlayerName) {
@@ -200,12 +207,14 @@ function startGame() {
 
             // If the user doesn't exist, request a new user to be created.
             if (!exists)
-                await requestApi('createuser', {name: playerName}).then(res => playerId = res.userId)
-                    .then(() => console.log(playerId));
+                await requestApi('createuser', {name: playerName}).then(res => PlayerData.PLAYER_ID = res.userId)
             else
-                await requestApi('getuser', {name: playerName}).then(res => playerId = res.userData.userId)
-                    .then(() => console.log(playerId));
-
+                await requestApi('getuser', {name: playerName}).then(res => {
+                    PlayerData.PLAYER_ID = res.userData.userId;
+                    PlayerData.HIGH_SCORE = res.userData.maxScore;
+                    PlayerData.SCORE = res.userData.lastScore;
+                })
+            setScore(0);
             setInterval(scoreUpdater, 5000);
 
         })();
@@ -241,6 +250,8 @@ function respawn() {
     player.health = DEFAULT_HEALTH;
     player.pos.translate(window.innerWidth/2, window.innerHeight/2);
     player.vel.translate(0, 0);
+    PlayerData.WAVE = 1;
+    PlayerData.SCORE = 0;
     entities = [player];
     setScore(0);
 }
@@ -259,11 +270,15 @@ function showDeathAnimation(entity) {
 
 /**
  * Function for setting the score of the user
+ * Also updates the high score if the score is higher than the current high score
  * @param {number} score new score
  */
 function setScore(score) {
-    playerScore = score;
-    document.querySelector('.game-score-value').innerText = `${playerScore}`;
+    PlayerData.SCORE = score;
+    if (PlayerData.SCORE > PlayerData.HIGH_SCORE)
+        PlayerData.HIGH_SCORE = PlayerData.SCORE;
+    document.querySelector('.game-score-points-value').innerText = `${PlayerData.SCORE}`;
+    document.querySelector('.game-score-high-value').innerText = `${PlayerData.HIGH_SCORE}`;
 }
 
 /**
@@ -271,7 +286,7 @@ function setScore(score) {
  * @param {number} score How much score to add
  */
 function addScore(score) {
-    setScore(playerScore += Math.abs(score));
+    setScore(PlayerData.SCORE += Math.abs(score));
 }
 
 /**

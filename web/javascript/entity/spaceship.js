@@ -36,7 +36,7 @@ class Spaceship extends Entity {
         this.#movingAnimation = (this.#movingAnimation + dT * 10) % 4;
 
         // If we're moving, draw the moving animation
-        if (this.vel.x !== 0 || this.vel.y !== 0)
+        if (Math.abs(this.vel.x) > 0 || Math.abs(this.vel.y) > 0)
             resources['spritesheet'].drawSection(this.pos.x - this.#facing * this.size, this.pos.y, this.size, this.size, Math.floor(this.#movingAnimation), this.#facing < 0 ? 4 : 3);
 
         this.pos.add(this.vel.x, this.vel.y);

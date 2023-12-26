@@ -65,7 +65,7 @@ const tables = {
         userId: 'int NOT NULL',
         userName: 'varchar(255) NOT NULL',
         maxScore: 'int DEFAULT 0',
-        level: 'int DEFAULT 0'
+        maxWave: 'int DEFAULT 0'
     },
     lastPlayed: {
         userId: 'int NOT NULL',
@@ -77,7 +77,7 @@ const tables = {
         userId: 'int NOT NULL',
         userName: 'varchar(255) NOT NULL',
         lastScore: 'int DEFAULT 0',
-        lastCoins: 'int DEFAULT 0'
+        lastWave: 'int DEFAULT 0'
     },
     userData: {
         userId: 'int NOT NULL',
@@ -192,12 +192,12 @@ compareLastScores = async (userId) => {
  * Method for updating the last scores of the player in the 'lastScores' table
  * @param {number} userId The user-id to change the data of
  * @param {number} score New score
- * @param {number} coins New coins value
+ * @param {number} wave New wave level value
  */
-async function updateLastScore(userId, score, coins) {
+async function updateLastScore(userId, score, wave) {
 
     const connection = await pool.getConnection(); // Get a connection from the pool
-    await connection.query(mysql.format('UPDATE lastScores SET lastScore = ?, lastCoins = ? WHERE userId = ?', [score, coins, userId]))
+    await connection.query(mysql.format('UPDATE lastScores SET lastScore = ?, lastWave = ? WHERE userId = ?', [score, wave, userId]))
         .catch(e => console.error('An error occurred whilst attempting to update last score', e))
         .finally(() => connection.release())
 }

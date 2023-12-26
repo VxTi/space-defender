@@ -129,9 +129,10 @@ body, html {
 
 .leaderboard-data {
     font-family: minecraft-font, serif;
-    font-size: var(--font-size);
+    font-size: calc(0.8 * var(--font-size));
     display: inline-block;
     width: 25%;
+    padding: 0 10px;
     height: var(--font-size);
 }
 
@@ -213,7 +214,7 @@ body, html {
     justify-content: center;
     font-family: arcade, serif;
     color: white;
-    font-size: 30px;
+    font-size: 27px;
     padding-top: 10px;
     width: 100vw;
 }
@@ -225,7 +226,7 @@ body, html {
 }
 
 .game-scores-element {
-    width: 200px;
+    padding: 0 10px;
 }
 
 .game-intro {

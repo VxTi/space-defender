@@ -185,10 +185,14 @@ function retrieveLeaderboards() {
  * @return {string} String containing the HTML data for the leaderboards
  * */
 function parseLeaderboardData(data, filter) {
-    let content = '';
-    console.log(data)
-    Object.entries(data).forEach(([key, object]) => {
-        content += `<span class="leaderboard-data">${object.userName}</span> <span class="leaderboard-data" style="color: #a29b06">${object.maxScore} coins</span><br>\n`;
-    })
-    return content;
+    return Object.entries(data).map(([key, object]) => `${formatLeaderboardEntry(object)}\n`).join('');
+}
+
+/**
+ * Method for formatting the leaderboard entry data.
+ * @param {object} data Object containing the player data.
+ * @returns {string} Leaderboard entry from data object
+ */
+formatLeaderboardEntry = (data) => {
+    return `<span class="leaderboard-data">${data.userName}</span> <span class="leaderboard-data" style="color: #a29b06">${data.maxScore} SCORE </span> <span class="leaderboard-data" style="color: #001055">WAVE ${data.maxWave}</span><br>\n`;
 }

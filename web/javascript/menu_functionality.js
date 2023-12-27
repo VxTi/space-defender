@@ -151,20 +151,12 @@ function returnMain() {
  */
 function retrieveLeaderboards() {
     let content = "Waiting for leaderboard data...";
-    fetch(serverAddress, {
-        method: "POST",
-        contentType: "application/json",
-        cors: "no-cors",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            key: apiKey,
-            maxResults: 10,
-            sortBy: 'score'
-        })
+
+    requestApi('getleaderboards', {
+        key: apiKey,
+        maxResults: 10,
+        sortBy: 'maxScore'
     })
-        .then(result => result.json())
         .then(result => {
             leaderboardData = result;
             content = parseLeaderboardData(leaderboardData, leaderboardFilter);
@@ -194,5 +186,5 @@ function parseLeaderboardData(data, filter) {
  * @returns {string} Leaderboard entry from data object
  */
 formatLeaderboardEntry = (data) => {
-    return `<span class="leaderboard-data">${data.userName}</span> <span class="leaderboard-data" style="color: #a29b06">${data.maxScore} SCORE </span> <span class="leaderboard-data" style="color: #001055">WAVE ${data.maxWave}</span><br>\n`;
+    return `<span class="leaderboard-data">${data.userName}</span> <span class="leaderboard-data" style="color: #a29b06">${data.maxScore} </span> <span class="leaderboard-data" style="color: #001055">WAVE ${data.maxWave}</span><br>\n`;
 }

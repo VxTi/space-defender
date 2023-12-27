@@ -21,8 +21,8 @@ let player;
  */
 const PlayerData = {
     HIGH_SCORE: 0,
-    SCORE: 1,
-    WAVE: 0,
+    SCORE: 0,
+    WAVE: 1,
     PLAYER_ID: -1
 }
 
@@ -184,7 +184,7 @@ function scoreUpdater() {
     if (playerName === defaultPlayerName || !gameActive)
         return;
 
-    requestApi('updatescore', {userId: PlayerData.PLAYER_ID, score: PlayerData.SCORE, coins: 0})
+    requestApi('updatescore', {userId: PlayerData.PLAYER_ID, score: PlayerData.SCORE, wave: PlayerData.WAVE})
         .catch(e => console.error(e));
 }
 

@@ -2,9 +2,6 @@
 |Global variables, settings|
 \*========================*/
 
-// TODO: CHARACTER LIMIT OP alle inputs
-
-
 // Libraries
 const express = require('express');
 const app = express();
@@ -14,7 +11,7 @@ const cors = require('cors');
 const fs = require('fs');
 const crypto = require("crypto");
 
-/*
+/**
  * Which port to host the server on.
  * Since we're using two servers, one for API calls and one for
  * generic web calls, we must host them on two separate ports.
@@ -32,9 +29,6 @@ app.use(require('express-rate-limit')({
     max: rateLimit, // Maximum amount of requests allowed per window.
     message: '{"message": "You have exceeded your API rate limit. Please slow down."}' // Message to send when rate limit is exceeded.
 }));
-
-// Regular expression for checking email validity
-const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/
 
 // Parse JSON and URL-encoded data
 app.use(bodyParser.json());
@@ -141,51 +135,18 @@ function isApiKeyInvalid(apiKey) {
 isDataTooLong = (data) => data !== undefined && data.length > characterLimit;
 
 
-// Compare the last score and coins with the high score and coins:
-compareLastScores = async (userId) => {
-    try {
-        // Create a connection to the database:
-        const conn = await pool.getConnection(); // Get a connection from the pool
+/**
+ * Method for updating the highscores when they're higher than the last ones.
+ * @param {number} userId
+ */
+async function compareLastScores(userId) {
 
-        // Get the last score and coins from the database:
-        let sql1 = `SELECT * FROM lastScores WHERE userId = ?;`; // SQL query
-        let inserts1 = [userId]; // Using the ? to prevent SQL injection
-        sql1 = mysql.format(sql1, inserts1); // Format the SQL quer
-
-        let result1 = await conn.query(sql1); // Execute the query
-
-        let sql2 = `SELECT * FROM highScores WHERE userId = ?;`; // SQL query
-        let inserts2 = [userId]; // Using the ? to prevent SQL injection
-        sql2 = mysql.format(sql2, inserts2); // Format the SQL query
-
-        let result2 = await conn.query(sql2); // Execute the query
-
-        conn.release(); // Release the connection
-        lastScore = result1[0][0].lastScore;
-        lastCoins = result1[0][0].lastCoins;
-
-        highScore = result2[0][0].maxScore;
-        highCoins = result2[0][0].maxCoins;
-
-        // Compare the last score and coins with the high score and coins:
-        if (lastScore > highScore) {
-            // Update the high score if the last score is higher:
-            let sql3 = `UPDATE highScores SET maxScore = ? WHERE userId = ?;`; // SQL query
-            let inserts3 = [lastScore, userId]; // Using the ? to prevent SQL injection
-            sql3 = mysql.format(sql3, inserts3); // Format the SQL query
-            await conn.query(sql3); // Execute the query
-        }
-
-        if (lastCoins > highCoins) {
-            // Update the high coins if the last coins is higher:
-            let sql4 = `UPDATE highScores SET maxCoins = ? WHERE userId = ?;`; // SQL query
-            let inserts4 = [lastCoins, userId]; // Using the ? to prevent SQL injection
-            sql4 = mysql.format(sql4, inserts4); // Format the SQL query
-            await conn.query(sql4); // Execute the query
-        }
-    } catch (err) {
-        return err;
-    }
+    const connection = await pool.getConnection();
+    // Update the high score and wave if the value is higher than the current high score and wave:
+    await connection.query(
+        mysql.format('UPDATE highScores SET maxScore = GREATEST(maxScore, (SELECT lastScore FROM lastScores WHERE userId = ?)), maxWave = GREATEST(maxWave, (SELECT lastWave FROM lastScores WHERE userId = ?)) WHERE userId = ?', [userId, userId, userId]))
+        .catch(e => console.error('An error occurred whilst attempting to compare last scores', e))
+        .finally(() => connection.release());
 }
 
 /**
@@ -311,7 +272,10 @@ async function createNewUser(name) {
     return userId;
 }
 
-// Delete a user:
+/**
+ * Method for deleting a user from the database.
+ * @param {number} userId
+ */
 async function deleteUser(userId) {
 
     const connection = await pool.getConnection(); // Get a connection from the pool
@@ -363,10 +327,15 @@ getHighScore = async (userId) => {
         .finally(() => connection.release());
 }
 
-// Get leaderboards:
+/**
+ * Method for retrieving the leaderboards from the database
+ * @param {string} sortBy
+ * @param {number} maxResults
+ * @returns {Promise<object>} Promise object containing the leaderboards
+ */
 getLeaderboards = async (sortBy, maxResults) => {
     const connection = await pool.getConnection();
-    return await connection.query(mysql.format('SELECT * FROM highScores ORDER BY ? DESC LIMIT ?', [sortBy, maxResults]))
+    return await connection.query(mysql.format('SELECT * FROM `highScores` ORDER BY ? DESC LIMIT ?', [sortBy, maxResults]))
         .then(result => result[0])
         .catch(e => console.error('An error occurred whilst attempting to retrieve leaderboards', e))
         .finally(() => connection.release());
@@ -457,12 +426,12 @@ app.post('/api/updatescore', async (req, res) => {
     let key = postData.key;
     let userId = postData.userId;
     let score = postData.score;
-    let coins = postData.coins;
+    let wave = postData.wave;
 
-    consoleLog("REQ", `Got an update score request for userId ${userId} with score ${score} and coins ${coins}`); // Log the request
+    consoleLog("REQ", `Got an update score request for userId ${userId} with score ${score} and wave ${wave}`); // Log the request
 
     // Check if the request data is too long:
-    if (isDataTooLong(key) || isDataTooLong(userId) || isDataTooLong(score) || isDataTooLong(coins)) {
+    if (isDataTooLong(key) || isDataTooLong(userId) || isDataTooLong(score) || isDataTooLong(wave)) {
         res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
         consoleLog("RES", "Too many characters in request");
         return;
@@ -476,14 +445,14 @@ app.post('/api/updatescore', async (req, res) => {
     }
 
     // Check if the data is valid:
-    if (userId == null || score == null || coins == null) {
+    if (userId == null || score == null || wave == null) {
         res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
         consoleLog("RES", "Invalid data");
         return;
     }
 
     // Update the last score and coins:
-    await updateLastScore(userId, score, coins);
+    await updateLastScore(userId, score, wave);
 
     // Update the high score and coins if necessary:
     await compareLastScores(userId);
@@ -557,8 +526,10 @@ app.post('/api/getuser', async (req, res) => {
     }
 
     // Check whether the user exists
-    if (!await userNameExists(req.body.name) && !await userIdExists(req.body.userId))
+    if (!await userNameExists(req.body.name) && !await userIdExists(req.body.userId)) {
         res.status(400).json({ message: 'User does not exist' });
+        return;
+    }
 
     // Retrieve data from the user based on the provided parameters
     let userData = req.body.hasOwnProperty('userId') ?
@@ -770,15 +741,16 @@ app.post('/api/getleaderboards', async (req, res) => {
     }
 
     // Check if the sortBy is valid:
-    if (sortBy !== "score" && sortBy !== "coins") {
+    if (sortBy !== "maxScore" && sortBy !== "maxWave") {
         res.status(400).json({ message: 'Invalid sortBy, must be either score or coins' }); // Send status 400 with appropriate JSON-body
         consoleLog("RES", "Invalid sortBy");
         return;
     }
 
     // Get the leaderboards:
-    let leaderboards = await getLeaderboards(sortBy, maxResults).then(r => r); // Get the leaderboards from the database
-    console.log(leaderboards)
+    let leaderboards = await getLeaderboards(sortBy, maxResults) // Get the leaderboards from the database
+
+    console.log(await getLeaderboards('maxScore', 10));
 
     // Send the result to the client:
     res.status(200).json(leaderboards); // Send status 200 with appropriate JSON-body

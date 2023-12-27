@@ -88,7 +88,7 @@
         "key": "APIKEY",
         "userId": "USERID",
         "score": "SCORE",
-        "coins": "COINS"
+        "wave": "WAVE"
     }
     ```
 
@@ -133,6 +133,41 @@
     }
     ```
 
+??? note "Verkrijg alle data van een gebruiker"
+    ##  Verkrijg alle data van een gebruiker
+    
+    Om snel en gemakkelijk alle data van een gebruiker te verkrijgen dient de API gebruiker
+    simpelweg een verzoek te sturen naar `http://oege.ie.hva.nl:8081/api/getuser` met de
+    een header 'Content-Type: application/json' en een JSON object met de key en de userId.
+    Dit object ziet er als volgend uit:
+    ```json
+    {
+        "key": "APIKEY",
+        "userId": "USERID",  - of -  "name": "NAAM",
+    }
+    ```
+    De gebruiker kan zowel 'name' als 'userId' gebruiken om de gebruiker te identificeren.
+    Als de gebruiker niet bestaat zal de API HTTP status 400 (Bad request) terugsturen, en een JSON-object waarin staat dat de gebruiker niet bestaat. Deze ziet er als volgt uit:
+    ```json
+    {
+        "message": "User does not exist"
+    }
+    ```
+    Indien de gebruiker wel bestaat zal de API HTTP status 200 (OK) terugsturen, en een JSON-object waarin staat dat de gebruiker succesvol is opgehaald. Deze ziet er als volgt uit:
+    ```json
+    {
+        "message": "User retrieved",
+        "user": {
+            "userId": "USERID",
+            "userName": "NAAM",
+            "lastScore": "LAATSTE SCORE",
+            "lastCoins": "LAATSTE COINS",
+            "maxScore": "HIGHSCORE",
+            "maxCoins": "HIGHCOINS"
+        }
+    }
+    ```
+
 ??? note "Verwijder een gebruiker"
     ## Verwijder een gebruiker
 
@@ -172,7 +207,7 @@
     ```json
     {
         "message": "User exists",
-        "exists": "TRUE of FALSE"
+        "exists": true || false
     }
     ```
 
@@ -198,7 +233,7 @@
             "userId": "USERID",
             "userName": "NAAM",
             "lastScore": "LAATSTE SCORE",
-            "lastCoins": "LAATSTE COINS"
+            "lastWave": "LAATSTE WAVE"
         } 
     }
     ```
@@ -227,7 +262,7 @@
             "userId": "USERID",
             "userName": "NAAM",
             "maxScore": "HIGHSCORE",
-            "maxCoins": "HIGHCOINS"
+            "maxWave": "HOOGSTE WAVE"
         } 
     }
     ```
@@ -241,7 +276,7 @@
     ```json
     {
         "key": "APIKEY",
-        "sortBy": "SCORE of COINS",
+        "sortBy": "maxScore || maxWave",
         "maxResults": "AANTAL"
     }
     ```
@@ -257,20 +292,15 @@
                 "userId": "USERID",
                 "userName": "NAAM",
                 "maxScore": "HIGHSCORE",
-                "maxCoins": "HIGHCOINS"
+                "maxWave": "MAX WAVE"
             },
             {
                 "userId": "USERID",
                 "userName": "NAAM",
                 "maxScore": "HIGHSCORE",
-                "maxCoins": "HIGHCOINS"
+                "maxWave": "MAX WAVE"
             },
-            {
-                "userId": "USERID",
-                "userName": "NAAM",
-                "maxScore": "HIGHSCORE",
-                "maxCoins": "HIGHCOINS"
-            }
+            ...
         ]
     }
     ```

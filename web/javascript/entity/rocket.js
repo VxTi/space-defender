@@ -4,6 +4,7 @@ class Rocket extends Entity {
     #trailX;
     #source;
     #facing;
+    #damage;
 
     static ROCKET_SPEED = 1000;
     static ROCKET_TRAIL_DISTANCE = 300;
@@ -14,19 +15,20 @@ class Rocket extends Entity {
      * Rocket must be coming from a spaceship (obviously)
      * @param {Spaceship} source The spaceship that shoots the rocket
      */
-    constructor(source) {
+    constructor(source, damage = 1) {
         super(source.pos.x + Spaceship.WEAPON_OFFSET.x, source.pos.y + Spaceship.WEAPON_OFFSET.y, 1);
         this.#trailX = this.pos.x
+        this.#damage = damage;
         this.#facing = source.facing;
         this.#source = source;
     }
 
     update(dT) {
-        this.health = (this.#trailX >= -mapWidth/2 && this.#trailX <= mapWidth / 2) && this.alive ? 1 : 0;
+        this.health = (this.#trailX >= -mapWidth/2 && this.#trailX <= mapWidth / 2) ? 1 : 0;
 
         for (let i = 0; i < 6; i++)
         {
-            let len = (1 + (i + this.pos.x) % 4) * 5;
+            let len = (1 + (i + Math.abs(this.pos.x)) % 4) * 5;
             drawLine(this.pos.x - i * len * this.#facing, this.pos.y, this.pos.x - (i + 1) * len * this.#facing, this.pos.y, 0x613583, 4);
         }
        // drawLine(this.#trailX, this.pos.y, this.pos.x, this.pos.y, 0x613583, 4);
@@ -44,7 +46,7 @@ class Rocket extends Entity {
                 this.pos.x + Rocket.ROCKET_SPEED * dT / 2 >= e.pos.x - e.size / 2 &&
                 this.pos.x - Rocket.ROCKET_SPEED * dT / 2 <= e.pos.x + e.size / 2
             ) {
-                e.damage(1);
+                e.damage(this.#damage);
                 this.health = 0;
                 addScore(e.ENTITY_SCORE);
                 return;

@@ -8,8 +8,6 @@ class Spaceship extends Entity {
 
     MINIMAP_SPRITE_INDEX = [0, 1];
 
-
-
     // The size of the entity, in pixels
     static SHIP_SIZE = 80;
     static MOVEMENT_SPEED = new Vec2(20, 10);
@@ -36,7 +34,7 @@ class Spaceship extends Entity {
         this.#movingAnimation = (this.#movingAnimation + dT * 10) % 4;
 
         // If we're moving, draw the moving animation
-        if (Math.abs(this.vel.x) > 0 || Math.abs(this.vel.y) > 0)
+        if (Math.abs(this.vel.x) > 0.1 || Math.abs(this.vel.y) > 0.1)
             resources['spritesheet'].drawSection(this.pos.x - this.#facing * this.size, this.pos.y, this.size, this.size, Math.floor(this.#movingAnimation), this.#facing < 0 ? 4 : 3);
 
         this.pos.add(this.vel.x, this.vel.y);
@@ -56,17 +54,21 @@ class Spaceship extends Entity {
     shoot() {
         let rocket = new Rocket(this);
         entities.push(rocket);
+
     }
 
     get facing() { return this.#facing; }
 
     onDeath() {
         let element = document.querySelector('.game-event-indicator');
-        element.innerText = 'Game over';
+        element.innerHTML = 'Game over<br>';
         setTimeout(() => {
-            element.innerText = '';
-            respawn();
-        }, 3000);
+            element.innerHTML += 'Respawning...<br>'
+            setTimeout(() => {
+                element.innerHTML = '';
+                respawn();
+            }, 3000);
+        }, 1000);
     }
 
 }

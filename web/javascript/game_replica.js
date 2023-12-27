@@ -62,7 +62,6 @@ function setup() {
     window.addEventListener('resize', () => resizeCanvas(window.innerWidth, window.innerHeight));
 
     resources['spritesheet'] = new Resource(_resources['spritesheet'], 10, 10);
-    resources['sky'] = new Resource(_resources['sky']);
 
     pixelPerCm = document.querySelector('.pixel-size').clientWidth;
     mapWidth = 200 * pixelPerCm; // 1 physical meter wide.
@@ -83,10 +82,17 @@ function setup() {
         }
     })
 
+    /** -- FUNCTIONALITY -- BACKGROUND STARS -- **/
     let starCount = 100;
     stars = Array(starCount);
     for (let i = 0; i < starCount; i++) {
-        stars[i] = [0, Math.random() * window.innerWidth, Math.random() * window.innerHeight, Math.floor(Math.random() * 0xFFFFFF)];
+        stars[i] = {
+            x: 0,
+            y: Math.round(Math.random() * window.innerHeight),
+            offset: Math.round(Math.random() * window.innerWidth),
+            depth: Math.random(),
+            color: Math.round(0xFFFFFF * Math.random())
+        }
     }
 
     let scoreContainer = document.querySelector('.game-scores');
@@ -110,10 +116,12 @@ function draw() {
 
     background(0);
 
+    // If the game isn't active or the window isn't focussed, prevent the game from updating.
     if (!gameActive || !document.hasFocus())
         return;
 
-    player.move((-keyIsDown(65) + keyIsDown(68)), (-keyIsDown(87) + keyIsDown(83)));
+    // Update which direction the player is going to
+    player.dir.translate((-keyIsDown(65) + keyIsDown(68)), (-keyIsDown(87) + keyIsDown(83)));
 
 
     msElapsed += deltaTime;
@@ -155,9 +163,10 @@ function draw() {
         );
     }
 
+    /** -- SECTION -- RENDERING STARS -- **/
     for (let star of stars) {
-        drawRect(star[0], star[2], 5, 5, star[3]);
-        star[0] = (star[1] * 4 + player.pos.x * 0.5 + window.innerWidth) % window.innerWidth;
+        drawRect(star.x, star.y, 5, 5, star.color);
+        star.x = Math.abs(star.offset + star.depth * player.pos.x + window.innerWidth * star.depth) % window.innerWidth;
     }
 
     translate(screenOffsetX, 0);
@@ -184,6 +193,7 @@ function scoreUpdater() {
     if (playerName === defaultPlayerName || !gameActive)
         return;
 
+    // Send the score to the server
     requestApi('updatescore', {userId: PlayerData.PLAYER_ID, score: PlayerData.SCORE, wave: PlayerData.WAVE})
         .catch(e => console.error(e));
 }

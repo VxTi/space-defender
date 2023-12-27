@@ -19,7 +19,10 @@ class Alien extends Entity {
         let [Dx, Dy] = [Math.sign(player.pos.x - this.pos.x), Math.sign(player.pos.y - this.pos.y)];
 
         if (this.pos.distSq(player.pos) <= Math.pow(player.size / 2 + this.size / 2 + Alien.#DAMAGE_REACH, 2) && player.alive && player.canDamage)
+        {
             player.damage(1);
+            player.acceleration.add(Dx * 10, Dy * 10);
+        }
 
         this.vel.add(Dx * dT, Dy * dT);
         this.pos.add(this.vel.x, this.vel.y);

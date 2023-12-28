@@ -6,8 +6,9 @@ class Entity {
     #acceleration;
     #health;
     #size;
-    #damage_cooldown;
+    #damageCooldown;
     #direction;
+    #damageColor;
 
     MINIMAP_SPRITE_INDEX = null;
     ENTITY_KILL_SCORE = 200;
@@ -20,12 +21,19 @@ class Entity {
         this.#direction = new Vec2();
         this.#health = health;
         this.#size = size;
-        this.#damage_cooldown = 0;
+        this.#damageColor = -1;
+        this.#damageCooldown = 0;
     }
     update(dT) {
-        this.#damage_cooldown = Math.max(0, this.#damage_cooldown - dT);
-        this.pos.x = Math.max(Math.min(this.pos.x, mapWidth / 2), -mapWidth / 2);
-        this.pos.y = Math.max(Math.min(this.pos.y, window.innerHeight - this.size/2), mapTop);
+        this.#damageCooldown = Math.max(0, this.#damageCooldown - dT);
+        if (this.pos.x < -mapWidth / 2 || this.pos.x > mapWidth / 2) {
+            this.pos.x = Math.max(Math.min(this.pos.x, mapWidth / 2), -mapWidth / 2);
+            this.vel.x = this.acceleration.x = 0;
+        }
+        if (this.pos.y < mapTop || this.pos.y > window.innerHeight - this.size/2) {
+            this.pos.y = Math.max(Math.min(this.pos.y, window.innerHeight - this.size/2), mapTop);
+            this.vel.y = this.acceleration.y = 0;
+        }
 
         // Add the velocity to the position of the player
         this.pos.add(this.vel.x * dT, this.vel.y * dT);
@@ -41,28 +49,33 @@ class Entity {
     get dir() { return this.#direction; }
     get health() { return this.#health; }
     get size() { return this.#size; }
-    set health(a) { this.#health = a; }
     get acceleration() { return this.#acceleration; }
-
     get alive() { return this.#health > 0; }
+
+    get damageCooldown() { return this.#damageCooldown; }
+
+    get damageColor() { return this.#damageColor; }
+    set damageColor(newValue) { this.#damageColor = newValue; }
+
+    get canDamage() { return this.#damageCooldown <= 0; }
 
     set deathAnimations(state) { this.#doDeathAnimation = state; }
 
-    get damageCooldown() { return this.#damage_cooldown; }
-
-    get canDamage() { return this.#damage_cooldown <= 0; }
+    set health(a) { this.#health = a; }
 
     /**
      * Function for damaging this entity
+     * @param {number} amount How much to damage to deal to this entity
+     * @param {Entity} [source] The source of the damage
      */
-    damage(amount) {
+    damage(amount, source = null) {
         // If already dead, stop
         if (!this.alive || !this.canDamage)
             return;
 
         // do the harm >:)
         this.#health = Math.max(0, this.#health - amount);
-        this.#damage_cooldown = 0.5;
+        this.#damageCooldown = 0.5;
 
         // For when the entity is hurt and is still alive,
         // call the 'onDamage' method (if present)
@@ -79,6 +92,21 @@ class Entity {
             // then check if it's dead and animations are present
             if (this.#doDeathAnimation)
                 showDeathAnimation(this);
+        } else {
+            // Same check as above, though this one is for hurt animations
+            if (this.#doDeathAnimation)
+                showHurtAnimation(this);
         }
+    }
+
+    /**
+     * Method for checking whether another entity is within reach (for interaction)
+     * @param {Entity} other The entity to check the distance for
+     * @param {number} [offset] The offset added to the distance check. This is for when
+     * one wants to implement additional reach for certain entities.
+     */
+    withinRange(other, offset = 0) {
+        // Check whether D(a, b) <= Ra + Rb + delta
+        return this.pos.distSq(player.pos) <= Math.pow(other.size / 2 + this.size / 2 + offset, 2)
     }
 }

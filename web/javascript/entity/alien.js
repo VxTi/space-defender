@@ -10,6 +10,7 @@ class Alien extends Entity {
     constructor(x, y, size = 50) {
         super(x, y, 1, size);
         this.deathAnimations = true;
+        this.damageColor = 0x800000;
     }
 
 

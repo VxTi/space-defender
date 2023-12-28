@@ -47,6 +47,7 @@
                     <div class="frame-title">PAUSE</div>
                     <div class="menu-button pause-resume gamepad-selectable" data-menu="">Resume</div>
                     <div class="menu-button pause-settings gamepad-selectable" data-menu="menu-settings">Settings</div>
+                    <div class="menu-button pause-settings gamepad-selectable" data-menu="menu-statistics" data-onload="loadStatistics">Statistics</div>
                     <div class="menu-button pause-main-menu gamepad-selectable" data-menu="menu-start">Return   to   menu</div>
                 </div>
             </div>
@@ -60,6 +61,17 @@
                     <div class="button-menu gamepad-selectable" data-menu="menu-start"><</div>
                     <div class="frame-title">Leaderboards</div>
                     <div class="menu-text-content leaderboard-content"></div>
+                </div>
+            </div>
+
+            <!--
+           Section: Statistics
+           -->
+            <div class="match-parent-size d-flex f-h-center f-v-center f-nowrap f-o-column pd-15 menu-page menu-statistics">
+                <div class="bg">
+                    <div class="button-menu gamepad-selectable" data-menu="menu-pause"><</div>
+                    <div class="frame-title">Statistics</div>
+                    <div class="menu-text-content statistics-content"></div>
                 </div>
             </div>
 
@@ -91,9 +103,12 @@
                         First, get on thy spaceship. Once aboard, one can move the ship by <br>
                         either occupying the wireless or wired controller<br>
                         If you're using the wireless one, the controls are as followed: <br>
-                        To move left, use <img
-                        <b>A</b> to move left, <b>D</b> to move right and <b>SPACE</b> to jump. <br>
-                        Your goal is to
+                        To move the spaceship, use the D-Pad buttons (<b>←↑→↓</b> to get to the desired direction. <br>
+                        To shoot, press the <b>A</b> button. <br>
+                        To pause the game, press the middle button. <br>
+                        If you're using a keyboard, the controls are as followed: <br>
+                        To move, use the <b>WASD</b> keys. <br>
+                        To shoot, press the <b>Space</b> key. <br>
                     </div>
                 </div>
             </div>

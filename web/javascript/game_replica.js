@@ -1,7 +1,7 @@
 
 const apiKey = 'dcdc91a618b4c9830fcc2e20';
 
-let windowSegments = 70;
+let windowSegments = 50;
 
 let pixelPerCm;  // How many pixels a physical centimeter occupy.
 
@@ -26,9 +26,7 @@ const PlayerData = {
     PLAYER_ID: -1
 }
 
-// Method for mapping a value from one range to another
-const map = (x, min1, max1, min2, max2) => ((x - min1) / (max1 - min1) * (max2 - min2) + min2);
-
+// Default health of the player, fairly self-explanatory
 const DEFAULT_HEALTH = 5;
 
 let screenOffsetX = 0;
@@ -88,7 +86,7 @@ function setup() {
     for (let i = 0; i < starCount; i++) {
         stars[i] = {
             x: 0,
-            y: Math.round(Math.random() * window.innerHeight),
+            y: mapTop + Math.round(Math.random() * (window.innerHeight - mapTop)),
             offset: Math.round(Math.random() * window.innerWidth),
             depth: Math.random(),
             color: Math.round(0xFFFFFF * Math.random())
@@ -105,13 +103,12 @@ function setup() {
     }, 500);
 
     /** -- FUNCTIONALITY -- FILTER OUT DEAD ENTITIES. -- **/
-    setInterval(() => {
-        if (gameActive) {
-            entities.push(new Alien(-mapWidth / 2 + Math.random() * mapWidth, Math.random() * mapHeight));
-        }
-    }, 1000);
+    setInterval(checkEntitySpawning, 1000);
 }
 
+/**
+ * Main Rendering loop
+ */
 function draw() {
 
     background(0);
@@ -188,6 +185,27 @@ function draw() {
     }
 }
 
+/**
+ * Function for checking whether an entity can spawn or not
+ * Occasionally introduces new entities.
+ */
+function checkEntitySpawning() {
+    if (!gameActive || !document.hasFocus())
+        return;
+
+    let [x, y] = [-mapWidth / 2 + Math.random() * mapWidth, mapTop + Math.random() * mapHeight];
+    entities.push(
+        Math.random() <= 0.05 ? new HealthElement(x, y, 1) :
+        Math.random() <= 0.3 ?  new EnemyShip(x, y) :
+                                new Alien(x, y)
+    );
+}
+
+/**
+ * Function for updating the score of the player.
+ * This only works when the player has selected a name for themselves,
+ * and one is connected to the internet.
+ */
 function scoreUpdater() {
     // Check if the player has selected a name, if not, don't update the score.
     if (playerName === defaultPlayerName || !gameActive)
@@ -275,7 +293,18 @@ function respawn() {
 function showDeathAnimation(entity) {
 
     for (let i = 0; i < entity.size * 2; i++)
-        entities.push(new Particle(entity, entity.size/6, Math.random(), entity.size/20.0));
+        entities.push(new Particle(entity, entity.size/6, Math.random(), 1, entity.damageColor));
+}
+
+/**
+ * Method for showing hurt animation.
+ * This is the same as the method above, with as only difference that the
+ * amount of released particles is less.
+ * @param {Entity} entity The entity for which to show the hurt animation
+ */
+function showHurtAnimation(entity) {
+    for (let i = 0; i < 10; i++)
+        entities.push(new Particle(entity, 5, 0.5, 0.5, entity.damageColor));
 }
 
 /**
@@ -294,9 +323,12 @@ function setScore(score) {
 /**
  * Function for adding score of the player
  * @param {number} score How much score to add
+ * @param {Entity} [e] Source from which the score was added
  */
-function addScore(score) {
+function addScore(score, e = null) {
     setScore(PlayerData.SCORE += Math.abs(score));
+    if (e)
+        console.log("Score received from entity ", e);
 }
 
 /**

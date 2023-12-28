@@ -36,14 +36,22 @@ class Rocket extends Entity {
 
         for (let e of entities) {
             // Check if it's a hit-able entity. If not, continue to the next.
-            if (e instanceof Spaceship || e instanceof Rocket || !e.alive)
+            if (!this.#canHit(e))
                 continue;
 
             // Check if the rocket collides with the entity in its path
             if (this.#collidesWith(e, dT)) {
                 e.damage(this.#damage);
+                this.#source.statistics.damageDealt[1] += this.#damage; // Take measurements !!!
+                if (!e.alive) {
+                    addScore(e.ENTITY_KILL_SCORE);
+                    this.#source.statistics.entitiesKilled[1]++; // Take measurements!!!
+                    if (e instanceof Alien)
+                        this.#source.statistics.aliensKilled[1]++;
+                    else if (e instanceof EnemyShip)
+                        this.#source.statistics.enemyShipsKilled[1]++;
+                }
                 this.health = 0;
-                addScore(e.ENTITY_KILL_SCORE);
                 return;
             }
         }
@@ -64,5 +72,15 @@ class Rocket extends Entity {
             this.pos.x + Rocket.ROCKET_SPEED * dT / 2 >= entity.pos.x - entity.size / 2 &&
             this.pos.x - Rocket.ROCKET_SPEED * dT / 2 <= entity.pos.x + entity.size / 2
         );
+    }
+
+    /**
+     * Method for checking whether the rocket can actually damage
+     * the entity in question
+     * @param {Entity} entity The entity to check
+     * @returns {boolean} Whether the entity can be hit or not
+     */
+    #canHit(entity){
+        return (entity instanceof Alien || entity instanceof EnemyShip);
     }
 }

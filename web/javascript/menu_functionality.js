@@ -139,6 +139,14 @@ function showMenu(element = null) {
 
 }
 
+function loadStatistics() {
+    document.querySelector('.statistics-content').innerHTML =
+        Object.entries(player.statistics).map(([key, value]) => {
+            console.log(value)
+           return  `${value[0]} - ${value[1]}`
+        }).join('<br>');
+}
+
 function returnMain() {
     player.health = DEFAULT_HEALTH;
 }

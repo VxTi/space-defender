@@ -45,6 +45,9 @@ let shotsFired = 0;
 let shootFrequency = 5; // How many bullets the spaceship can shoot each second
 let lastMissileTime = 0;
 
+let explosiveTimerDelay = 10; // Delay in seconds until the explosive effect can be used.
+let explosiveTimer = explosiveTimerDelay; // Time until the explosive effect can be used, in seconds.
+
 let msElapsed = 0;
 
 // Noise function for the bottom of the screen
@@ -73,10 +76,44 @@ function setup() {
 
     document.addEventListener('keydown', (event) => {
         // Check if we've hit the space-bar (shoot) and if there's enough time elapsed
-        if (event.key === ' ' && shotsFired + 1 < shootFrequency) {
-            player.shoot();
-            shotsFired++;
-            lastMissileTime = msElapsed;
+        switch (event.key) {
+            case ' ': {
+                if (shotsFired + 1 < shootFrequency) {
+                    player.shoot();
+                    shotsFired++;
+                    lastMissileTime = msElapsed;
+                }
+            }
+            case 'f': {
+                if (explosiveTimer <= 0) {
+                    let [dX, dY] = [0, 0];
+                    let theta = 0;
+                    explosiveTimer = explosiveTimerDelay;
+                    entities.forEach(e => {
+                        if (!(e.canDamage && (e instanceof EnemyShip || e instanceof Alien) && e.alive))
+                            return;
+
+                        // Check whether the entity is within distance of the player
+                        if (e.pos.distSq(player.pos) <= Math.pow(200, 2))  {
+
+                            theta = -Math.atan((e.pos.y - player.pos.y) / (e.pos.x - player.pos.x));
+                            e.damage(10);
+                            e.vel.add(
+                                Math.cos(theta) * 10,
+                                Math.sin(theta) * 10
+                            )
+
+                            for (let i = 0; i < 10; i++) {
+                                [dX, dY] = randDir(theta - Math.PI/18, theta + Math.PI/18, 10, 20);
+
+                                entities.push(
+                                    new Particle(player.pos.x, player.pos.y, dX, dY, e, Math.random(), 0.8, 0x00FF00));
+                            }
+                        }
+                    })
+                    explosiveTimer = explosiveTimerDelayw;
+                }
+            }
         }
     })
 
@@ -125,6 +162,7 @@ function draw() {
     let dT = deltaTime / 1000;
 
     shotsFired = Math.max(0, shotsFired - shootFrequency * dT);
+    explosiveTimer = Math.max(0, explosiveTimer - dT);
 
     /** -- SECTION -- RENDERING INNER MAP -- **/
 
@@ -147,9 +185,13 @@ function draw() {
     for (let i = 0, s = 200/DEFAULT_HEALTH; i < player.health; i++)
         resources['spritesheet'].animate(midX - innerMapRadius - 215 + s * i, mapTop - 22 - s, s, s, 0);
 
-
+    /** -- SECTION -- RENDERING SHOOT CHARGE -- **/
     drawRect(midX - innerMapRadius - 215, mapTop - 20, 204, 15, 0x404040);
     drawRect(midX - innerMapRadius - 213, mapTop - 18, 200 * (1.0 - shotsFired/shootFrequency), 11, 0xff);
+
+    /** -- SECTION -- RENDERING EXPLOSIVE CHARGE -- **/
+    drawRect(midX + innerMapRadius + 15, mapTop - 20, 204, 15, 0x404040);
+    drawRect(midX + innerMapRadius + 17, mapTop - 18, 200 * (1.0 - explosiveTimer/explosiveTimerDelay), 11, 0xff0000);
 
 
     /** -- SECTION -- RENDERING HILLS BELOW -- **/
@@ -284,7 +326,19 @@ function respawn() {
     setScore(0);
 }
 
-
+/**
+ * Method for retrieving a random direction vector.
+ * @param thetaMin Minimum angle (in radians)
+ * @param thetaMax Maximum angle (in radians)
+ * @param rMin Minimum radius (in pixels)
+ * @param rMax Maximum radius (in pixels)
+ * @returns {number[]} Direction vector in the form [x, y]
+ */
+function randDir(thetaMin, thetaMax, rMin, rMax) {
+    let theta = thetaMin + Math.random() * (thetaMax - thetaMin);
+    let r = rMin + Math.random() * (rMax - rMin);
+    return [r * Math.cos(theta), r * Math.sin(theta)];
+}
 
 /**
  * Method for showing a death animation for given entity.
@@ -292,8 +346,12 @@ function respawn() {
  */
 function showDeathAnimation(entity) {
 
+    let [dX, dY] = [0, 0];
     for (let i = 0; i < entity.size * 2; i++)
-        entities.push(new Particle(entity, entity.size/6, Math.random(), 1, entity.damageColor));
+    {
+        [dX, dY] = randDir(0, 2 * Math.PI, 2, 10);
+        entities.push(new Particle(entity.pos.x, entity.pos.y, dX, dY, entity, Math.random(), 0.8, entity.damageColor));
+    }
 }
 
 /**
@@ -303,8 +361,11 @@ function showDeathAnimation(entity) {
  * @param {Entity} entity The entity for which to show the hurt animation
  */
 function showHurtAnimation(entity) {
-    for (let i = 0; i < 10; i++)
-        entities.push(new Particle(entity, 5, 0.5, 0.5, entity.damageColor));
+    let [dX, dY] = [0, 0];
+    for (let i = 0; i < 10; i++) {
+        [dX, dY] = randDir(0, 2 * Math.PI, 2, 10);
+        entities.push(new Particle(entity.pos.x, entity.pos.y, dX, dY, entity, Math.random(), 0.8, entity.damageColor));
+    }
 }
 
 /**

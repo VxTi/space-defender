@@ -9,7 +9,7 @@ class Spaceship extends Entity {
 
     // The size of the entity, in pixels
     static SHIP_SIZE = 80;
-    static MOVEMENT_SPEED = new Vec2(400, 200);
+    static MOVEMENT_SPEED = new Vec2(600, 600);
     static WEAPON_OFFSET = new Vec2(Spaceship.SHIP_SIZE * 0.55, Spaceship.SHIP_SIZE*0.57);  // Position of the weapon, in relative fractions
 
     /**

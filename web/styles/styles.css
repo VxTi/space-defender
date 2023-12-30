@@ -150,7 +150,6 @@ body, html {
 .menu-text-content > b {
     background-color: color-mix(in srgb, var(--color-button-static) 20%, #ffffff);
     border-radius: 5px;
-    padding: 0 10px;
     color: #101010;
 }
 

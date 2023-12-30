@@ -38,7 +38,6 @@ class Entity {
         // Add the velocity to the position of the player
         this.pos.add(this.vel.x * dT, this.vel.y * dT);
         this.vel.add(this.acceleration.x * dT, this.acceleration.y * dT);
-        //this.acceleration.translate(-this.acceleration.x * dT, -this.acceleration.y * dT);
     }
 
     /**

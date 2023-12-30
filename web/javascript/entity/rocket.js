@@ -5,10 +5,10 @@ class Rocket extends Entity {
     #source;
     #facing;
     #damage;
+    #color;
+
 
     static ROCKET_SPEED = 1000;
-    static ROCKET_TRAIL_DISTANCE = 300;
-    static ROCKET_REACH = 15;
 
     /**
      * Constructor for creating a new rocket.
@@ -17,23 +17,27 @@ class Rocket extends Entity {
      * @param {number?} damage The amount of damage the rocket deals
      */
     constructor(source, damage = 1) {
-        super(source.pos.x + Spaceship.WEAPON_OFFSET.x, source.pos.y + Spaceship.WEAPON_OFFSET.y, 1);
+        super(source.pos.x + Spaceship.WEAPON_OFFSET.x, source.pos.y + Spaceship.WEAPON_OFFSET.y, window.innerWidth / Rocket.ROCKET_SPEED);
         this.#trailX = this.pos.x
         this.#damage = damage;
         this.#facing = source.facing;
         this.#source = source;
+        this.#color = HSVtoRGB(Math.random(), 0.5, 0.5);
     }
 
     update(dT) {
-        this.health = (this.#trailX >= -mapWidth/2 && this.#trailX <= mapWidth / 2) ? 1 : 0;
+        //this.health = (this.#trailX >= -mapWidth/2 && this.#trailX <= mapWidth / 2) ? 1 : 0;
+        this.health = Math.max(0, this.health - dT);
 
-        for (let i = 0; i < 3; i++) {
+        /*for (let i = 0; i < 3; i++) {
             let len = (1 + (i + Math.abs(this.pos.x)) % 4) * 5;
-            drawLine(this.pos.x - i * len * this.#facing, this.pos.y, this.pos.x - (i + 1) * len * this.#facing, this.pos.y, 0x613583, 4);
-        }
-       // drawLine(this.#trailX, this.pos.y, this.pos.x, this.pos.y, 0x613583, 4);
+            drawLine(this.pos.x - i * len * this.#facing, this.pos.y, this.pos.x - (i + 1) * len * this.#facing, this.pos.y, /!*0x613583*!/this.#color, 4);
+        }*/
+        drawLine(this.#trailX, this.pos.y, this.pos.x, this.pos.y, 0x613583, 3);
+        // Main bullet
         drawLine(this.pos.x - this.#facing * 5, this.pos.y, this.pos.x, this.pos.y, -1, 4);
 
+        // Check for collision with entities.
         for (let e of entities) {
             // Check if it's a hit-able entity. If not, continue to the next.
             if (!this.#canHit(e))
@@ -55,6 +59,7 @@ class Rocket extends Entity {
                 return;
             }
         }
+        // Update the position of the rocket and its trail.
         this.pos.x += (Rocket.ROCKET_SPEED * dT * this.#facing);
         this.#trailX += Rocket.ROCKET_SPEED * dT * 0.8 * this.#facing;
     }

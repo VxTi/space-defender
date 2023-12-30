@@ -10,7 +10,7 @@ class Spaceship extends Entity {
     // The size of the entity, in pixels
     static SHIP_SIZE = 80;
     static MOVEMENT_SPEED = new Vec2(600, 600);
-    static WEAPON_OFFSET = new Vec2(Spaceship.SHIP_SIZE * 0.55, Spaceship.SHIP_SIZE*0.57);  // Position of the weapon, in relative fractions
+    static WEAPON_OFFSET = new Vec2(Spaceship.SHIP_SIZE * 0.55 * 0.5, /*Spaceship.SHIP_SIZE*0.57*/0);  // Position of the weapon, in relative fractions
 
     /**
      * Object containing all the statistical properties of this spaceship.
@@ -35,23 +35,26 @@ class Spaceship extends Entity {
         super.update(dT);
         if (!this.alive)
             return;
-        resources['spritesheet'].drawSection(this.pos.x, this.pos.y, this.size, this.size, this.#facing < 0 ? 1  : 0, 0);
+        resources['spritesheet'].drawSection(this.pos.x - this.size / 2, this.pos.y - this.size / 2, this.size, this.size, this.#facing < 0 ? 1  : 0, 0);
 
         this.#facing = this.dir.x !== 0 ? this.dir.x: this.#facing;
         this.#movingAnimation = (this.#movingAnimation + dT * 10) % 4;
 
         this.acceleration.translate(this.dir.x * Spaceship.MOVEMENT_SPEED.x, this.dir.y * Spaceship.MOVEMENT_SPEED.y);
 
-        // If we're moving, draw the moving animation
+        // If we're moving, draw the fire animation behind the ship
         if (Math.abs(this.vel.x) > 0.1 || Math.abs(this.vel.y) > 0.1)
-            resources['spritesheet'].drawSection(this.pos.x - this.#facing * this.size, this.pos.y, this.size, this.size, Math.floor(this.#movingAnimation), this.#facing < 0 ? 4 : 3);
+            resources['spritesheet'].drawSection(this.pos.x - (this.#facing + 0.5) * this.size, this.pos.y - this.size / 2, this.size, this.size, Math.floor(this.#movingAnimation), this.#facing < 0 ? 4 : 3);
 
+        // Make the screen move if the player comes too close to the edges
         if (this.pos.x + screenOffsetX <= window.innerWidth * 0.1)
             screenOffsetX = -this.pos.x + window.innerWidth * 0.1;
         else if (this.pos.x + screenOffsetX >= window.innerWidth * 0.9)
             screenOffsetX = -this.pos.x + window.innerWidth * 0.9;
+
     }
 
+    // Nothing too interesting, just update some statistics.
     onDamage(amount) {
         this.statistics.damageReceived[1] += amount;
     }

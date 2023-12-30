@@ -37,18 +37,26 @@ let gameActive = false;
 let _resources = {};
 let resources = {}; // Here are all images stored as Resource objects
 
+// Array containing all the entities in the game
 let entities = [];
 
-let stars;
+let starCount = 200;
+let stars; // Array object containing all the stars
 
-let shotsFired = 0;
+let shotsFired = 0; // How many shots are fired, this is used to determine whether the player can shoot or not.
 let shootFrequency = 5; // How many bullets the spaceship can shoot each second
-let lastMissileTime = 0;
 
-let explosiveTimerDelay = 10; // Delay in seconds until the explosive effect can be used.
+let explosiveTimerDelay = 5; // Delay in seconds until the explosive effect can be used.
 let explosiveTimer = explosiveTimerDelay; // Time until the explosive effect can be used, in seconds.
+const explosiveRadius = 200; // Explosion radius of the explosive effect in pixels.
 
 let msElapsed = 0;
+
+Number.prototype.isBetween = function(a, b) {
+    return this >= Math.min(a) && this <= Math.max(b);
+}
+
+isOnScreen = (x, y) => x.isBetween(screenOffsetX, screenOffsetX + window.innerWidth) && y.isBetween(0, window.innerHeight);
 
 // Noise function for the bottom of the screen
 GNoise = (x) => noise(x / 3) * 200;
@@ -77,55 +85,27 @@ function setup() {
     document.addEventListener('keydown', (event) => {
         // Check if we've hit the space-bar (shoot) and if there's enough time elapsed
         switch (event.key) {
-            case ' ': {
+            case ' ':
                 if (shotsFired + 1 < shootFrequency) {
                     player.shoot();
                     shotsFired++;
-                    lastMissileTime = msElapsed;
                 }
-            }
-            case 'f': {
-                if (explosiveTimer <= 0) {
-                    let [dX, dY] = [0, 0];
-                    let theta = 0;
-                    explosiveTimer = explosiveTimerDelay;
-                    entities.forEach(e => {
-                        if (!(e.canDamage && (e instanceof EnemyShip || e instanceof Alien) && e.alive))
-                            return;
-
-                        // Check whether the entity is within distance of the player
-                        if (e.pos.distSq(player.pos) <= Math.pow(200, 2))  {
-
-                            theta = -Math.atan((e.pos.y - player.pos.y) / (e.pos.x - player.pos.x));
-                            e.damage(10);
-                            e.vel.add(
-                                Math.cos(theta) * 10,
-                                Math.sin(theta) * 10
-                            )
-
-                            for (let i = 0; i < 10; i++) {
-                                [dX, dY] = randDir(theta - Math.PI/18, theta + Math.PI/18, 10, 20);
-
-                                entities.push(
-                                    new Particle(player.pos.x, player.pos.y, dX, dY, e, Math.random(), 0.8, 0x00FF00));
-                            }
-                        }
-                    })
-                    explosiveTimer = explosiveTimerDelayw;
-                }
-            }
+            break;
+            case 'f':
+                performExplosion();
+            break;
         }
     })
 
     /** -- FUNCTIONALITY -- BACKGROUND STARS -- **/
-    let starCount = 100;
     stars = Array(starCount);
     for (let i = 0; i < starCount; i++) {
         stars[i] = {
             x: 0,
             y: mapTop + Math.round(Math.random() * (window.innerHeight - mapTop)),
             offset: Math.round(Math.random() * window.innerWidth),
-            depth: Math.random(),
+            depth: Math.random() * 0.5,
+            opacity: Math.random(),
             color: Math.round(0xFFFFFF * Math.random())
         }
     }
@@ -186,12 +166,12 @@ function draw() {
         resources['spritesheet'].animate(midX - innerMapRadius - 215 + s * i, mapTop - 22 - s, s, s, 0);
 
     /** -- SECTION -- RENDERING SHOOT CHARGE -- **/
-    drawRect(midX - innerMapRadius - 215, mapTop - 20, 204, 15, 0x404040);
-    drawRect(midX - innerMapRadius - 213, mapTop - 18, 200 * (1.0 - shotsFired/shootFrequency), 11, 0xff);
+    drawRect(midX - innerMapRadius - 215, mapTop - 20, 205, 15, 0x404040);
+    drawRect(midX - innerMapRadius - 213, mapTop - 16, 200 * (1.0 - shotsFired/shootFrequency), 8, 0xff);
 
     /** -- SECTION -- RENDERING EXPLOSIVE CHARGE -- **/
-    drawRect(midX + innerMapRadius + 15, mapTop - 20, 204, 15, 0x404040);
-    drawRect(midX + innerMapRadius + 17, mapTop - 18, 200 * (1.0 - explosiveTimer/explosiveTimerDelay), 11, 0xff0000);
+    drawRect(midX + innerMapRadius + 14, mapTop - 20, 205, 15, 0x404040);
+    drawRect(midX + innerMapRadius + 16, mapTop - 16, 200 * (1.0 - explosiveTimer/explosiveTimerDelay), 8, 0xff0000);
 
 
     /** -- SECTION -- RENDERING HILLS BELOW -- **/
@@ -204,8 +184,9 @@ function draw() {
 
     /** -- SECTION -- RENDERING STARS -- **/
     for (let star of stars) {
-        drawRect(star.x, star.y, 5, 5, star.color);
+        drawRect(star.x, star.y, 2, 2, star.color, Math.max(1 - star.opacity, 0.1));
         star.x = Math.abs(star.offset + star.depth * player.pos.x + window.innerWidth * star.depth) % window.innerWidth;
+        star.opacity = (star.opacity + dT / 10) % 1;
     }
 
     translate(screenOffsetX, 0);
@@ -256,6 +237,40 @@ function scoreUpdater() {
     // Send the score to the server
     requestApi('updatescore', {userId: PlayerData.PLAYER_ID, score: PlayerData.SCORE, wave: PlayerData.WAVE})
         .catch(e => console.error(e));
+}
+
+function performExplosion() {
+    if (explosiveTimer <= 0 && player.alive) {
+        let [dX, dY] = [0, 0];
+        let theta = 0;
+        explosiveTimer = explosiveTimerDelay;
+
+        // Add particles for special effect
+        for (let i = 0; i < 50; i++) {
+            [dX, dY] = randDir(0, Math.PI * 2, 100, 2 * explosiveRadius);
+
+            entities.push(
+                new Particle(player.pos.x, player.pos.y, dX, dY, player, Math.random(), 1.0, 0x00FF00));
+        }
+
+        entities.forEach(e => {
+            if (!(e.canDamage && (e instanceof EnemyShip || e instanceof Alien) && e.alive))
+                return;
+
+            // Check whether the entity is within distance of the player
+            if (e.pos.distSq(player.pos) <= Math.pow(explosiveRadius, 2))  {
+                theta = Math.atan2((e.pos.y - player.pos.y), (e.pos.x - player.pos.x));
+                e.damage(1);
+                if (!e.alive)
+                    addScore(e.ENTITY_KILL_SCORE);
+                e.vel.add(
+                    Math.cos(theta) * 10,
+                    Math.sin(theta) * 10
+                )
+            }
+        })
+        explosiveTimer = explosiveTimerDelay;
+    }
 }
 
 
@@ -349,8 +364,8 @@ function showDeathAnimation(entity) {
     let [dX, dY] = [0, 0];
     for (let i = 0; i < entity.size * 2; i++)
     {
-        [dX, dY] = randDir(0, 2 * Math.PI, 2, 10);
-        entities.push(new Particle(entity.pos.x, entity.pos.y, dX, dY, entity, Math.random(), 0.8, entity.damageColor));
+        [dX, dY] = randDir(0, 2 * Math.PI, 10, 200);
+        entities.push(new Particle(entity.pos.x, entity.pos.y, dX, dY, entity, Math.random() * 0.5, 1.2, entity.damageColor));
     }
 }
 
@@ -363,8 +378,8 @@ function showDeathAnimation(entity) {
 function showHurtAnimation(entity) {
     let [dX, dY] = [0, 0];
     for (let i = 0; i < 10; i++) {
-        [dX, dY] = randDir(0, 2 * Math.PI, 2, 10);
-        entities.push(new Particle(entity.pos.x, entity.pos.y, dX, dY, entity, Math.random(), 0.8, entity.damageColor));
+        [dX, dY] = randDir(0, 2 * Math.PI, 10, 50);
+        entities.push(new Particle(entity.pos.x, entity.pos.y, dX, dY, entity, Math.random() * 0.5, 1.2, entity.damageColor));
     }
 }
 
@@ -399,9 +414,10 @@ function addScore(score, e = null) {
  * @param {number} width width of the rectangle
  * @param {number} height height of the rectangle
  * @param {number} rgb Color value. Can be provided as '0xRRGGBB' where [R, G, B] are in base-16
+ * @param {number} opacity Opacity of the rectangle
  */
-function drawRect(x, y, width, height, rgb) {
-    fill((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
+function drawRect(x, y, width, height, rgb, opacity = 1) {
+    fill((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, opacity * 255);
     noStroke();
     rect(x, y, width, height);
 }

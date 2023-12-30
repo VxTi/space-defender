@@ -32,9 +32,10 @@ class Spaceship extends Entity {
     }
 
     update(dT) {
-        super.update(dT);
         if (!this.alive)
             return;
+
+        super.update(dT);
         resources['spritesheet'].drawSection(this.pos.x - this.size / 2, this.pos.y - this.size / 2, this.size, this.size, this.#facing < 0 ? 1  : 0, 0);
 
         this.#facing = this.dir.x !== 0 ? this.dir.x: this.#facing;
@@ -60,6 +61,9 @@ class Spaceship extends Entity {
     }
 
     shoot() {
+        if (!this.alive)
+            return;
+
         entities.push(new Rocket(this));
         this.statistics.rocketsFired[1]++;
     }

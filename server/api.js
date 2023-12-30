@@ -124,9 +124,12 @@ const pool = mysql.createPool(credentials);
  * @param {string} message
  * @param {string?} parameters
  */
-function log(type, message, parameters) {
+function log(type, message, ...parameters) {
     // Fix this code please it's ugly
 
+
+    console.log(`${type === 'REQ' ? 'C -REQ-> S' : `S -${type}-> C`} |`, message, ...parameters);
+/*
     switch (true) {
         case type === "REQ" && parameters === undefined:
             console.log(`[C -REQ-> S]: ${message}`);
@@ -152,7 +155,7 @@ function log(type, message, parameters) {
         default:
             console.log(`[C <-??-> S]: ${message}`, parameters);
             break;
-    }
+    }*/
 }
 
 /**

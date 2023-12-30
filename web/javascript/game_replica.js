@@ -176,9 +176,16 @@ function draw() {
 
     /** -- SECTION -- RENDERING HILLS BELOW -- **/
     for (let i = 0, frac = window.innerWidth / windowSegments; i < windowSegments; i++) {
-        drawSegmentedLine(frac * i, window.innerHeight - GNoise(i - screenOffsetX / frac),
+        drawSegmentedLine(frac * i, window.innerHeight - GNoise(i - screenOffsetX / frac) ,
             frac * (i + 1), window.innerHeight - GNoise(i + 1 - screenOffsetX / frac),
-            5, 0xff0000
+            0xff0000, 3
+        );
+    }
+
+    for (let i = 0, frac = window.innerWidth / windowSegments; i < windowSegments; i++) {
+        drawSegmentedLine(frac * i, window.innerHeight - GNoise((i - screenOffsetX / frac) * 0.5) * 0.5,
+            frac * (i + 1), window.innerHeight - GNoise((i + 1 - screenOffsetX / frac) * 0.5) * 0.5,
+            0xA020F0,  3
         );
     }
 
@@ -444,10 +451,10 @@ function drawLine(x0, y0, x1, y1, rgb = 0xFFFFFF, thickness = 1) {
  * @param y0 first y-coordinate
  * @param x1 second x-coordinate
  * @param y1 second y-coordinate
- * @param segmentSize Size of each segments
  * @param rgb Color to draw
+ * @param thickness Size of each segments
  */
-function drawSegmentedLine(x0, y0, x1, y1, segmentSize, rgb) {
+function drawSegmentedLine(x0, y0, x1, y1,  rgb, thickness) {
     noStroke();
     fill((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
     let segments = Math.max(Math.abs(x1 - x0) / 6, Math.abs(y1 - y0) / 6);
@@ -456,7 +463,7 @@ function drawSegmentedLine(x0, y0, x1, y1, segmentSize, rgb) {
 
     for (let i = 0, x, y; i < segments; i++) {
         [x, y] = [x0 + dx * i, y0 + dy * i];
-        [x, y] = [x - x % segmentSize, y - y % segmentSize];
-        rect(x, y, segmentSize, segmentSize);
+        [x, y] = [x - x % thickness, y - y % thickness];
+        rect(x, y, thickness, thickness);
     }
 }

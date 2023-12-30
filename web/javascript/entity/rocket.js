@@ -5,10 +5,9 @@ class Rocket extends Entity {
     #source;
     #facing;
     #damage;
-    #color;
 
 
-    static ROCKET_SPEED = 1000;
+    static ROCKET_SPEED = 1200;
 
     /**
      * Constructor for creating a new rocket.
@@ -17,12 +16,11 @@ class Rocket extends Entity {
      * @param {number?} damage The amount of damage the rocket deals
      */
     constructor(source, damage = 1) {
-        super(source.pos.x + Spaceship.WEAPON_OFFSET.x, source.pos.y + Spaceship.WEAPON_OFFSET.y, window.innerWidth / Rocket.ROCKET_SPEED);
+        super(source.pos.x + Spaceship.WEAPON_OFFSET.x, source.pos.y + Spaceship.WEAPON_OFFSET.y, (window.innerWidth / Rocket.ROCKET_SPEED) );
         this.#trailX = this.pos.x
         this.#damage = damage;
         this.#facing = source.facing;
         this.#source = source;
-        this.#color = HSVtoRGB(Math.random(), 0.5, 0.5);
     }
 
     update(dT) {
@@ -33,9 +31,12 @@ class Rocket extends Entity {
             let len = (1 + (i + Math.abs(this.pos.x)) % 4) * 5;
             drawLine(this.pos.x - i * len * this.#facing, this.pos.y, this.pos.x - (i + 1) * len * this.#facing, this.pos.y, /!*0x613583*!/this.#color, 4);
         }*/
-        drawLine(this.#trailX, this.pos.y, this.pos.x, this.pos.y, 0x613583, 3);
+        //drawLine(this.#trailX, this.pos.y, this.pos.x, this.pos.y, 0x613583, 3);
         // Main bullet
-        drawLine(this.pos.x - this.#facing * 5, this.pos.y, this.pos.x, this.pos.y, -1, 4);
+        //drawLine(this.pos.x - this.#facing * 5, this.pos.y, this.pos.x, this.pos.y, -1, 4);
+        let dw = Math.max(20, Math.abs(this.pos.x - this.#trailX));
+        resources['spritesheet'].drawSection(Math.min(this.#trailX, this.pos.x), this.pos.y, dw, 15, this.#facing < 0 ? 2 : 1, 2);
+        drawRect(this.pos.x + 4, this.pos.y + 4, 4, 4, -1);
 
         // Check for collision with entities.
         for (let e of entities) {
@@ -61,7 +62,7 @@ class Rocket extends Entity {
         }
         // Update the position of the rocket and its trail.
         this.pos.x += (Rocket.ROCKET_SPEED * dT * this.#facing);
-        this.#trailX += Rocket.ROCKET_SPEED * dT * 0.8 * this.#facing;
+        this.#trailX += Rocket.ROCKET_SPEED * dT * 0.2 * this.#facing;
     }
 
     /**

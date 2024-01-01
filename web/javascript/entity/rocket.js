@@ -3,11 +3,12 @@ class Rocket extends Entity {
     // Private fields that represent this rocket.
     #trailX;
     #source;
+    #velocity;
     #facing;
     #damage;
 
 
-    static ROCKET_SPEED = 1200;
+    static ROCKET_SPEED = 1100;
 
     /**
      * Constructor for creating a new rocket.
@@ -16,27 +17,21 @@ class Rocket extends Entity {
      * @param {number?} damage The amount of damage the rocket deals
      */
     constructor(source, damage = 1) {
-        super(source.pos.x + Spaceship.WEAPON_OFFSET.x, source.pos.y + Spaceship.WEAPON_OFFSET.y, (window.innerWidth / Rocket.ROCKET_SPEED) );
+        super(source.pos.x + Spaceship.WEAPON_OFFSET.x, source.pos.y + Spaceship.WEAPON_OFFSET.y, (window.innerWidth / Rocket.ROCKET_SPEED) + 1);
         this.#trailX = this.pos.x
+        this.#velocity = /*source.vel.x + */Rocket.ROCKET_SPEED * source.facing;
         this.#damage = damage;
         this.#facing = source.facing;
         this.#source = source;
+        console.log(this);
     }
 
     update(dT) {
         //this.health = (this.#trailX >= -mapWidth/2 && this.#trailX <= mapWidth / 2) ? 1 : 0;
         this.health = Math.max(0, this.health - dT);
-
-        /*for (let i = 0; i < 3; i++) {
-            let len = (1 + (i + Math.abs(this.pos.x)) % 4) * 5;
-            drawLine(this.pos.x - i * len * this.#facing, this.pos.y, this.pos.x - (i + 1) * len * this.#facing, this.pos.y, /!*0x613583*!/this.#color, 4);
-        }*/
-        //drawLine(this.#trailX, this.pos.y, this.pos.x, this.pos.y, 0x613583, 3);
-        // Main bullet
-        //drawLine(this.pos.x - this.#facing * 5, this.pos.y, this.pos.x, this.pos.y, -1, 4);
-        let dw = Math.max(20, Math.abs(this.pos.x - this.#trailX));
-        resources['spritesheet'].drawSection(Math.min(this.#trailX, this.pos.x), this.pos.y, dw, 15, this.#facing < 0 ? 2 : 1, 2);
-        drawRect(this.pos.x + 4, this.pos.y + 4, 4, 4, -1);
+        let dw = Math.abs(this.pos.x - this.#trailX);
+        resources['spritesheet'].drawSection(Math.min(this.#trailX, this.pos.x), this.pos.y, dw, 4, this.#facing < 0 ? 2 : 1, 2);
+        drawRect(this.pos.x + 4, this.pos.y + 4, 4, 4, -1, Math.min(1, this.health));
 
         // Check for collision with entities.
         for (let e of entities) {
@@ -61,8 +56,8 @@ class Rocket extends Entity {
             }
         }
         // Update the position of the rocket and its trail.
-        this.pos.x += (Rocket.ROCKET_SPEED * dT * this.#facing);
-        this.#trailX += Rocket.ROCKET_SPEED * dT * 0.2 * this.#facing;
+        this.pos.x += this.#velocity * dT;
+        this.#trailX += this.#velocity * dT * 0.5;
     }
 
     /**

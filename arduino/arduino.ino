@@ -202,12 +202,65 @@ class OutputCallbacks : public BLECharacteristicCallbacks
 // Function for reading battery level via the selected PIN
 void readBatteryLevel()
 {
-    // Read the battery level from the selected pin and perform calculations to get the percentage
-    float batteryVoltage = (((analogRead(PIN_BATTERY) * 3.3) / 4095) * 2); 
-    float batteryPercentage = (batteryVoltage - BATTERY_MIN_VOLTAGE) * 100 / (BATTERY_MAX_VOLTAGE - BATTERY_MIN_VOLTAGE); 
+    /*
+    |-------------------------------------------------|
+    |           LiPo Discharge table                  |
+    |-------------------------------------------------|
+    |  Voltage   |   Percentage  | analogRead() value |
+    |------------|---------------|--------------------|
+    | 4.20V      | 100%          | 3475               |
+    | 4.15V      | 95%           | 3433               |
+    | 4.11V      | 90%           | 3400               |
+    | 4.08V      | 85%           | 3375               |
+    | 4.02V      | 80%           | 3325               |
+    | 3.98V      | 75%           | 3292               |
+    | 3.95V      | 70%           | 3268               |
+    | 3.91V      | 65%           | 3235               |
+    | 3.87V      | 60%           | 3202               |
+    | 3.85V      | 55%           | 3185               |
+    | 3.84V      | 50%           | 3177               |
+    | 3.82V      | 45%           | 3160               |
+    | 3.80V      | 40%           | 3144               |
+    | 3.79V      | 35%           | 3135               |
+    | 3.77V      | 30%           | 3119               |
+    | 3.75V      | 25%           | 3102               |
+    | 3.73V      | 20%           | 3086               |
+    | 3.71V      | 15%           | 3069               |
+    | 3.69V      | 10%           | 3053               |
+    | 3.61V      | 5%            | 2986               |
+    | 3.27V      | 0%            | 2705               |
+    |-------------------------------------------------|
+
+    Source: https://blog.ampow.com/lipo-voltage-chart/
+    */
+
+    int batteryPercentage = calculateBatteryPercentage(analogRead(PIN_BATTERY));
+    Serial.println("Battery percentage: " + String(batteryPercentage) + "%, Reading: " + String(analogRead(PIN_BATTERY)));
 
     // Set the battery level
-    hid->setBatteryLevel((uint8_t)floor(batteryPercentage));
+    // hid->setBatteryLevel((uint8_t)floor(batteryPercentage));
+}
+
+int calculateBatteryPercentage(int reading)
+{
+    // Define the battery discharge table
+    const int voltageReadings[] = {3475, 3433, 3400, 3375, 3325, 3292, 3268, 3235, 3202, 3185, 3177, 3160, 3144, 3135, 3119, 3102, 3086, 3069, 3053, 2986, 2705};
+    const int percentages[] = {100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0};
+    const int tableSize = sizeof(voltageReadings) / sizeof(voltageReadings[0]);
+
+    // Find the two points in the table that the reading is between
+    for (int i = 0; i < tableSize - 1; i++)
+    {
+        if (reading >= voltageReadings[i + 1] && reading <= voltageReadings[i])
+        {
+            // Perform linear interpolation
+            float slope = (percentages[i] - percentages[i + 1]) / (float)(voltageReadings[i] - voltageReadings[i + 1]);
+            return percentages[i] + slope * (reading - voltageReadings[i]);
+        }
+    }
+
+    // If the reading is outside the range of the table, return the closest percentage
+    return (reading > voltageReadings[0]) ? 100 : 0;
 }
 
 void bluetoothTask(void *)

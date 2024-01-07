@@ -31,7 +31,7 @@ class Rocket extends Entity {
         this.health = Math.max(0, this.health - dT);
         let dw = Math.abs(this.pos.x - this.#trailX);
         resources['spritesheet'].drawSection(Math.min(this.#trailX, this.pos.x), this.pos.y, dw, 4, this.#facing < 0 ? 2 : 1, 2);
-        drawRect(this.pos.x + 4, this.pos.y + 4, 4, 4, -1, Math.min(1, this.health));
+        drawRect(this.pos.x + 4, this.pos.y - 2, 4, 4, -1, Math.min(1, this.health));
 
         // Check for collision with entities.
         for (let e of entities) {

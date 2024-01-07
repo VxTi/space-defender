@@ -56,6 +56,10 @@ Number.prototype.isBetween = function(a, b) {
     return this >= Math.min(a) && this <= Math.max(b);
 }
 
+Number.prototype.isZero = function() {
+    return Math.abs(this) <= 0.0001;
+}
+
 isOnScreen = (x, y) => x.isBetween(screenOffsetX, screenOffsetX + window.innerWidth) && y.isBetween(0, window.innerHeight);
 
 // Noise function for the bottom of the screen
@@ -207,7 +211,7 @@ function draw() {
             if (e.MINIMAP_SPRITE_INDEX != null && typeof e.MINIMAP_SPRITE_INDEX === 'object')
                 resources['spritesheet'].drawSection(
                     midX + e.pos.x * mapCoordinateFrac - screenOffsetX,
-                    innerMapTop + (e.pos.y - mapTop) / (window.innerHeight - mapTop) * innerMapHeight, 30, 30,
+                    innerMapTop + Math.round((e.pos.y - mapTop) / (window.innerHeight - mapTop) * innerMapHeight), 30, 30,
                     e.MINIMAP_SPRITE_INDEX[0], e.MINIMAP_SPRITE_INDEX[1]
                 );
         }

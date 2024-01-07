@@ -12,7 +12,7 @@ class Spaceship extends Entity {
     static MOVEMENT_SPEED = new Vec2(600, 600);
     static WEAPON_OFFSET = new Vec2(Spaceship.SHIP_SIZE * 0.275,0);  // Position of the weapon, in relative fractions
     static ACCELERATION_MULTIPLIER = 0.95;
-    static VELOCITY_THRESHOLD = 0.1;
+    static VELOCITY_THRESHOLD = 0.2;
 
 
     /**
@@ -46,11 +46,11 @@ class Spaceship extends Entity {
 
         this.acceleration.translate(this.dir.x * Spaceship.MOVEMENT_SPEED.x, this.dir.y * Spaceship.MOVEMENT_SPEED.y);
 
-        if (Math.abs(this.acceleration.x) <= Spaceship.VELOCITY_THRESHOLD) {
+        if (Math.abs(this.acceleration.x) <= Spaceship.VELOCITY_THRESHOLD && this.dir.x.isZero()) {
             this.vel.x *= Spaceship.ACCELERATION_MULTIPLIER;
             this.acceleration.x *= Spaceship.ACCELERATION_MULTIPLIER;
         }
-        if (Math.abs(this.acceleration.y) <= Spaceship.VELOCITY_THRESHOLD) {
+        if (Math.abs(this.acceleration.y) <= Spaceship.VELOCITY_THRESHOLD && this.dir.y.isZero()) {
             this.vel.y *= Spaceship.ACCELERATION_MULTIPLIER;
             this.acceleration.y *= Spaceship.ACCELERATION_MULTIPLIER;
         }

@@ -30,6 +30,9 @@
 
 #define BUTTON_COUNT 7
 
+#define BATTERY_MAX_VOLTAGE 4.2
+#define BATTERY_MIN_VOLTAGE 3.7
+
 char *buffer = (char *)malloc(BUTTON_COUNT * sizeof(char));
 
 const uint8_t pinData[BUTTON_COUNT][2] = {
@@ -201,7 +204,7 @@ void readBatteryLevel()
 {
     // Read the battery level from the selected pin and perform calculations to get the percentage
     float batteryVoltage = (((analogRead(PIN_BATTERY) * 3.3) / 4095) * 2); 
-    float batteryPercentage = (batteryVoltage - 2.8) * 100 / (4.2 - 2.8); 
+    float batteryPercentage = (batteryVoltage - BATTERY_MIN_VOLTAGE) * 100 / (BATTERY_MAX_VOLTAGE - BATTERY_MIN_VOLTAGE); 
 
     // Set the battery level
     hid->setBatteryLevel((uint8_t)floor(batteryPercentage));

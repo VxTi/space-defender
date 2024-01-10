@@ -6,7 +6,7 @@
     // Names of the scripts.
     // These have to be loaded in the right order.
     const scripts = [
-        'p5', 'resource', 'vec2', 'entity/entity', 'entity/spaceship', 'entity/rocket', 'entity/alien',
+        'p5', 'resource', 'vec2', 'entity/entity', 'entity/spaceship', 'entity/rocket', 'entity/alien', 'entity/evolved_alien', 'entity/evolved_alien_bomb',
         'game_replica', 'entity/enemy_ship', 'entity/health_element', 'entity/particle', 'menu_functionality defer'
     ];
     let head = document.getElementsByTagName('head')[0];

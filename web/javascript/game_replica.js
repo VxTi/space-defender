@@ -228,11 +228,13 @@ function checkEntitySpawning() {
         return;
 
     let [x, y] = [-mapWidth / 2 + Math.random() * mapWidth, mapTop + Math.random() * mapHeight];
-    entities.push(
+    if (Math.random() < 0.5) entities.push(new EvolvedAlien(x, y))
+    /*entities.push(
+        Math.random() <= 0.2 ?  new EvolvedAlien(x, y) :
         Math.random() <= 0.05 ? new HealthElement(x, y, 1) :
         Math.random() <= 0.3 ?  new EnemyShip(x, y) :
                                 new Alien(x, y)
-    );
+    );*/
 }
 
 /**

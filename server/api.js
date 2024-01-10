@@ -88,7 +88,7 @@ const credentials = {
  * The children of the column objects are the column name and the column type.
  */
 const tables = {
-    highScores: {
+    highScore: {
         userId: 'int NOT NULL',
         userName: 'varchar(255) NOT NULL',
         maxScore: 'int DEFAULT 0',
@@ -100,7 +100,7 @@ const tables = {
         time: 'TIME DEFAULT (CURRENT_TIME)',
         date: 'DATE DEFAULT (CURRENT_DATE)'
     },
-    lastScores: {
+    lastScore: {
         userId: 'int NOT NULL',
         userName: 'varchar(255) NOT NULL',
         lastScore: 'int DEFAULT 0',
@@ -125,37 +125,7 @@ const pool = mysql.createPool(credentials);
  * @param {string?} parameters
  */
 function log(type, message, ...parameters) {
-    // Fix this code please it's ugly
-
-
     console.log(`${type === 'REQ' ? 'C -REQ-> S' : `S -${type}-> C`} |`, message, ...parameters);
-/*
-    switch (true) {
-        case type === "REQ" && parameters === undefined:
-            console.log(`[C -REQ-> S]: ${message}`);
-            break;
-        case type === "RES" && parameters === undefined:
-            console.log(`[C <-RES- S]: ${message}`);
-            break;
-        case type === "ERR" && parameters === undefined:
-            console.log(`[C <-ERR- S]: ${message}`);
-            break;
-        case type === "REQ" && parameters !== undefined:
-            console.log(`[C -REQ-> S]: ${message}`, parameters);
-            break;
-        case type === "RES" && parameters !== undefined:
-            console.log(`[C <-RES- S]: ${message}`, parameters);
-            break;
-        case type === "ERR" && parameters !== undefined:
-            console.log(`[C <-ERR- S]: ${message}`, parameters);
-            break;
-        case type === "RUN":
-            console.log(`[C <-RUN- S]: ${message}`);
-            break;
-        default:
-            console.log(`[C <-??-> S]: ${message}`, parameters);
-            break;
-    }*/
 }
 
 /**
@@ -181,7 +151,7 @@ async function compareLastScores(userId) {
     const connection = await pool.getConnection();
     // Update the high score and wave if the value is higher than the current high score and wave:
     await connection.query(
-        mysql.format('UPDATE highScores SET maxScore = GREATEST(maxScore, (SELECT lastScore FROM lastScores WHERE userId = ?)), maxWave = GREATEST(maxWave, (SELECT lastWave FROM lastScores WHERE userId = ?)) WHERE userId = ?', [userId, userId, userId]))
+        mysql.format('UPDATE highScore SET maxScore = GREATEST(maxScore, (SELECT lastScore FROM lastScore WHERE userId = ?)), maxWave = GREATEST(maxWave, (SELECT lastWave FROM lastScore WHERE userId = ?)) WHERE userId = ?', [userId, userId, userId]))
         .catch(e => console.error('An error occurred whilst attempting to compare last scores', e))
         .finally(() => connection.release());
 }
@@ -195,7 +165,7 @@ async function compareLastScores(userId) {
 async function updateLastScore(userId, score, wave) {
 
     const connection = await pool.getConnection(); // Get a connection from the pool
-    await connection.query(mysql.format('UPDATE lastScores SET lastScore = ?, lastWave = ? WHERE userId = ?', [score, wave, userId]))
+    await connection.query(mysql.format('UPDATE lastScore SET lastScore = ?, lastWave = ? WHERE userId = ?', [score, wave, userId]))
         .catch(e => console.error('An error occurred whilst attempting to update last score', e))
         .finally(() => connection.release())
 }
@@ -208,7 +178,6 @@ async function updateLastPlayed(userId) {
 
     const connection = await pool.getConnection();
     await connection.query(mysql.format('UPDATE lastPlayed SET time = (CURRENT_TIME), date = (CURRENT_DATE) WHERE userId = ?', userId))
-        .then(() => log("RES", `Updated last played for userId ${userId}`))
         .catch(e => console.error('An error occurred whilst attempting to update last played', e))
         .finally(() => connection.release());
 }
@@ -272,9 +241,9 @@ async function getUserDataFromId(userId) {
     return await connection
         .query(mysql.format(
             'SELECT * FROM userData ' +
-                'RIGHT JOIN lastScores ON lastScores.userId = userData.userId ' +
+                'RIGHT JOIN lastScore ON lastScore.userId = userData.userId ' +
                 'RIGHT JOIN lastPlayed ON lastPlayed.userId = userData.userId ' +
-                'RIGHT JOIN highScores ON highScores.userId = userData.userId ' +
+                'RIGHT JOIN highScore ON highScore.userId = userData.userId ' +
                 'WHERE userData.userId = ?', userId))
         .then(res => res[0][0] || {})
         .catch(e => console.error('Error occurred whilst attempting to retrieve user-data', e))
@@ -336,7 +305,7 @@ async function deleteUser(userId) {
  */
 async function getLastScore(userId)  {
     const connection = await pool.getConnection();
-    return await connection.query(mysql.format('SELECT * FROM lastScores WHERE userId = ?', userId))
+    return await connection.query(mysql.format('SELECT * FROM lastScore WHERE userId = ?', userId))
         .then(result => result[0][0])
         .catch(e => console.error('An error occurred whilst attempting to retrieve last score', e))
         .finally(() => connection.release());
@@ -362,7 +331,7 @@ async function getLastPlayed(userId){
  */
 async function getHighScore(userId){
     const connection = await pool.getConnection();
-    return await connection.query(mysql.format('SELECT * FROM highScores WHERE userId = ?', userId))
+    return await connection.query(mysql.format('SELECT * FROM highScore WHERE userId = ?', userId))
         .then(result => result[0][0])
         .catch(e => console.error('An error occurred whilst attempting to retrieve high-scores', e))
         .finally(() => connection.release());
@@ -376,7 +345,7 @@ async function getHighScore(userId){
  */
 async function getLeaderboards(sortBy, maxResults){
     const connection = await pool.getConnection();
-    return await connection.query(mysql.format('SELECT * FROM `highScores` ORDER BY ? DESC LIMIT ?', [sortBy, maxResults]))
+    return await connection.query(mysql.format('SELECT * FROM `highScore` ORDER BY ? DESC LIMIT ?', [sortBy, maxResults]))
         .then(result => result[0])
         .catch(e => console.error('An error occurred whilst attempting to retrieve leaderboards', e))
         .finally(() => connection.release());
@@ -646,7 +615,7 @@ app.post('/api/getleaderboards', async (req, res) => {
 
     // Check whether the 'sortBy' parameter is present in the tables object
     // if this isn't the case, cancel the request.
-    if (!Object.keys(tables.highScores).includes(sortBy)) {
+    if (!Object.keys(tables.highScore).includes(sortBy)) {
         res.status(400).json({ message: 'Invalid sortBy, must be either score or coins' }); // Send status 400 with appropriate JSON-body
         log("RES", "Invalid sortBy");
         return;

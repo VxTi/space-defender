@@ -13,6 +13,7 @@ class Spaceship extends Entity {
     static WEAPON_OFFSET = new Vec2(Spaceship.SHIP_SIZE * 0.275,0);  // Position of the weapon, in relative fractions
     static ACCELERATION_MULTIPLIER = 0.95;
     static VELOCITY_THRESHOLD = 0.2;
+    static EDGE_SCROLL_OFFSET = 0.3;
 
 
     /**
@@ -60,10 +61,10 @@ class Spaceship extends Entity {
             resources['spritesheet'].drawSection(this.pos.x - (this.#facing + 0.5) * this.size, this.pos.y - this.size / 2, this.size, this.size, Math.floor(this.#movingAnimation), this.#facing < 0 ? 4 : 3);
 
         // Make the screen move if the player comes too close to the edges
-        if (this.pos.x + screenOffsetX <= window.innerWidth * 0.1)
-            screenOffsetX = -this.pos.x + window.innerWidth * 0.1;
-        else if (this.pos.x + screenOffsetX >= window.innerWidth * 0.9)
-            screenOffsetX = -this.pos.x + window.innerWidth * 0.9;
+        if (this.pos.x + screenOffsetX <= window.innerWidth * Spaceship.EDGE_SCROLL_OFFSET)
+            screenOffsetX = -this.pos.x + window.innerWidth * Spaceship.EDGE_SCROLL_OFFSET;
+        else if (this.pos.x + screenOffsetX >= window.innerWidth * (1.0 - Spaceship.EDGE_SCROLL_OFFSET))
+            screenOffsetX = -this.pos.x + window.innerWidth * (1.0 - Spaceship.EDGE_SCROLL_OFFSET);
 
     }
 

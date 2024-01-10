@@ -23,7 +23,6 @@ class Rocket extends Entity {
         this.#damage = damage;
         this.#facing = source.facing;
         this.#source = source;
-        console.log(this);
     }
 
     update(dT) {
@@ -82,6 +81,6 @@ class Rocket extends Entity {
      * @returns {boolean} Whether the entity can be hit or not
      */
     #canHit(entity){
-        return (entity instanceof Alien || entity instanceof EnemyShip);
+        return (entity instanceof Alien || entity instanceof EnemyShip || entity instanceof EvolvedAlien);
     }
 }

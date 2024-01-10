@@ -208,37 +208,20 @@ void readBatteryLevel()
     |-------------------------------------------------|
     |  Voltage   |   Percentage  | analogRead() value |
     |------------|---------------|--------------------|
-    | 4.20V      | 100%          | 3475               |
-    | 4.15V      | 95%           | 3433               |
-    | 4.11V      | 90%           | 3400               |
-    | 4.08V      | 85%           | 3375               |
-    | 4.02V      | 80%           | 3325               |
-    | 3.98V      | 75%           | 3292               |
-    | 3.95V      | 70%           | 3268               |
-    | 3.91V      | 65%           | 3235               |
-    | 3.87V      | 60%           | 3202               |
-    | 3.85V      | 55%           | 3185               |
-    | 3.84V      | 50%           | 3177               |
-    | 3.82V      | 45%           | 3160               |
-    | 3.80V      | 40%           | 3144               |
-    | 3.79V      | 35%           | 3135               |
-    | 3.77V      | 30%           | 3119               |
-    | 3.75V      | 25%           | 3102               |
-    | 3.73V      | 20%           | 3086               |
-    | 3.71V      | 15%           | 3069               |
-    | 3.69V      | 10%           | 3053               |
-    | 3.61V      | 5%            | 2986               |
-    | 3.27V      | 0%            | 2705               |
+    | 4.20V      | 100%          | 3300               |
+    | 3.30V      | 0%            | 2700?              |
     |-------------------------------------------------|
 
-    Source: https://blog.ampow.com/lipo-voltage-chart/
+    Full battery reading: 3300
     */
+
+   // Gebruik: https://randomnerdtutorials.com/power-esp32-esp8266-solar-panels-battery-level-monitoring/
 
     int batteryPercentage = calculateBatteryPercentage(analogRead(PIN_BATTERY));
     Serial.println("Battery percentage: " + String(batteryPercentage) + "%, Reading: " + String(analogRead(PIN_BATTERY)));
 
     // Set the battery level
-    // hid->setBatteryLevel((uint8_t)floor(batteryPercentage));
+    hid->setBatteryLevel((uint8_t)100); // TEMPORARY FIX, WORK IN PROGRESS
 }
 
 int calculateBatteryPercentage(int reading)
@@ -292,7 +275,7 @@ void bluetoothTask(void *)
     hid->reportMap((uint8_t *)REPORT_MAP, sizeof(REPORT_MAP));
     hid->startServices();
 
-    // set battery level to 100%
+    // Read the battery level
     readBatteryLevel();
 
     // advertise the services

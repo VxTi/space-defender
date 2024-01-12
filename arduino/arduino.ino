@@ -40,6 +40,8 @@ const uint8_t pinData[BUTTON_COUNT][2] = {
 
 bool useBluetooth = false; // False = Serial communication, True = BLE communication.
 
+int pollingRate = 500; // Polling rate in milliseconds (Default: 500, 500x per second)
+
 // Set all used pins to their used mode
 void configurePins()
 {
@@ -59,41 +61,6 @@ void bluetoothTask(void *);
 void write(const char *text);
 
 bool isBleConnected = false;
-
-void setup()
-{
-    Serial.begin(115200);
-
-    pinMode(PIN_LED, OUTPUT);
-    pinMode(PIN_BUTTON_A, INPUT);
-    pinMode(PIN_BUTTON_B, INPUT);
-    pinMode(PIN_BUTTON_UP, INPUT);
-    pinMode(PIN_BUTTON_LEFT, INPUT);
-    pinMode(PIN_BUTTON_RIGHT, INPUT);
-    pinMode(PIN_BUTTON_DOWN, INPUT);
-    pinMode(PIN_BUTTON_OPT, INPUT);
-    pinMode(PIN_BATTERY, INPUT);
-
-    // start Bluetooth task
-    xTaskCreate(bluetoothTask, "bluetooth", 20000, NULL, 5, NULL);
-}
-
-void loop()
-{
-    if (isBleConnected)
-    {
-        memset(buffer, 0, BUTTON_COUNT);
-
-        for (uint8_t i = 0, j = 0; i < BUTTON_COUNT; i++)
-        {
-            if (digitalRead(pinData[i][0]))
-                buffer[j++] = pinData[i][1];
-        }
-        write(buffer);
-        delay(25);
-        readBatteryLevel();
-    }
-}
 
 // Message (report) sent when a key is pressed or released
 struct InputReport
@@ -202,48 +169,24 @@ class OutputCallbacks : public BLECharacteristicCallbacks
 // Function for reading battery level via the selected PIN
 void readBatteryLevel()
 {
-    /*
-    |-------------------------------------------------|
-    |           LiPo Discharge table                  |
-    |-------------------------------------------------|
-    |  Voltage   |   Percentage  | analogRead() value |
-    |------------|---------------|--------------------|
-    | 4.20V      | 100%          | 3300               |
-    | 3.30V      | 0%            | 2700?              |
-    |-------------------------------------------------|
+    // Source: https://randomnerdtutorials.com/power-esp32-esp8266-solar-panels-battery-level-monitoring/
 
-    Full battery reading: 3300
-    */
+    // Read the battery voltage
+    float batteryLevel = map(analogRead(PIN_BATTERY), 0.0f, 4095.0f, 0, 100);
+    hid->setBatteryLevel((uint8_t)round(batteryLevel));
 
-   // Gebruik: https://randomnerdtutorials.com/power-esp32-esp8266-solar-panels-battery-level-monitoring/
-
-    int batteryPercentage = calculateBatteryPercentage(analogRead(PIN_BATTERY));
-    Serial.println("Battery percentage: " + String(batteryPercentage) + "%, Reading: " + String(analogRead(PIN_BATTERY)));
-
-    // Set the battery level
-    hid->setBatteryLevel((uint8_t)100); // TEMPORARY FIX, WORK IN PROGRESS
-}
-
-int calculateBatteryPercentage(int reading)
-{
-    // Define the battery discharge table
-    const int voltageReadings[] = {3475, 3433, 3400, 3375, 3325, 3292, 3268, 3235, 3202, 3185, 3177, 3160, 3144, 3135, 3119, 3102, 3086, 3069, 3053, 2986, 2705};
-    const int percentages[] = {100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0};
-    const int tableSize = sizeof(voltageReadings) / sizeof(voltageReadings[0]);
-
-    // Find the two points in the table that the reading is between
-    for (int i = 0; i < tableSize - 1; i++)
+    // Check if battery level is below 20%
+    if (batteryLevel < 20)
     {
-        if (reading >= voltageReadings[i + 1] && reading <= voltageReadings[i])
-        {
-            // Perform linear interpolation
-            float slope = (percentages[i] - percentages[i + 1]) / (float)(voltageReadings[i] - voltageReadings[i + 1]);
-            return percentages[i] + slope * (reading - voltageReadings[i]);
-        }
+        // Lower the polling rate to 100ms
+        pollingRate = 100;
     }
 
-    // If the reading is outside the range of the table, return the closest percentage
-    return (reading > voltageReadings[0]) ? 100 : 0;
+    if (Serial){
+        Serial.print("Battery level: ");
+        Serial.print(batteryLevel);
+        Serial.println("%");
+    }
 }
 
 void bluetoothTask(void *)
@@ -314,13 +257,41 @@ void write(const char *text)
         input->setValue((uint8_t *)&report, sizeof(report));
         input->notify();
 
-        delay(5);
+        // delay(5);
 
         // release all keys between two characters; otherwise two identical
         // consecutive characters are treated as just one key press
         input->setValue((uint8_t *)&NO_KEY_PRESSED, sizeof(NO_KEY_PRESSED));
         input->notify();
 
-        delay(5);
+        // delay(5);
+    }
+}
+
+/***************
+Setup and loop
+***************/
+
+void setup()
+{
+    Serial.begin(115200);
+    configurePins();
+    xTaskCreate(bluetoothTask, "bluetooth", 20000, NULL, 5, NULL);
+}
+
+void loop()
+{
+    if (isBleConnected)
+    {
+        memset(buffer, 0, BUTTON_COUNT);
+
+        for (uint8_t i = 0, j = 0; i < BUTTON_COUNT; i++)
+        {
+            if (digitalRead(pinData[i][0]))
+                buffer[j++] = pinData[i][1];
+        }
+        write(buffer);             // Write the buffer to the keyboard
+        readBatteryLevel();        // Read the battery level
+        delay(1000 / pollingRate); // Polling rate
     }
 }

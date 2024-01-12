@@ -91,11 +91,8 @@ function keyTyped() {
     // Add event listener to all 'return to menu' back arrow buttons.
     // If the div has a data-tag in it defining the location to return to, then that menu will show
     // otherwise it just returns to main menu by default.
-    document.querySelectorAll('.button-menu').forEach(e => {
-        e.onclick = () => {
-            showMenu(typeof e.dataset.target !== 'undefined' ? e.dataset.target : 'menu-start');
-        }
-    });
+    document.querySelectorAll('.button-menu').forEach(e =>
+        e.onclick = () => showMenu(e.dataset.menu ?? 'menu-start'));
 
     // Add event listeners to the leaderboard buttons, so that when the user clicks on one of the filters,
     // the page automatically updates the order of elements
@@ -143,7 +140,7 @@ function showMenu(element = null) {
 function loadStatistics() {
     document.querySelector('.statistics-content').innerHTML =
         Object.entries(Statistics).map(([key, value]) => {
-           return  `<div class="statistics-element"><span class="statistics-name">${value.name}</span><span class="statistics-value">${value.value.toPrecision(2)}</span></div>`
+           return  `<div class="statistics-element"><span class="statistics-name">${value.name}</span><span class="statistics-value">${value.value}</span></div>`
         }).join('');
 }
 

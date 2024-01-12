@@ -339,4 +339,6 @@ body, html {
 .statistics-value {
     display: inline-block;
     margin: 0 auto;
+    width: 50%;
+    float: left;
 }

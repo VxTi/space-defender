@@ -15,20 +15,6 @@ class Spaceship extends Entity {
     static VELOCITY_THRESHOLD = 0.2;
     static EDGE_SCROLL_OFFSET = 0.3;
 
-
-    /**
-     * Object containing all the statistical properties of this spaceship.
-     * These can be viewed in the 'statistics' tab in-game.
-     */
-    statistics = {
-        rocketsFired:     ['Rockets Fired', 0],
-        damageDealt:      ['Damage Dealt', 0],
-        damageReceived:   ['Damage Received', 0],
-        entitiesKilled:   ['Overall Kills', 0],
-        aliensKilled:     ['Aliens Slaughtered', 0],
-        enemyShipsKilled: ['Enemy Ships Destroyed', 0]
-    }
-
     constructor(x, y, health) {
         super(x, y, health, Spaceship.SHIP_SIZE);
         this.deathAnimations = true;
@@ -70,7 +56,7 @@ class Spaceship extends Entity {
 
     // Nothing too interesting, just update some statistics.
     onDamage(amount) {
-        this.statistics.damageReceived[1] += amount;
+        Statistics.damageReceived.value += amount;
     }
 
     shoot() {
@@ -78,12 +64,13 @@ class Spaceship extends Entity {
             return;
 
         entities.push(new Rocket(this));
-        this.statistics.rocketsFired[1]++;
+        Statistics.rocketsFired.value++;
     }
 
     get facing() { return this.#facing; }
 
     onDeath() {
+        Statistics.timesDied.value++;
         let element = document.querySelector('.game-event-indicator');
         element.innerHTML = 'Game over<br>';
         setTimeout(() => {

@@ -16,7 +16,7 @@ class HealthElement extends Entity {
         resources['spritesheet'].animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, HealthElement.#SPRITE_INDEX);
         if (this.withinRange(player)) {
             this.health = 0;
-            player.health = Math.min(player.health + this.#amount, DEFAULT_HEALTH);
+            player.health = Math.min(player.health + this.#amount, Config.DEFAULT_HEALTH);
         }
     }
 }

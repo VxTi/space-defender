@@ -41,14 +41,18 @@ class Rocket extends Entity {
             // Check if the rocket collides with the entity in its path
             if (this.#collidesWith(e, dT)) {
                 e.damage(this.#damage);
-                this.#source.statistics.damageDealt[1] += this.#damage; // Take measurements !!!
+                Statistics.damageDealt.value += this.#damage; // Take measurements !!!
                 if (!e.alive) {
                     addScore(e.ENTITY_KILL_SCORE);
-                    this.#source.statistics.entitiesKilled[1]++; // Take measurements!!!
+                    Statistics.entitiesKilled.value++; // Take measurements!!!
+                    Statistics.killDeathRatio.value = Statistics.entitiesKilled.value / Math.max(1, Statistics.timesDied.value);
+
                     if (e instanceof Alien)
-                        this.#source.statistics.aliensKilled[1]++;
+                        Statistics.aliensKilled.value++;
                     else if (e instanceof EnemyShip)
-                        this.#source.statistics.enemyShipsKilled[1]++;
+                        Statistics.enemyShipsKilled.value++;
+                    else if (e instanceof EvolvedAlien)
+                        Statistics.evolvedAliensKilled.value++;
                 }
                 this.health = 0;
                 return;
@@ -81,6 +85,6 @@ class Rocket extends Entity {
      * @returns {boolean} Whether the entity can be hit or not
      */
     #canHit(entity){
-        return (entity instanceof Alien || entity instanceof EnemyShip || entity instanceof EvolvedAlien);
+        return !(entity instanceof Particle || entity instanceof Rocket || entity instanceof Spaceship)//(entity instanceof Alien || entity instanceof EnemyShip || entity instanceof EvolvedAlien);
     }
 }

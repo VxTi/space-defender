@@ -9,10 +9,12 @@ class Entity {
     #damageCooldown;
     #direction;
     #damageColor;
+    #doDeathAnimation = false;
+    #doHurtAnimation = false;
+    #hurtInterval = 0.5;
 
     MINIMAP_SPRITE_INDEX = null;
     ENTITY_KILL_SCORE = 200;
-    #doDeathAnimation = false;
 
     constructor(x, y, health, size = 20) {
         this.#position = new Vec2(x, y);
@@ -58,23 +60,40 @@ class Entity {
 
     get canDamage() { return this.#damageCooldown <= 0; }
 
+    set hurtInterval(a) { this.#hurtInterval = a; }
+
     set deathAnimations(state) { this.#doDeathAnimation = state; }
+    set hurtAnimations(state) { this.#doHurtAnimation = state; }
 
     set health(a) { this.#health = a; }
 
     /**
+     * Method for killing this entity.
+     */
+    terminate() {
+        this.#health = 0;
+
+        // Check if an 'onDeath' function exists, if so, call it.
+        if (typeof this['onDeath'] === 'function')
+            this['onDeath']();
+
+        // Check whether death animations are enabled, if so, show them.
+        if (this.#doDeathAnimation)
+            showDeathAnimation(this);
+    }
+
+    /**
      * Function for damaging this entity
      * @param {number} amount How much to damage to deal to this entity
-     * @param {Entity} [source] The source of the damage
      */
-    damage(amount, source = null) {
+    damage(amount) {
         // If already dead, stop
         if (!this.alive || !this.canDamage)
             return;
 
         // do the harm >:)
         this.#health = Math.max(0, this.#health - amount);
-        this.#damageCooldown = 0.5;
+        this.#damageCooldown = this.#hurtInterval
 
         // For when the entity is hurt and is still alive,
         // call the 'onDamage' method (if present)
@@ -93,7 +112,7 @@ class Entity {
                 showDeathAnimation(this);
         } else {
             // Same check as above, though this one is for hurt animations
-            if (this.#doDeathAnimation)
+            if (this.#doHurtAnimation)
                 showHurtAnimation(this);
         }
     }

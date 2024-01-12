@@ -136,19 +136,15 @@ function showMenu(element = null) {
         currentMenu.style.visibility = 'visible';
     }
     gameActive = element === "" || element == null;
+    document.querySelector('.game-scores').style.visibility = gameActive ? 'visible' : 'hidden';
 
 }
 
 function loadStatistics() {
     document.querySelector('.statistics-content').innerHTML =
-        Object.entries(player.statistics).map(([key, value]) => {
-            console.log(value)
-           return  `${value[0]} - ${value[1]}`
-        }).join('<br>');
-}
-
-function returnMain() {
-    player.health = DEFAULT_HEALTH;
+        Object.entries(Statistics).map(([key, value]) => {
+           return  `<div class="statistics-element"><span class="statistics-name">${value.name}</span><span class="statistics-value">${value.value.toPrecision(2)}</span></div>`
+        }).join('');
 }
 
 /**
@@ -212,12 +208,12 @@ function HSVtoRGB(h, s, v) {
     q = v * (1 - f * s);
     t = v * (1 - (1 - f) * s);
     switch (i % 6) {
-        case 0: r = v, g = t, b = p; break;
-        case 1: r = q, g = v, b = p; break;
-        case 2: r = p, g = v, b = t; break;
-        case 3: r = p, g = q, b = v; break;
-        case 4: r = t, g = p, b = v; break;
-        case 5: r = v, g = p, b = q; break;
+        case 0: [r, g, b] = [v, t, p]; break;
+        case 1: [r, g, b] = [q, v, p]; break;
+        case 2: [r, g, b] = [p, v, t]; break;
+        case 3: [r, g, b] = [p, q, v]; break;
+        case 4: [r, g, b] = [t, p, v]; break;
+        case 5: [r, g, b] = [v, p, q]; break;
     }
     return Math.round(r * 255) << 16 | Math.round(g * 255) << 8 | Math.round(b * 255);
 }

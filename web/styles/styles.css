@@ -318,3 +318,25 @@ body, html {
     word-spacing: 10px;
     letter-spacing: 3px;
 }
+
+.statistics-element {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+
+}
+
+.statistics-element:hover {
+    background-color: var(--color-button-hover);
+}
+
+.statistics-name {
+    margin-left: 10px;
+    width: 50%;
+    float: left;
+}
+
+.statistics-value {
+    display: inline-block;
+    margin: 0 auto;
+}

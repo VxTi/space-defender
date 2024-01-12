@@ -11,8 +11,67 @@ let mapTop = 150; // Top of the map, in pixels.
 let innerMapWidth = 600; // Width of the inner map in pixels
 let innerMapTop = 50;    // Top of the inner map
 
-const defaultPlayerName = 'Guest';
-let playerName = defaultPlayerName;
+// Configuration settings for the game.
+const Config = {
+    EXPLOSION_PARTICLE_COLOR: 0x00FF00,
+    EXPLOSION_TIMER_DELAY: 5,           // Delay in seconds until the explosive effect can be used.
+    EXPLOSION_RADIUS: 200,              // Explosion radius of the explosive effect in pixels.
+    EXPLOSION_PARTICLE_COUNT: 50,
+    STAR_COUNT: 200,
+    SHOOT_FREQUENCY: 5,                // How many bullets the spaceship can shoot each second
+    DEFAULT_HEALTH: 5,
+    DEFAULT_PLAYER_NAME: 'Guest',
+    API_URL: 'http://localhost:8081/api/',
+}
+
+/**
+ * Object containing all the statistical properties of the spaceship.
+ * These can be viewed in the 'statistics' tab in-game.
+ */
+const Statistics = {
+    rocketsFired: {
+        name: 'Rockets Fired',
+        value: 0
+    },
+    damageDealt: {
+        name: 'Damage Dealt',
+        value: 0
+    },
+    damageReceived: {
+        name: 'Damage Received',
+        value: 0
+    },
+    entitiesKilled: {
+        name: 'Overall Kills',
+        value: 0
+    },
+    aliensKilled: {
+        name: 'Aliens Slaughtered',
+        value: 0
+    },
+    enemyShipsKilled: {
+        name: 'Enemy Ships Destroyed',
+        value: 0
+    },
+    evolvedAliensKilled: {
+        name: 'Evolved Aliens Killed',
+        value: 0
+    },
+    killDeathRatio: {
+        name: 'Kill/Death Ratio',
+        value: 0
+    },
+    timesDied: {
+        name: 'Times Died',
+        value: 0
+    },
+    timesBlownUp: {
+        name: 'Times Blown Up',
+        value: 0
+    }
+}
+
+let playerName = Config.DEFAULT_PLAYER_NAME;
 let player;
 
 /**
@@ -26,9 +85,6 @@ const PlayerData = {
     PLAYER_ID: -1
 }
 
-// Default health of the player, fairly self-explanatory
-const DEFAULT_HEALTH = 5;
-
 let screenOffsetX = 0;
 
 let gameActive = false;
@@ -40,22 +96,20 @@ let resources = {}; // Here are all images stored as Resource objects
 // Array containing all the entities in the game
 let entities = [];
 
-let starCount = 200;
 let stars; // Array object containing all the stars
 
 let shotsFired = 0; // How many shots are fired, this is used to determine whether the player can shoot or not.
-let shootFrequency = 5; // How many bullets the spaceship can shoot each second
 
-let explosiveTimerDelay = 5; // Delay in seconds until the explosive effect can be used.
-let explosiveTimer = explosiveTimerDelay; // Time until the explosive effect can be used, in seconds.
-const explosiveRadius = 200; // Explosion radius of the explosive effect in pixels.
+let explosiveTimer = Config.EXPLOSION_TIMER_DELAY; // Time until the explosive effect can be used, in seconds.
 
 let msElapsed = 0;
 
+// Create a method for checking whether a number is between two other numbers.
 Number.prototype.isBetween = function(a, b) {
     return this >= Math.min(a) && this <= Math.max(b);
 }
 
+// Create method for numbers named 'isZero', for checking whether a number is close to zero.
 Number.prototype.isZero = function() {
     return Math.abs(this) <= 0.0001;
 }
@@ -70,6 +124,9 @@ function preload() {
     _resources['sky'] = loadImage('./assets/skyImage.png');
 }
 
+/**
+ * Main setup method. Here we load resources and initialize variables.
+ */
 function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
     window.addEventListener('resize', () => resizeCanvas(window.innerWidth, window.innerHeight));
@@ -90,7 +147,7 @@ function setup() {
         // Check if we've hit the space-bar (shoot) and if there's enough time elapsed
         switch (event.key) {
             case ' ':
-                if (shotsFired + 1 < shootFrequency) {
+                if (shotsFired + 1 < Config.SHOOT_FREQUENCY) {
                     player.shoot();
                     shotsFired++;
                 }
@@ -102,8 +159,8 @@ function setup() {
     })
 
     /** -- FUNCTIONALITY -- BACKGROUND STARS -- **/
-    stars = Array(starCount);
-    for (let i = 0; i < starCount; i++) {
+    stars = Array(Config.STAR_COUNT);
+    for (let i = 0; i < Config.STAR_COUNT; i++) {
         stars[i] = {
             x: 0,
             y: mapTop + Math.round(Math.random() * (window.innerHeight - mapTop)),
@@ -145,7 +202,7 @@ function draw() {
     msElapsed += deltaTime;
     let dT = deltaTime / 1000;
 
-    shotsFired = Math.max(0, shotsFired - shootFrequency * dT);
+    shotsFired = Math.max(0, shotsFired - Config.SHOOT_FREQUENCY * dT);
     explosiveTimer = Math.max(0, explosiveTimer - dT);
 
     /** -- SECTION -- RENDERING INNER MAP -- **/
@@ -166,16 +223,16 @@ function draw() {
     resources['spritesheet'].drawSection(midX + (player.pos.x) * mapCoordinateFrac - innerMapHeight/2, innerMapTop - 1, innerMapHeight, innerMapHeight, 0, 2)
 
     /** -- SECTION -- RENDERING LIVES -- **/
-    for (let i = 0, s = 200/DEFAULT_HEALTH; i < player.health; i++)
+    for (let i = 0, s = 200 / Config.DEFAULT_HEALTH; i < player.health; i++)
         resources['spritesheet'].animate(midX - innerMapRadius - 215 + s * i, mapTop - 22 - s, s, s, 0);
 
     /** -- SECTION -- RENDERING SHOOT CHARGE -- **/
     drawRect(midX - innerMapRadius - 215, mapTop - 20, 205, 15, 0x404040);
-    drawRect(midX - innerMapRadius - 213, mapTop - 16, 200 * (1.0 - shotsFired/shootFrequency), 8, 0xff);
+    drawRect(midX - innerMapRadius - 213, mapTop - 16, 200 * (1.0 - shotsFired/Config.SHOOT_FREQUENCY), 8, 0xff);
 
     /** -- SECTION -- RENDERING EXPLOSIVE CHARGE -- **/
     drawRect(midX + innerMapRadius + 14, mapTop - 20, 205, 15, 0x404040);
-    drawRect(midX + innerMapRadius + 16, mapTop - 16, 200 * (1.0 - explosiveTimer/explosiveTimerDelay), 8, 0xff0000);
+    drawRect(midX + innerMapRadius + 16, mapTop - 16, 200 * (1.0 - explosiveTimer/Config.EXPLOSION_TIMER_DELAY), 8, 0xff0000);
 
 
     /** -- SECTION -- RENDERING HILLS BELOW -- **/
@@ -244,7 +301,7 @@ function checkEntitySpawning() {
  */
 function scoreUpdater() {
     // Check if the player has selected a name, if not, don't update the score.
-    if (playerName === defaultPlayerName || !gameActive)
+    if (playerName === Config.DEFAULT_PLAYER_NAME || !gameActive)
         return;
 
     // Send the score to the server
@@ -252,26 +309,31 @@ function scoreUpdater() {
         .catch(e => console.error(e));
 }
 
+/**
+ * Method for performing the explosion effect.
+ */
 function performExplosion() {
     if (explosiveTimer <= 0 && player.alive) {
         let [dX, dY] = [0, 0];
         let theta = 0;
-        explosiveTimer = explosiveTimerDelay;
+        explosiveTimer = Config.EXPLOSION_TIMER_DELAY;
 
         // Add particles for special effect
-        for (let i = 0; i < 50; i++) {
-            [dX, dY] = randDir(0, Math.PI * 2, 100, 2 * explosiveRadius);
+        for (let i = 0; i < Config.EXPLOSION_PARTICLE_COUNT; i++) {
+            [dX, dY] = randDir(0, Math.PI * 2, 100, 2 * Config.EXPLOSION_RADIUS);
 
+            // Add explosion particle
             entities.push(
-                new Particle(player.pos.x, player.pos.y, dX, dY, player, Math.random(), 1.0, 0x00FF00));
+                new Particle(player.pos.x, player.pos.y, dX, dY, player, Math.random(), 1.0, Config.EXPLOSION_PARTICLE_COLOR));
         }
 
+        // Check what entities are within range
         entities.forEach(e => {
-            if (!(e.canDamage && (e instanceof EnemyShip || e instanceof Alien) && e.alive))
+            if (!(e.canDamage && !(e instanceof Particle) && e.alive))
                 return;
 
             // Check whether the entity is within distance of the player
-            if (e.pos.distSq(player.pos) <= Math.pow(explosiveRadius, 2))  {
+            if (e.pos.distSq(player.pos) <= Math.pow(Config.EXPLOSION_RADIUS, 2))  {
                 theta = Math.atan2((e.pos.y - player.pos.y), (e.pos.x - player.pos.x));
                 e.damage(1);
                 if (!e.alive)
@@ -282,7 +344,8 @@ function performExplosion() {
                 )
             }
         })
-        explosiveTimer = explosiveTimerDelay;
+        // Reset the timer
+        explosiveTimer = Config.EXPLOSION_TIMER_DELAY;
     }
 }
 
@@ -292,13 +355,14 @@ function performExplosion() {
  */
 function startGame() {
     entities = [player];
+    setScore(0);
     let nameInput = document.getElementById('menu-start-name-input');
-    playerName = nameInput.value.length >= nameInput.minLength ? nameInput.value : defaultPlayerName;
+    playerName = nameInput.value.length >= nameInput.minLength ? nameInput.value : Config.DEFAULT_PLAYER_NAME;
     console.log("Starting game as " + playerName);
     PlayerData.WAVE = 1;
 
     // If the player decided to use a name, then we'll check whether the user exists,
-    if (playerName !== defaultPlayerName) {
+    if (playerName !== Config.DEFAULT_PLAYER_NAME) {
         (async () => {
 
             let exists = await requestApi('checkuser', {idorname: playerName}).then(res => res.exists);
@@ -312,9 +376,10 @@ function startGame() {
                     PlayerData.HIGH_SCORE = res.userData.maxScore;
                     PlayerData.SCORE = res.userData.lastScore;
                 })
-            setScore(0);
-            setInterval(scoreUpdater, 5000);
 
+            // Check whether the retrieved id is valid, if so, start the score updater.
+            if (PlayerData.PLAYER_ID > -1)
+                setInterval(scoreUpdater, 5000);
         })();
     }
 }
@@ -326,7 +391,7 @@ function startGame() {
  * @returns {Promise<Object>}
  */
 async function requestApi(param, content) {
-    return fetch(`http://localhost:8081/api/${param}`, {
+    return fetch(`${Config.API_URL}${param}`, {
         method: 'POST',
         cors: 'no-cors',
         headers: {
@@ -345,13 +410,11 @@ async function requestApi(param, content) {
  * Method for respawning the player and resetting some variables.
  */
 function respawn() {
-    player.health = DEFAULT_HEALTH;
+    player.health = Config.DEFAULT_HEALTH;
     player.pos.translate(window.innerWidth/2, window.innerHeight/2);
     player.vel.translate(0, 0);
-    PlayerData.WAVE = 1;
-    PlayerData.SCORE = 0;
     entities = [player];
-    setScore(0);
+    setScore(0, 1);
 }
 
 /**
@@ -400,11 +463,15 @@ function showHurtAnimation(entity) {
  * Function for setting the score of the user
  * Also updates the high score if the score is higher than the current high score
  * @param {number} score new score
+ * @param {number} [wave] The wave the player is on
  */
-function setScore(score) {
+function setScore(score, wave = PlayerData.WAVE) {
+    PlayerData.WAVE  = wave;
     PlayerData.SCORE = score;
     if (PlayerData.SCORE > PlayerData.HIGH_SCORE)
         PlayerData.HIGH_SCORE = PlayerData.SCORE;
+
+    document.querySelector('.game-score-wave-value').innerText = `${PlayerData.WAVE}`;
     document.querySelector('.game-score-points-value').innerText = `${PlayerData.SCORE}`;
     document.querySelector('.game-score-high-value').innerText = `${PlayerData.HIGH_SCORE}`;
 }

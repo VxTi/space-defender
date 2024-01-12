@@ -13,13 +13,14 @@ class EvolvedAlien extends Entity {
         super(x, y, 1, 40);
         this.deathAnimations = true;
         this.damageColor = -1;
+        this.ENTITY_KILL_SCORE = 400;
     }
 
 
     update(dT) {
         super.update(dT);
         this.#shootDelay = Math.max(0, this.#shootDelay - dT);
-        drawRect(this.pos.x, this.pos.y, this.size, this.size, -1);
+        drawRect(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, -1);
         //resources['spritesheet'].animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, Alien.#SPRITE_INDEX);
         let [Dx, Dy] = [Math.sign(player.pos.x - this.pos.x), Math.sign(player.pos.y - this.pos.y)];
 
@@ -29,7 +30,7 @@ class EvolvedAlien extends Entity {
             this.#shootDelay = EvolvedAlien.#SHOOT_DELAY;
         }
 
-        this.vel.add(Dx * dT, Dy * dT);
+        this.vel.add(Dx * dT * 2, Dy * dT * 2);
         this.pos.add(this.vel.x, this.vel.y);
     }
 

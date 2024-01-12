@@ -1,12 +1,12 @@
 # Hoe gebruik je de API?
 
-!!! success "Gebruikswijze"
+### Gebruikswijze
     De API is te gebruiken door een request te maken naar het adres: `http://oege.ie.hva.nl:8081/api`. 
 
-!!! tip "Probeer de API"
+### Probeer de API
     Wij hebben tijdens het ontwikkelen van de API het programma Postman gebruikt. Hierin kun je heel gemakkelijk requests sturen naar de API, en de response bekijken. Dit is heel handig om de API te testen. Je kunt Postman downloaden op de volgende website: [https://www.postman.com/downloads/](https://www.postman.com/downloads/)
 
-!!! failure "Niet bestaande URL"
+### Niet bestaande URL
     Als je een niet bestaande URL probeert te gebruiken, zal de API HTTP status 404 (Not Found) terugsturen, en een JSON-object waarin staat dat de URL niet bestaat.
 
 # Beveiliging

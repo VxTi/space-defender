@@ -307,6 +307,9 @@ function scoreUpdater() {
     // Send the score to the server
     requestApi('updatescore', {userId: PlayerData.PLAYER_ID, score: PlayerData.SCORE, wave: PlayerData.WAVE})
         .catch(e => console.error(e));
+    let stats = Object.entries(Statistics).map(([key, value]) => ({field: key, value: value.value}));
+    requestApi('updatestatistics', {userId: PlayerData.PLAYER_ID, userName: playerName, statistics: stats})
+        .catch(e => console.error(e));
 }
 
 /**
@@ -370,12 +373,16 @@ function startGame() {
             // If the user doesn't exist, request a new user to be created.
             if (!exists)
                 await requestApi('createuser', {name: playerName}).then(res => PlayerData.PLAYER_ID = res.userId)
-            else
+            else {
                 await requestApi('getuser', {name: playerName}).then(res => {
+                    console.log("Retrieved user data");
                     PlayerData.PLAYER_ID = res.userData.userId;
                     PlayerData.HIGH_SCORE = res.userData.maxScore;
                     PlayerData.SCORE = res.userData.lastScore;
+                    res.userData.statistics.map(stat => Statistics[stat.field].value = stat.value);
+                    console.log(Statistics);
                 })
+            }
 
             // Check whether the retrieved id is valid, if so, start the score updater.
             if (PlayerData.PLAYER_ID > -1)

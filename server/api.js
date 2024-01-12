@@ -109,6 +109,11 @@ const tables = {
     userData: {
         userId: 'int NOT NULL',
         userName: 'varchar(255) NOT NULL',
+    },
+    statistics: {
+        userId: 'int NOT NULL',
+        userName: 'varchar(255) NOT NULL',
+        statistics: 'json DEFAULT NULL'
     }
 }
 
@@ -244,6 +249,7 @@ async function getUserDataFromId(userId) {
                 'RIGHT JOIN lastScore ON lastScore.userId = userData.userId ' +
                 'RIGHT JOIN lastPlayed ON lastPlayed.userId = userData.userId ' +
                 'RIGHT JOIN highScore ON highScore.userId = userData.userId ' +
+                'RIGHT JOIN statistics ON statistics.userId = userData.userId ' +
                 'WHERE userData.userId = ?', userId))
         .then(res => res[0][0] || {})
         .catch(e => console.error('Error occurred whilst attempting to retrieve user-data', e))
@@ -493,6 +499,37 @@ app.post('/api/getuser', async (req, res) => {
     // Return appropriate response.
     res.status(200).json({ message: 'User data retrieved', userData: userData });
 });
+
+/**
+ * POST Request handler for updating statistics of a player, with a provided JSON object.
+ */
+app.post('/api/updatestatistics', async (req, res) => {
+
+        // Parse the request body:
+        let postData = JSON.parse(JSON.stringify(req.body));
+        let userId = postData.userId;
+        let userName = postData.userName;
+        let statistics = JSON.stringify(req.body.statistics);
+
+        log("REQ", `Got an update statistics request for userId ${userId}`); // Log the request
+
+        // Check if the data is valid:
+        if (!userId || !req.body.statistics || !userName) {
+            res.status(400).json({ message: 'Invalid data' }); // Send status 400 with appropriate JSON-body
+            log("RES", "User did not provide enough data.");
+            return;
+        }
+
+        // Update the statistics:
+        const connection = await pool.getConnection();
+        await connection.query(mysql.format('UPDATE statistics SET statistics = ? WHERE userId = ?', [statistics, userId]))
+            .catch(e => console.error('An error occurred whilst attempting to update statistics', e))
+            .finally(() => connection.release());
+
+        // Send the result to the client:
+        res.status(200).json({ message: 'Statistics updated' }); // Send status 200 with appropriate JSON-body
+        log("RES", `Statistics updated for userId ${userId}`); // Log the request
+})
 
 // Check if a user exists:
 app.post('/api/checkuser', async (req, res) => {

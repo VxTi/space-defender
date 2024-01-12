@@ -286,12 +286,17 @@ function checkEntitySpawning() {
 
     let [x, y] = [-mapWidth / 2 + Math.random() * mapWidth, mapTop + Math.random() * mapHeight];
     if (Math.random() < 0.5) entities.push(new EvolvedAlien(x, y))
-    /*entities.push(
-        Math.random() <= 0.2 ?  new EvolvedAlien(x, y) :
-        Math.random() <= 0.05 ? new HealthElement(x, y, 1) :
-        Math.random() <= 0.3 ?  new EnemyShip(x, y) :
-                                new Alien(x, y)
-    );*/
+    for (let i = 0, probabilities = [0.2, 0.05, 0.3, 0.45]; i < probabilities.length; i++) {
+        if (Math.random() < probabilities[i]) {
+            switch (i) {
+                case 0: entities.push(new EvolvedAlien(x, y)); break;
+                case 1: entities.push(new HealthElement(x, y, 1)); break;
+                case 2: entities.push(new EnemyShip(x, y)); break;
+                case 3: entities.push(new Alien(x, y)); break;
+            }
+            break;
+        }
+    }
 }
 
 /**
@@ -332,7 +337,7 @@ function performExplosion() {
 
         // Check what entities are within range
         entities.forEach(e => {
-            if (!(e.canDamage && !(e instanceof Particle) && e.alive))
+            if (!e.canDamage || e instanceof Particle || !e.alive || e === player || e instanceof HealthElement)
                 return;
 
             // Check whether the entity is within distance of the player
@@ -379,8 +384,11 @@ function startGame() {
                     PlayerData.PLAYER_ID = res.userData.userId;
                     PlayerData.HIGH_SCORE = res.userData.maxScore;
                     PlayerData.SCORE = res.userData.lastScore;
-                    res.userData.statistics.map(stat => Statistics[stat.field].value = stat.value);
-                    console.log(Statistics);
+                    if (res.userData.statistics)
+                        res.userData.statistics.map(stat => {
+                            if (typeof Statistics[stat.field] === 'object')
+                                Statistics[stat.field].value = stat.value
+                        });
                 })
             }
 

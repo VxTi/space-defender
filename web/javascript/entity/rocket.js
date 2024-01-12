@@ -8,7 +8,7 @@ class Rocket extends Entity {
     #damage;
 
 
-    static ROCKET_SPEED = 1100;
+    static ROCKET_SPEED = 1300;
 
     /**
      * Constructor for creating a new rocket.

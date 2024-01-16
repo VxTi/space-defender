@@ -89,7 +89,7 @@ let gameActive = false;
 // Object where all resources are stored in at preload
 let _resources = {};
 let resources = {}; // Here are all images stored as Resource objects
-let audio = {};     // Here are all audio files stored as p5 SoundFile objects
+let audioFiles = {};     // Here are all audio files stored as p5 SoundFile objects
 
 // Array containing all the entities in the game
 let entities = [];
@@ -121,11 +121,10 @@ function preload() {
     _resources['spritesheet'] = loadImage('./assets/spritesheet.png');
     _resources['sky'] = loadImage('./assets/skyImage.png');
 
-
-
-    const audioFiles = ['achievement', 'death', 'explosion', 'hit', 'lose', 'navigate1', 'navigate2', 'navigate3', 'navigate4', 'pickup', 'shoot', 'win'];
-    for (let file of audioFiles)
-        audio[file] = new Audio(`./assets/soundpack/${file}.wav`);
+    // Load all audio
+    const audioFileNames = ['achievement', 'death', 'explosion', 'hit', 'lose', 'navigate1', 'navigate2', 'navigate3', 'navigate4', 'pickup', 'shoot', 'win'];
+    for (let file of audioFileNames)
+        audioFiles[file] = new Audio(`./assets/soundpack/${file}.wav`);
 }
 
 /**
@@ -510,14 +509,16 @@ function addScore(score, e = null) {
 
 /**
  * Method for playing a sound effect
- * @param {SoundFile} audio The audio file to play
+ * @param {string} audio The audio file to play
  */
-function playAudio(audio) {
-    p5.loadSound(audio).play();
-    audio.currentTime = 0;
-    audio.play();
+function playSound(sound) {
+    if (typeof audioFiles[sound] === 'undefined'){
+        console.error(`Sound file '${sound}' doesn't exist`);
+        return;
+    } else {
+        audioFiles[sound].cloneNode(true).play();
+    }
 }
-
 /**
  * Method for drawing a rectangle onto the screen with provided color values
  * @param {number} x screen x-coordinate

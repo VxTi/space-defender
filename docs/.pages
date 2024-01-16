@@ -11,17 +11,17 @@ nav:
     - Game functionaliteit: project/functionaliteit
     - API documentatie: project/apidocs
     - Code:
-        - Game: project/game_replica
-        - Alien: project/alien
-        - Entity: project/entity
-        - Enemy Ship: project/enemy_ship
-        - Evolved Alien: project/evolved_alien
-        - Rocket: project/rocket
-        - Script Loader: project/script_loader
-        - Spaceship: project/spaceship
-        - Space Rock: project/space_rock
-        - Particle: project/particle
-        - Health Element: project/health_element
-        - Resource: project/resource
-        - Menu Functionaliteit: project/menu_functionality
-        - Vec2: project/vec2
+        - Game: project/jsdocs/game_replica
+        - Alien: project/jsdocs/alien
+        - Entity: project/jsdocs/entity
+        - Enemy Ship: project/jsdocs/enemy_ship
+        - Evolved Alien: project/jsdocs/evolved_alien
+        - Rocket: project/jsdocs/rocket
+        - Script Loader: project/jsdocs/script_loader
+        - Spaceship: project/jsdocs/spaceship
+        - Space Rock: project/jsdocs/space_rock
+        - Particle: project/jsdocs/particle
+        - Health Element: project/jsdocs/health_element
+        - Resource: project/jsdocs/resource
+        - Menu Functionaliteit: project/jsdocs/menu_functionality
+        - Vec2: project/jsdocs/vec2

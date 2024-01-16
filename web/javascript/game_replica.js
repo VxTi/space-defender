@@ -102,6 +102,9 @@ let explosiveTimer = Config.EXPLOSION_TIMER_DELAY; // Time until the explosive e
 
 let msElapsed = 0;
 
+// Global volume value (Luca deze moet jij maar ff een plekje geven!)
+let globalVolume = 100; // 0 - 100
+
 // Create a method for checking whether a number is between two other numbers.
 Number.prototype.isBetween = function(a, b) {
     return this >= Math.min(a) && this <= Math.max(b);
@@ -508,17 +511,40 @@ function addScore(score, e = null) {
 }
 
 /**
- * Method for playing a sound effect
+ * Function for playing a specific sound effect
  * @param {string} audio The audio file to play
  */
 function playSound(sound) {
-    if (typeof audioFiles[sound] === 'undefined'){
+    if (typeof audioFiles[sound] === 'undefined') {
         console.error(`Sound file '${sound}' doesn't exist`);
         return;
     } else {
         audioFiles[sound].cloneNode(true).play();
+        audioFiles[sound].setVolume(globalVolume / 100);
     }
 }
+
+/**
+ * Function for playing a continous sound (such as the rocket SFX).
+ * An intensity of 0 will pause the sound.
+ * @param {string} sound The audio file to play
+ * @param {number} intensity The intensity of the sound (ranging from 0 to 100)
+ */
+function playSoundContinuous(sound, intensity) {
+    if (typeof audioFiles[sound] === 'undefined') {
+        console.error(`Sound file '${sound}' doesn't exist`);
+        return;
+    } else {
+        if (intensity === 0) {
+            audioFiles[sound].pause();
+        } else {
+            intensity = intensity / 100;
+            audioFiles[sound].play().loop()
+                .setVolume(intensity * globalVolume / 100);
+        }
+    }
+}
+
 /**
  * Method for drawing a rectangle onto the screen with provided color values
  * @param {number} x screen x-coordinate

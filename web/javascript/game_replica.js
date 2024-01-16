@@ -1,3 +1,4 @@
+let apiKey = 'dcdc91a618b4c9830fcc2e20';
 let windowSegments = 50;
 
 let pixelPerCm;  // How many pixels a physical centimeter occupy.
@@ -148,6 +149,8 @@ function setup() {
 
     document.addEventListener('keydown', (event) => {
         // Check if we've hit the space-bar (shoot) and if there's enough time elapsed
+        if (!gameActive)
+            return;
         switch (event.key) {
             case ' ':
                 if (shotsFired + 1 < Config.SHOOT_FREQUENCY) {
@@ -327,6 +330,8 @@ function scoreUpdater() {
  */
 function performExplosion() {
     if (explosiveTimer <= 0 && player.alive) {
+
+        playSound('explosion');
         let [dX, dY] = [0, 0];
         let theta = 0;
         explosiveTimer = Config.EXPLOSION_TIMER_DELAY;
@@ -509,12 +514,11 @@ function addScore(score, e = null) {
 
 /**
  * Method for playing a sound effect
- * @param {string} audio The audio file to play
+ * @param {string} sound Name of the sound effect to play
  */
 function playSound(sound) {
     if (typeof audioFiles[sound] === 'undefined'){
         console.error(`Sound file '${sound}' doesn't exist`);
-        return;
     } else {
         audioFiles[sound].cloneNode(true).play();
     }

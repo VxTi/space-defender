@@ -131,7 +131,7 @@ function preload() {
     // Load all audio
     const audioFileNames = ['achievement', 'death', 'explosion', 'hit', 'hit2', 'lose', 'navigate1', 'navigate2', 'navigate3', 'navigate4', 'pickup', 'shoot', 'win'];
     for (let file of audioFileNames)
-        audioFiles[file] = new Audio(`./assets/soundpack/${file}.wav`);
+        audioFiles[file] = loadSound(`./assets/soundpack/${file}.wav`);
 }
 
 /**
@@ -147,6 +147,7 @@ function setup() {
 
     noSmooth(); // prevent pixel-smoothing (this makes images look wacky)
     pixelDensity(1);
+    frameRate(120);
 
     player = new Spaceship(100, window.innerHeight/2, 5);
     entities.push(player);
@@ -542,7 +543,7 @@ function playSound(sound) {
     if (typeof audioFiles[sound] === 'undefined'){
         console.error(`Sound file '${sound}' doesn't exist`);
     } else {
-        audioFiles[sound].cloneNode(true).play();
+        audioFiles[sound].play();
     }
 }
 /**

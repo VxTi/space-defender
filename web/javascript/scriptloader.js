@@ -6,7 +6,7 @@
     // Names of the scripts.
     // These have to be loaded in the right order.
     const scripts = [
-        'p5', 'resource', 'vec2', 'entity/entity', 'entity/spaceship', 'entity/rocket',
+        'p5.min', 'p5.sound.min', 'resource', 'vec2', 'entity/entity', 'entity/spaceship', 'entity/rocket',
         'entity/alien', 'entity/evolved_alien', 'entity/space_rock',
         'game_replica', 'entity/enemy_ship', 'entity/health_element',
         'entity/particle', 'menu_functionality defer'

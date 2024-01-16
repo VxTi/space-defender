@@ -28,15 +28,34 @@
 
 #define DEVICE_NAME "Game Controller"
 
-#define BUTTON_COUNT 7
+#define BUTTON_COUNT 6
 
 char * buffer = (char *) malloc(BUTTON_COUNT * sizeof(char));
 
 const uint8_t pinData[BUTTON_COUNT][2] = {
             {PIN_BUTTON_UP, BUTTON_UP_KEY}, {PIN_BUTTON_LEFT, BUTTON_LEFT_KEY},
             {PIN_BUTTON_RIGHT, BUTTON_RIGHT_KEY}, {PIN_BUTTON_DOWN, BUTTON_DOWN_KEY},
-            {PIN_BUTTON_A, BUTTON_A_KEY}, {PIN_BUTTON_B, BUTTON_B_KEY}, {PIN_BUTTON_OPT, BUTTON_OPT_KEY}
+            {PIN_BUTTON_A, BUTTON_A_KEY}, {PIN_BUTTON_B, BUTTON_B_KEY}
 };
+
+struct ButtonData {
+    char character;
+    uint8_t pin;
+};
+
+BLEHIDDevice* hid;
+BLECharacteristic* input;
+BLECharacteristic* output;
+
+// Message (report) sent when a key is pressed or released
+struct InputReport {
+    uint8_t modifiers;	     // bitmask: CTRL = 1, SHIFT = 2, ALT = 4
+    uint8_t reserved;        // must be 0
+    uint8_t pressedKeys[6];  // up to six concurrenlty pressed keys
+};
+
+
+InputReport reportMap = {};
 
 bool useBluetooth = false; // False = Serial communication, True = BLE communication.
 
@@ -82,30 +101,20 @@ void setup() {
 
 void loop() {  
     if (isBleConnected) {
-      memset(buffer, 0, BUTTON_COUNT);
 
-      for (uint8_t i = 0, j = 0; i < BUTTON_COUNT; i++) {
-          if (digitalRead(pinData[i][0]))
-            buffer[j++] = pinData[i][1];
+      for (uint16_t i = 0, j = 0; i < BUTTON_COUNT; i++) {
+        j = analogRead(pinData[i][0]);
+        if (j >= 4095)
+          Serial.printf("Button '%s' is pressed\r\n", (char) pinData[0][1]);
+        reportMap.pressedKeys[i] = j >= 4095 ? keymap[(uint8_t) pinData[i][1]].modifier : 0; // Set the pressed key at index i to the key at pindata index i when the button is pressed.
       }
-      write(buffer);
-      delay(25);
+      
       readBatteryLevel();
+      input->setValue((uint8_t*)&reportMap, sizeof(reportMap));
+      input->notify();
+      delay(25);
     }
 }
-
-
-// Message (report) sent when a key is pressed or released
-struct InputReport {
-    uint8_t modifiers;	     // bitmask: CTRL = 1, SHIFT = 2, ALT = 4
-    uint8_t reserved;        // must be 0
-    uint8_t pressedKeys[7];  // up to seven concurrenlty pressed keys
-};
-
-// Message (report) received when an LED's state changed
-struct OutputReport {
-    uint8_t leds;            // bitmask: num lock = 1, caps lock = 2, scroll lock = 4, compose = 8, kana = 16
-};
 
 
 // The report map describes the HID device (a keyboard in this case) and
@@ -147,11 +156,6 @@ static const uint8_t REPORT_MAP[] = {
     END_COLLECTION(0)               // End application collection
 };
 
-
-BLEHIDDevice* hid;
-BLECharacteristic* input;
-BLECharacteristic* output;
-
 const InputReport NO_KEY_PRESSED = { };
 
 
@@ -181,28 +185,13 @@ class BleKeyboardCallbacks : public BLEServerCallbacks {
     }
 };
 
-
-/*
- * Called when the client (computer, smart phone) wants to turn on or off
- * the LEDs in the keyboard.
- *
- * bit 0 - NUM LOCK
- * bit 1 - CAPS LOCK
- * bit 2 - SCROLL LOCK
- */
- class OutputCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic* characteristic) {
-        OutputReport* report = (OutputReport*) characteristic->getData();
-
-    }
-};
-
 // Function for reading battery level via the selected PIN
 void readBatteryLevel(){
     // Set battery level, read from battery pin. Input value is converted from 0-4095 to 0-100 range
     hid->setBatteryLevel((uint8_t) ((float) analogRead(PIN_BATTERY) * 100.0 / 4095.0));
 }
 
+// The task containing the initialization code for the BLE Keyboard.
 void bluetoothTask(void*) {
 
     // initialize the device
@@ -214,7 +203,6 @@ void bluetoothTask(void*) {
     hid = new BLEHIDDevice(server);
     input = hid->inputReport(1); // report ID
     output = hid->outputReport(1); // report ID
-    output->setCallbacks(new OutputCallbacks());
 
     // set manufacturer name
     hid->manufacturer()->setValue("HBO-ICT");
@@ -245,41 +233,3 @@ void bluetoothTask(void*) {
     Serial.println("Bluetooth device is ready to be connected");
     delay(portMAX_DELAY);
 };
-
-
-
-
-void write(const char* text) {
-    int len = strlen(text);
-    for (int i = 0; i < len; i++) {
-
-        // translate character to key combination
-        uint8_t val = (uint8_t)text[i];
-        if (val > KEYMAP_SIZE)
-            continue; // character not available on keyboard - skip
-        KEYMAP map = keymap[val];
-
-        // create input report
-        InputReport report = {
-            .modifiers = map.modifier,
-            .reserved = 0,
-            .pressedKeys = {
-                map.usage,
-                0, 0, 0, 0, 0
-            }
-        };
-
-        // send the input report
-        input->setValue((uint8_t*)&report, sizeof(report));
-        input->notify();
-
-        delay(5);
-
-        // release all keys between two characters; otherwise two identical
-        // consecutive characters are treated as just one key press
-        input->setValue((uint8_t*)&NO_KEY_PRESSED, sizeof(NO_KEY_PRESSED));
-        input->notify();
-
-        delay(5);
-    }
-}

@@ -122,7 +122,7 @@ function preload() {
     _resources['sky'] = loadImage('./assets/skyImage.png');
 
     // Load all audio
-    const audioFileNames = ['achievement', 'death', 'explosion', 'hit', 'lose', 'navigate1', 'navigate2', 'navigate3', 'navigate4', 'pickup', 'shoot', 'win'];
+    const audioFileNames = ['achievement', 'death', 'explosion', 'hit', 'hit2', 'lose', 'navigate1', 'navigate2', 'navigate3', 'navigate4', 'pickup', 'shoot', 'win'];
     for (let file of audioFileNames)
         audioFiles[file] = new Audio(`./assets/soundpack/${file}.wav`);
 }

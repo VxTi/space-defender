@@ -17,7 +17,7 @@ nav:
         - Enemy Ship: project/jsdocs/enemy_ship
         - Evolved Alien: project/jsdocs/evolved_alien
         - Rocket: project/jsdocs/rocket
-        - Script Loader: project/jsdocs/script_loader
+        - Script Loader: project/jsdocs/scriptloader
         - Spaceship: project/jsdocs/spaceship
         - Space Rock: project/jsdocs/space_rock
         - Particle: project/jsdocs/particle

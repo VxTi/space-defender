@@ -13,5 +13,8 @@
     "mysql": "^2.18.1",
     "mysql2": "^3.6.5",
     "uuidv5": "^1.0.0"
+  },
+  "devDependencies": {
+    "jsdoc-to-markdown": "^8.0.0"
   }
 }

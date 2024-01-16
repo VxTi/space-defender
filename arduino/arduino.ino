@@ -102,18 +102,28 @@ void setup() {
 void loop() {  
     if (isBleConnected) {
 
+      /*
       for (uint16_t i = 0, j = 0; i < BUTTON_COUNT; i++) {
         j = analogRead(pinData[i][0]);
         if (j >= 4095)
           Serial.printf("Button '%s' is pressed\r\n", (char) pinData[0][1]);
         reportMap.pressedKeys[i] = j >= 4095 ? keymap[(uint8_t) pinData[i][1]].modifier : 0; // Set the pressed key at index i to the key at pindata index i when the button is pressed.
       }
+      */
+
+     for (int i = 0; i < BUTTON_COUNT; i++) {
+        int j = analogRead(pinData[i][0])
+        if (j >= 4095){
+            reportMap.pressedKeys[i] = keymap[(uint8_t) pinData[i][1]].modifier;
+        }
+        
       
       readBatteryLevel();
       input->setValue((uint8_t*)&reportMap, sizeof(reportMap));
       input->notify();
       delay(25);
     }
+}
 }
 
 

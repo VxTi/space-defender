@@ -1,6 +1,8 @@
 
-// Quick class for a 2-dimensional vector
-
+/**
+ * Vec2 class
+ * Represents a 2D vector with x and y coordinates
+ */
 class Vec2 {
     // Private fields for x and y coordinates
     #x;

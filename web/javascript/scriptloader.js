@@ -12,11 +12,13 @@
     let head = document.getElementsByTagName('head')[0];
 
     let start = new Date();
-    for (let script of scripts)
-    {
+    for (let script of scripts) {
+        // Wait until script has loaded, then add it to the head.
+        // Must wait until done until the next script can be loaded,
+        // otherwise the order of the scripts will be messed up.
         let args = script.split(" ");
-        let name = args[0];
-        head.appendChild(await loadScript(`javascript/${name}.js`, head, args[1] !== undefined));
+        await loadScript(`javascript/${args[0]}.js`, head, args[1] !== undefined)
+            .then(e => head.appendChild(e));
     }
 
     console.log(`Loaded ${scripts.length} script(s) in ${(new Date()) - start}ms`);
@@ -24,14 +26,18 @@
 })();
 
 
-// Method for loading script and adding it to the target head element.
-// Returns a promise after script has successfully loaded to prevent others
-// from loading first and causing conflicts.
-async function loadScript(script, target, defer) {
+/**
+ * Method for loading script and adding it to the target head element.
+ * Returns a promise after script has successfully loaded to prevent others
+ * from loading first and causing conflicts.
+ * @param {string} script The script to load
+ * @param {HTMLElement} target The target element to add the script to
+ * @param {boolean} defer Whether to defer the script or not (loading after page load, default = false)
+ */
+async function loadScript(script, target, defer= false) {
     let element = document.createElement("script");
     element.setAttribute("src", script);
-    if (defer)
-        element.defer = true;
+    element.defer = defer;
     target.appendChild(element);
 
     // Return the promise with the element as content

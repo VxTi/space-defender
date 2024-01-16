@@ -342,3 +342,20 @@ body, html {
     width: 50%;
     float: left;
 }
+.virtual-keyboard {
+    left: calc(100vw - 75%);
+    position: absolute;
+    display: flex;
+    flex-flow: row wrap;
+    width: 50%;
+    height: 30%;
+    background-color: var(--color-button-static);
+}
+
+.virtual-key {
+    display: block;
+    width: 30px;
+    height: 30px;
+    background-color: var(--color-button-hover);
+    color: black;
+}

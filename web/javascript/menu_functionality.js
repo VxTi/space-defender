@@ -119,6 +119,19 @@ function keyTyped() {
 
     showMenu("menu-start");
 
+    let virtualKeyboard = document.querySelector('.virtual-keyboard');
+    let keys = 'qwertyuiopasdfghjklzxcvbnm';
+    for (let i = 0; i < keys.length; i++) {
+        let key = document.createElement('div');
+        key.classList.add('virtual-key');
+        key.innerHTML = keys[i];
+        key.onclick = () => {
+            let input = document.querySelector('.menu-text-input');
+            input.value += keys[i];
+        }
+        virtualKeyboard.appendChild(key);
+    }
+
 })();
 
 /**

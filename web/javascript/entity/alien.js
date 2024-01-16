@@ -1,3 +1,8 @@
+/**
+ * Alien class.
+ * Class represents an enemy Entity that will follow the player and
+ * damage it when it gets too close.
+ */
 class Alien extends Entity {
 
     static #SPRITE_INDEX = 2;
@@ -7,6 +12,12 @@ class Alien extends Entity {
     MINIMAP_SPRITE_INDEX = [1, 1]
 
 
+    /**
+     * Constructor for the Alien class.
+     * @param {number} x The x-coordinate of the Alien
+     * @param {number} y The y-coordinate of the Alien
+     * @param {number} size The size of the Alien
+     */
     constructor(x, y, size = 50) {
         super(x, y, 1, size);
         this.deathAnimations = true;
@@ -14,6 +25,11 @@ class Alien extends Entity {
     }
 
 
+    /**
+     * Overwrite of the update method in the Entity class.
+     * This will allow the Alien to follow the spaceship and attack it if it gets too close.
+     * @param {number} dT Time since last frame in seconds
+     */
     update(dT) {
         super.update(dT);
         resources['spritesheet'].animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, Alien.#SPRITE_INDEX);

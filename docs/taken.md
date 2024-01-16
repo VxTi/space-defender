@@ -14,7 +14,7 @@
 > Dit spreekt voor zich, we moeten meer mensen benaderen om feedback
 > van te verkrijgen.
 > 
-> ![25%](https://progress-bar.dev/25)
+> ![50%](https://progress-bar.dev/50)
 
 > ### Database uitbreiden 
 > 
@@ -37,4 +37,5 @@
 > ### Eigen User-Stories aanmaken 
 > 
 > We moeten afhankelijk van feedback user-stories creëren
-> - [ ] Afgerond
+> 
+> ![2/3](https://progress-bar.dev/33)

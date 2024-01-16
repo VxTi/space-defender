@@ -84,15 +84,13 @@ void loop() {
     if (isBleConnected) {
       memset(buffer, 0, BUTTON_COUNT);
 
-      uint8_t j = 0;
-      for (uint8_t i = 0; i < BUTTON_COUNT; i++) {
-          if (digitalRead(pinData[i][0]) == HIGH)
+      for (uint8_t i = 0, j = 0; i < BUTTON_COUNT; i++) {
+          if (digitalRead(pinData[i][0]))
             buffer[j++] = pinData[i][1];
       }
-
-      buffer[j] = '\0'; // Add null character at the end
       write(buffer);
       delay(25);
+      readBatteryLevel();
     }
 }
 
@@ -103,6 +101,12 @@ struct InputReport {
     uint8_t reserved;        // must be 0
     uint8_t pressedKeys[7];  // up to seven concurrenlty pressed keys
 };
+
+// Message (report) received when an LED's state changed
+struct OutputReport {
+    uint8_t leds;            // bitmask: num lock = 1, caps lock = 2, scroll lock = 4, compose = 8, kana = 16
+};
+
 
 // The report map describes the HID device (a keyboard in this case) and
 // the messages (reports in HID terms) sent and received.
@@ -117,12 +121,12 @@ static const uint8_t REPORT_MAP[] = {
     LOGICAL_MINIMUM(1), 0x00,       //   Each bit is either 0 or 1
     LOGICAL_MAXIMUM(1), 0x01,
     REPORT_COUNT(1),    0x08,       //   8 bits for the modifier keys
-    REPORT_SIZE(1),     0x01,       
+    REPORT_SIZE(1),     0x01,
     HIDINPUT(1),        0x02,       //   Data, Var, Abs
     REPORT_COUNT(1),    0x01,       //   1 byte (unused)
     REPORT_SIZE(1),     0x08,
     HIDINPUT(1),        0x01,       //   Const, Array, Abs
-    REPORT_COUNT(1),    0x07,       //   6 bytes (for up to 6 concurrently pressed keys)
+    REPORT_COUNT(1),    0x06,       //   6 bytes (for up to 6 concurrently pressed keys)
     REPORT_SIZE(1),     0x08,
     LOGICAL_MINIMUM(1), 0x00,
     LOGICAL_MAXIMUM(1), 0x65,       //   101 keys
@@ -146,6 +150,7 @@ static const uint8_t REPORT_MAP[] = {
 
 BLEHIDDevice* hid;
 BLECharacteristic* input;
+BLECharacteristic* output;
 
 const InputReport NO_KEY_PRESSED = { };
 
@@ -176,6 +181,22 @@ class BleKeyboardCallbacks : public BLEServerCallbacks {
     }
 };
 
+
+/*
+ * Called when the client (computer, smart phone) wants to turn on or off
+ * the LEDs in the keyboard.
+ *
+ * bit 0 - NUM LOCK
+ * bit 1 - CAPS LOCK
+ * bit 2 - SCROLL LOCK
+ */
+ class OutputCallbacks : public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic* characteristic) {
+        OutputReport* report = (OutputReport*) characteristic->getData();
+
+    }
+};
+
 // Function for reading battery level via the selected PIN
 void readBatteryLevel(){
     // Set battery level, read from battery pin. Input value is converted from 0-4095 to 0-100 range
@@ -192,6 +213,8 @@ void bluetoothTask(void*) {
     // create an HID device
     hid = new BLEHIDDevice(server);
     input = hid->inputReport(1); // report ID
+    output = hid->outputReport(1); // report ID
+    output->setCallbacks(new OutputCallbacks());
 
     // set manufacturer name
     hid->manufacturer()->setValue("HBO-ICT");
@@ -209,7 +232,7 @@ void bluetoothTask(void*) {
     hid->startServices();
 
     // set battery level to 100%
-    hid->setBatteryLevel(50);
+    readBatteryLevel();
 
     // advertise the services
     BLEAdvertising* advertising = server->getAdvertising();
@@ -223,22 +246,40 @@ void bluetoothTask(void*) {
     delay(portMAX_DELAY);
 };
 
+
+
+
 void write(const char* text) {
-    // Create an InputReport
-    InputReport report = {0};
+    int len = strlen(text);
+    for (int i = 0; i < len; i++) {
 
-    // Copy the pressed keys from the text to the report
-    for (int i = 0; i < 7 && text[i]; i++) {
-        report.pressedKeys[i] = text[i];
+        // translate character to key combination
+        uint8_t val = (uint8_t)text[i];
+        if (val > KEYMAP_SIZE)
+            continue; // character not available on keyboard - skip
+        KEYMAP map = keymap[val];
+
+        // create input report
+        InputReport report = {
+            .modifiers = map.modifier,
+            .reserved = 0,
+            .pressedKeys = {
+                map.usage,
+                0, 0, 0, 0, 0
+            }
+        };
+
+        // send the input report
+        input->setValue((uint8_t*)&report, sizeof(report));
+        input->notify();
+
+        delay(5);
+
+        // release all keys between two characters; otherwise two identical
+        // consecutive characters are treated as just one key press
+        input->setValue((uint8_t*)&NO_KEY_PRESSED, sizeof(NO_KEY_PRESSED));
+        input->notify();
+
+        delay(5);
     }
-
-    // Convert the InputReport struct to a byte array
-    uint8_t reportData[sizeof(InputReport)];
-    memcpy(reportData, &report, sizeof(InputReport));
-
-    // Write the byte array to the input report characteristic
-    input->setValue(reportData, sizeof(InputReport));
-    input->notify();
-    Serial.println("Sent report");
-    Serial.println(text);
 }

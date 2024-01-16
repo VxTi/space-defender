@@ -85,6 +85,6 @@ class Rocket extends Entity {
      * @returns {boolean} Whether the entity can be hit or not
      */
     #canHit(entity){
-        return !(entity instanceof Particle || entity instanceof Rocket || entity instanceof Spaceship)//(entity instanceof Alien || entity instanceof EnemyShip || entity instanceof EvolvedAlien);
+        return !(entity instanceof Particle || entity instanceof Rocket || entity instanceof Spaceship || entity instanceof HealthElement)
     }
 }

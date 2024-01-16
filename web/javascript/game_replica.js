@@ -237,8 +237,8 @@ function draw() {
 
     /** -- SECTION -- RENDERING HILLS BELOW -- **/
     for (let i = 0, frac = window.innerWidth / windowSegments; i < windowSegments; i++) {
-        drawSegmentedLine(frac * i, window.innerHeight - GNoise(i - screenOffsetX / frac) ,
-            frac * (i + 1), window.innerHeight - GNoise(i + 1 - screenOffsetX / frac),
+        drawSegmentedLine(frac * i, window.innerHeight - Math.round(GNoise(i - screenOffsetX / frac)) ,
+            frac * (i + 1), window.innerHeight - Math.round(GNoise(i + 1 - screenOffsetX / frac)),
             0xff0000, 3
         );
     }

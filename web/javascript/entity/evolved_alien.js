@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Contains the EvolvedAlien class
+ * This class is used for the evolved alien enemy.
+ * The evolved alien is a more advanced version of the alien.
+ */
 class EvolvedAlien extends Entity {
 
     static #SPRITE_INDEX = 2;
@@ -9,6 +14,11 @@ class EvolvedAlien extends Entity {
 
     #shootDelay = 0;
 
+    /**
+     * Constructor for the EvolvedAlien class.
+     * @param {number} x The x position of the evolved alien.
+     * @param {number} y The y position of the evolved alien.
+     */
     constructor(x, y) {
         super(x, y, 1, 40);
         this.deathAnimations = true;
@@ -17,16 +27,19 @@ class EvolvedAlien extends Entity {
     }
 
 
+    /**
+     * Overridden update method for updating the properties of this entity.
+     * @param {number} dT The time passed since the last update.
+     */
     update(dT) {
         super.update(dT);
         this.#shootDelay = Math.max(0, this.#shootDelay - dT);
         drawRect(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, -1);
-        //resources['spritesheet'].animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, Alien.#SPRITE_INDEX);
+        //spritesheet.animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, Alien.#SPRITE_INDEX);
         let [Dx, Dy] = [Math.sign(player.pos.x - this.pos.x), Math.sign(player.pos.y - this.pos.y)];
 
-        if (this.pos.distSq(player.pos) <= Math.pow(player.size / 2 + this.size / 2 + EvolvedAlien.#DAMAGE_REACH, 2) && player.alive && player.canDamage && this.#shootDelay <= 0)
-        {
-            entities.push(new EvolvedAlienBomb(this));
+        if (this.pos.distSq(player.pos) <= Math.pow(player.size / 2 + this.size / 2 + EvolvedAlien.#DAMAGE_REACH, 2) && player.alive && player.canDamage && this.#shootDelay <= 0) {
+            entities.push(new Rock(this));
             this.#shootDelay = EvolvedAlien.#SHOOT_DELAY;
         }
 

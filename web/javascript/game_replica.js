@@ -20,6 +20,10 @@ const Config = {
     DEFAULT_HEALTH: 5,
     DEFAULT_PLAYER_NAME: 'Guest',
     API_URL: 'http://localhost:8081/api/',
+    WAVE_MAX_ENTITIES: 200,
+    WAVE_MIN_ENTITIES: 10,
+    WAVE_INCREMENT_FACTOR: 2.2,
+
 }
 
 /**
@@ -91,6 +95,7 @@ let gameActive = false;
 let _resources = {};
 let resources = {}; // Here are all images stored as Resource objects
 let audioFiles = {};     // Here are all audio files stored as p5 SoundFile objects
+let spritesheet;
 
 // Array containing all the entities in the game
 let entities = [];
@@ -119,8 +124,9 @@ isOnScreen = (x, y) => x.isBetween(screenOffsetX, screenOffsetX + window.innerWi
 GNoise = (x) => noise(x / 3) * 200;
 
 function preload() {
-    _resources['spritesheet'] = loadImage('./assets/spritesheet.png');
-    _resources['sky'] = loadImage('./assets/skyImage.png');
+    loadImage('./assets/spritesheet.png', (img) => {
+        spritesheet = new Resource(img, 10, 10);
+    });
 
     // Load all audio
     const audioFileNames = ['achievement', 'death', 'explosion', 'hit', 'hit2', 'lose', 'navigate1', 'navigate2', 'navigate3', 'navigate4', 'pickup', 'shoot', 'win'];
@@ -134,9 +140,7 @@ function preload() {
 function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
     window.addEventListener('resize', () => resizeCanvas(window.innerWidth, window.innerHeight));
-
-    resources['spritesheet'] = new Resource(_resources['spritesheet'], 10, 10);
-
+    
     pixelPerCm = document.querySelector('.pixel-size').clientWidth;
     mapWidth = 200 * pixelPerCm; // 1 physical meter wide.
     mapHeight = window.innerHeight - mapTop;
@@ -226,11 +230,11 @@ function draw() {
     drawLine(midX - innerMapRadius, innerMapTop, midX - innerMapRadius, mapTop, 0xff, 4);
     drawLine(midX + innerMapRadius, innerMapTop, midX + innerMapRadius, mapTop, 0xff, 4);
 
-    resources['spritesheet'].drawSection(midX + (player.pos.x) * mapCoordinateFrac - innerMapHeight/2, innerMapTop - 1, innerMapHeight, innerMapHeight, 0, 2)
+    spritesheet.drawSection(midX + (player.pos.x) * mapCoordinateFrac - innerMapHeight/2, innerMapTop - 1, innerMapHeight, innerMapHeight, 0, 2)
 
     /** -- SECTION -- RENDERING LIVES -- **/
     for (let i = 0, s = 200 / Config.DEFAULT_HEALTH; i < player.health; i++)
-        resources['spritesheet'].animate(midX - innerMapRadius - 215 + s * i, mapTop - 22 - s, s, s, 0);
+        spritesheet.animate(midX - innerMapRadius - 215 + s * i, mapTop - 22 - s, s, s, 0);
 
     /** -- SECTION -- RENDERING SHOOT CHARGE -- **/
     drawRect(midX - innerMapRadius - 215, mapTop - 20, 205, 15, 0x404040);
@@ -272,7 +276,7 @@ function draw() {
             entities.splice(i, 1);
         else {
             if (e.MINIMAP_SPRITE_INDEX != null && typeof e.MINIMAP_SPRITE_INDEX === 'object')
-                resources['spritesheet'].drawSection(
+                spritesheet.drawSection(
                     midX + e.pos.x * mapCoordinateFrac - screenOffsetX,
                     innerMapTop + Math.round((e.pos.y - mapTop) / (window.innerHeight - mapTop) * innerMapHeight), 30, 30,
                     e.MINIMAP_SPRITE_INDEX[0], e.MINIMAP_SPRITE_INDEX[1]
@@ -280,6 +284,20 @@ function draw() {
         }
         e.update(dT)
     }
+}
+
+/**
+ * Method for introducing a new entity wave into the game.
+ * This method is called when the player has killed all entities in the current wave.
+ * @param {number} wave The wave number to introduce
+ */
+function introduceWave(wave) {
+    let entityCount = Math.min(wave * Config.WAVE_INCREMENT_FACTOR + Config.WAVE_MIN_ENTITIES, Config.WAVE_MAX_ENTITIES);
+    for (let i = 0; i < entityCount; i++) {
+        let [x, y] = [-mapWidth / 2 + Math.random() * mapWidth, mapTop + Math.random() * mapHeight];
+
+    }
+
 }
 
 /**
@@ -372,12 +390,15 @@ function performExplosion() {
  * Method for starting the game and configuring the right variables
  */
 function startGame() {
-    entities = [player];
-    setScore(0);
+    entities = [player]; // reset entity list
+    setScore(0); // reset score
     let nameInput = document.getElementById('menu-start-name-input');
     playerName = nameInput.value.length >= nameInput.minLength ? nameInput.value : Config.DEFAULT_PLAYER_NAME;
     console.log("Starting game as " + playerName);
-    PlayerData.WAVE = 1;
+    PlayerData.WAVE = 1; // set wave back to 1
+
+    // reset statistics
+    Object.entries(Statistics).forEach(([key, value]) => value.value = 0);
 
     // If the player decided to use a name, then we'll check whether the user exists,
     if (playerName !== Config.DEFAULT_PLAYER_NAME) {
@@ -438,6 +459,7 @@ function respawn() {
     player.health = Config.DEFAULT_HEALTH;
     player.pos.translate(window.innerWidth/2, window.innerHeight/2);
     player.vel.translate(0, 0);
+    player.acceleration.translate(0, 0);
     entities = [player];
     setScore(0, 1);
 }

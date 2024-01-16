@@ -1,3 +1,7 @@
+/**
+ * @fileoverview This file contains the Entity class.
+ * This class is the base class for all entities in the game.
+ */
 class Entity {
 
     // Private fields that represent this entity.
@@ -16,6 +20,13 @@ class Entity {
     MINIMAP_SPRITE_INDEX = null;
     ENTITY_KILL_SCORE = 200;
 
+    /**
+     * Constructor for the entity class.
+     * @param {number} x The x position of the entity
+     * @param {number} y The y position of the entity
+     * @param {number} health The health of the entity
+     * @param {number} size The size of the entity
+     */
     constructor(x, y, health, size = 20) {
         this.#position = new Vec2(x, y);
         this.#velocity = new Vec2();
@@ -26,6 +37,13 @@ class Entity {
         this.#damageColor = -1;
         this.#damageCooldown = 0;
     }
+
+
+    /**
+     * Method for updating the entity's position and other properties.
+     * This method is often overridden by subclasses.
+     * @param {number} dT Time difference since last frame, in seconds
+     */
     update(dT) {
         this.#damageCooldown = Math.max(0, this.#damageCooldown - dT);
         if (this.pos.x < -mapWidth / 2 || this.pos.x > mapWidth / 2) {

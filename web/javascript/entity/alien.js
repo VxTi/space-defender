@@ -1,5 +1,5 @@
 /**
- * Alien class.
+ * @fileoverview Alien class.
  * Class represents an enemy Entity that will follow the player and
  * damage it when it gets too close.
  */
@@ -32,7 +32,7 @@ class Alien extends Entity {
      */
     update(dT) {
         super.update(dT);
-        resources['spritesheet'].animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, Alien.#SPRITE_INDEX);
+        spritesheet.animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, Alien.#SPRITE_INDEX);
         let [Dx, Dy] = [Math.sign(player.pos.x - this.pos.x), Math.sign(player.pos.y - this.pos.y)];
 
         if (this.pos.distSq(player.pos) <= Math.pow(player.size / 2 + this.size / 2 + Alien.#DAMAGE_REACH, 2) && player.alive && player.canDamage)

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview This file contains the EnemyShip class, which is a subclass of Entity.
+ */
 class EnemyShip extends Entity {
 
 
@@ -8,6 +11,12 @@ class EnemyShip extends Entity {
     MINIMAP_SPRITE_INDEX = [2, 1]
 
 
+    /**
+     * Constructor for the enemy ship
+     * @param {number} x X position of the enemy ship
+     * @param {number} y Y position of the enemy ship
+     * @param {number} size Size of the enemy ship (in pixels), defaults to 70
+     */
     constructor(x, y, size = 70) {
         super(x, y, 2, size);
         this.deathAnimations = true;
@@ -16,9 +25,13 @@ class EnemyShip extends Entity {
     }
 
 
+    /**
+     * Overridden update method for the enemy ship.
+     * @param {number} dT Time difference since last frame, in seconds
+     */
     update(dT) {
         super.update(dT);
-        resources['spritesheet'].animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, EnemyShip.#SPRITE_INDEX);
+        spritesheet.animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, EnemyShip.#SPRITE_INDEX);
 
         this.#doPathfinding(dT);
 

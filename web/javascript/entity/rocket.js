@@ -1,3 +1,7 @@
+/**
+ * Class for creating a rocket, fired by the user.
+ * This rocket can damage malevolent entities.
+ */
 class Rocket extends Entity {
 
     // Private fields that represent this rocket.
@@ -25,11 +29,15 @@ class Rocket extends Entity {
         this.#source = source;
     }
 
+    /**
+     * Overridden method for updating the rocket and its properties.
+     * @param {number} dT The time passed since last frame, in seconds
+     */
     update(dT) {
         //this.health = (this.#trailX >= -mapWidth/2 && this.#trailX <= mapWidth / 2) ? 1 : 0;
         this.health = Math.max(0, this.health - dT);
         let dw = Math.abs(this.pos.x - this.#trailX);
-        resources['spritesheet'].drawSection(Math.min(this.#trailX, this.pos.x), this.pos.y, dw, 4, this.#facing < 0 ? 2 : 1, 2);
+        spritesheet.drawSection(Math.min(this.#trailX, this.pos.x), this.pos.y, dw, 4, this.#facing < 0 ? 2 : 1, 2);
         drawRect(this.pos.x + 4, this.pos.y - 2, 4, 4, -1, Math.min(1, this.health));
 
         // Check for collision with entities.
@@ -42,18 +50,12 @@ class Rocket extends Entity {
             if (this.#collidesWith(e, dT)) {
                 e.damage(this.#damage);
                 Statistics.damageDealt.value += this.#damage; // Take measurements !!!
-                if (!e.alive) {
-                    addScore(e.ENTITY_KILL_SCORE);
-                    Statistics.entitiesKilled.value++; // Take measurements!!!
-                    Statistics.killDeathRatio.value = Statistics.entitiesKilled.value / Math.max(1, Statistics.timesDied.value);
-                    playSound('hit');
-                    if (e instanceof Alien)
-                        Statistics.aliensKilled.value++;
-                    else if (e instanceof EnemyShip)
-                        Statistics.enemyShipsKilled.value++;
-                    else if (e instanceof EvolvedAlien)
-                        Statistics.evolvedAliensKilled.value++;
-                }
+
+                // Check whether the function 'onEntityKill' exists in the Spaceship class
+                // If so, call it.
+                if (typeof player['onEntityKill'] === 'function' && !e.alive)
+                    player['onEntityKill'](e);
+
                 this.health = 0;
                 return;
             }

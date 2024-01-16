@@ -18,6 +18,8 @@ selectNextMenuItem = (direction = 1) => {
     if (currentMenu === null)
         return;
 
+    playSound('navigate1');
+
     // Get the list of possible selectors
     let selectables = currentMenu.querySelectorAll(".gamepad-selectable");
     let currentlySelected = currentMenu.querySelector(".gamepad-selected");
@@ -81,7 +83,7 @@ function keyTyped() {
             break;
         case ' ':
             if (currentMenu != null) {
-
+                playSound('navigate2');
                 let selected = currentMenu.querySelector('.gamepad-selected');
 
                 // Check whether we've selected an item

@@ -45,6 +45,8 @@ function keyTyped() {
     if (document.activeElement === document.querySelector('.menu-text-input'))
         return;
 
+    let keyboardActive = document.querySelector('.virtual-keyboard').classList.contains('keyboard-active');
+
     switch (key) {
         case 'r':
         case ESCAPE:
@@ -54,11 +56,27 @@ function keyTyped() {
             }
             break;
         case 'w':
+            if (keyboardActive) {
+                moveKeyboardCursor(0, -1);
+                break;
+            }
         case 'd':
+            if (keyboardActive) {
+                moveKeyboardCursor(1, 0);
+                break;
+            }
             selectNextMenuItem(-1);
             break;
         case 's':
+            if (keyboardActive) {
+                moveKeyboardCursor(0, 1);
+                break;
+            }
         case 'a':
+            if (keyboardActive) {
+                moveKeyboardCursor(-1, 0);
+                break;
+            }
             selectNextMenuItem(1);
             break;
         case ' ':
@@ -141,6 +159,23 @@ function keyTyped() {
 })();
 
 /**
+ * Method for moving the keyboard cursor.
+ * @param x
+ * @param y
+ */
+function moveKeyboardCursor(x, y) {
+    let cursor = document.querySelector('.keyboard-cursor');
+    let keyboard = document.querySelector('.virtual-keyboard');
+    let keys = keyboard.querySelectorAll('.virtual-key');
+    let cursorPos = cursor.dataset.pos.split(',').map(e => parseInt(e));
+    cursorPos[0] = (cursorPos[0] + x + keys.length) % keys.length;
+    cursorPos[1] = (cursorPos[1] + y + Math.ceil(keys.length / 10)) % Math.ceil(keys.length / 10);
+    cursor.dataset.pos = cursorPos.join(',');
+    cursor.style.left = `${cursorPos[0] * 50}px`;
+    cursor.style.top = `${cursorPos[1] * 50}px`;
+}
+
+/**
  * Method for changing the current menu.
  * @param element
  */
@@ -156,6 +191,10 @@ function showMenu(element = null) {
 
 }
 
+/**
+ * Method for loading statistics.
+ * This method is called when the 'statistics' menu is opened in-game.
+ */
 function loadStatistics() {
     document.querySelector('.statistics-content').innerHTML =
         Object.entries(Statistics).map(([key, value]) => {

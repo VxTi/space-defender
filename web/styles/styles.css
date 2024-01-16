@@ -347,15 +347,23 @@ body, html {
     position: absolute;
     display: flex;
     flex-flow: row wrap;
+    justify-content: space-evenly;
     width: 50%;
     height: 30%;
     background-color: var(--color-button-static);
+    border-radius: 5px;
 }
 
 .virtual-key {
+    border-radius: 3px;
     display: block;
-    width: 30px;
-    height: 30px;
+    margin: 3px;
+    width: calc(10% - 2 * 3px);
+    height: 30%;
     background-color: var(--color-button-hover);
     color: black;
+}
+
+.virtual-key > .selected {
+    border: 1px solid white;
 }

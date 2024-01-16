@@ -1,8 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-
-const apiKey = 'dcdc91a618b4c9830fcc2e20';
-
 let windowSegments = 50;
 
 let pixelPerCm;  // How many pixels a physical centimeter occupy.
@@ -126,8 +121,11 @@ function preload() {
     _resources['spritesheet'] = loadImage('./assets/spritesheet.png');
     _resources['sky'] = loadImage('./assets/skyImage.png');
 
-    const audioFiles = ['./assets/soundpack/achievement.wav', './assets/soundpack/death.wav', './assets/soundpack/explosion.wav', './assets/soundpack/hit.wav', './assets/soundpack/lose.wav', './assets/soundpack/navigate1.wav', './assets/soundpack/navigate2.wav', './assets/soundpack/navigate3', './assets/soundpack/navigate4.wav', './assets/soundpack/pickup.wav', './assets/soundpack/shoot.wav', './assets/soundpack/win.wav'];
-    console.log(audioFiles);
+
+
+    const audioFiles = ['achievement', 'death', 'explosion', 'hit', 'lose', 'navigate1', 'navigate2', 'navigate3', 'navigate4', 'pickup', 'shoot', 'win'];
+    for (let file of audioFiles)
+        audio[file] = new Audio(`./assets/soundpack/${file}.wav`);
 }
 
 /**

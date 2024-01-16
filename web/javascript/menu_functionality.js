@@ -45,34 +45,40 @@ function keyTyped() {
     if (document.activeElement === document.querySelector('.menu-text-input'))
         return;
 
-    // Pause game key
-    if ((key === 'r' || key === ESCAPE) && gameActive) {
-        gameActive = false;
-        showMenu('menu-pause');
-    }
-
-    // For controller movement, when user enters 'w' or 'd', select next upper element
-    if (key === 'w' || key === 'd')
-        selectNextMenuItem(-1);
-    else if (key === 's' || key === 'a') // with 's' and 'a', do the opposite, move down
-        selectNextMenuItem(1);
-    else if (key === ' ') { // If space-bar is pressed, perform button click
-        if (currentMenu != null) {
-
-            let selected = currentMenu.querySelector('.gamepad-selected');
-
-            // Check whether we've selected an item
-            if (selected == null)
-                return;
-
-            // Check if it has a menu to go to
-            if (selected.dataset.menu != null) {
-                showMenu(selected.dataset.menu);
+    switch (key) {
+        case 'r':
+        case ESCAPE:
+            if (gameActive) {
+                gameActive = false;
+                showMenu('menu-pause');
             }
-            // Check if it has a function to perform when interacted with
-            if (selected.dataset.onload != null && typeof window[selected.dataset.onload] === 'function')
-                window[selected.dataset.onload]();
-        }
+            break;
+        case 'w':
+        case 'd':
+            selectNextMenuItem(-1);
+            break;
+        case 's':
+        case 'a':
+            selectNextMenuItem(1);
+            break;
+        case ' ':
+            if (currentMenu != null) {
+
+                let selected = currentMenu.querySelector('.gamepad-selected');
+
+                // Check whether we've selected an item
+                if (selected == null)
+                    return;
+
+                // Check if it has a menu to go to
+                if (selected.dataset.menu != null) {
+                    showMenu(selected.dataset.menu);
+                }
+                // Check if it has a function to perform when interacted with
+                if (selected.dataset.onload != null && typeof window[selected.dataset.onload] === 'function')
+                    window[selected.dataset.onload]();
+            }
+            break;
     }
 }
 

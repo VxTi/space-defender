@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 
 const apiKey = 'dcdc91a618b4c9830fcc2e20';
 
@@ -123,6 +125,9 @@ GNoise = (x) => noise(x / 3) * 200;
 function preload() {
     _resources['spritesheet'] = loadImage('./assets/spritesheet.png');
     _resources['sky'] = loadImage('./assets/skyImage.png');
+
+    const audioFiles = ['./assets/soundpack/achievement.wav', './assets/soundpack/death.wav', './assets/soundpack/explosion.wav', './assets/soundpack/hit.wav', './assets/soundpack/lose.wav', './assets/soundpack/navigate1.wav', './assets/soundpack/navigate2.wav', './assets/soundpack/navigate3', './assets/soundpack/navigate4.wav', './assets/soundpack/pickup.wav', './assets/soundpack/shoot.wav', './assets/soundpack/win.wav'];
+    console.log(audioFiles);
 }
 
 /**

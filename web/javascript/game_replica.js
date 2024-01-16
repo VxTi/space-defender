@@ -92,6 +92,7 @@ let gameActive = false;
 // Object where all resources are stored in at preload
 let _resources = {};
 let resources = {}; // Here are all images stored as Resource objects
+let audio = {};     // Here are all audio files stored as p5 SoundFile objects
 
 // Array containing all the entities in the game
 let entities = [];
@@ -318,7 +319,9 @@ function scoreUpdater() {
 }
 
 /**
- * Method for performing the explosion effect.
+ * Method for performing the explosion effect once the explosion progress has reached 100%
+ * This method checks which entities are within range of the explosion, and damages them accordingly.
+ * Also introduces particles into space.
  */
 function performExplosion() {
     if (explosiveTimer <= 0 && player.alive) {
@@ -500,6 +503,16 @@ function addScore(score, e = null) {
     setScore(PlayerData.SCORE += Math.abs(score));
     if (e)
         console.log("Score received from entity ", e);
+}
+
+/**
+ * Method for playing a sound effect
+ * @param {SoundFile} audio The audio file to play
+ */
+function playAudio(audio) {
+    p5.loadSound(audio).play();
+    audio.currentTime = 0;
+    audio.play();
 }
 
 /**

@@ -1,199 +1,169 @@
-#include <BleKeyboard.h>
-#define USE_NIMBLE
+/**
+ * A BLE client example that is rich in capabilities.
+ * There is a lot new capabilities implemented.
+ * author unknown
+ * updated by chegewara
+ */
 
-/*
-| PINS | PCB SW# | DESC   | CHAR |
-|------|---------|--------|------|
-| 7    | 1       | A      | ' '  |
-| 6    | 2       | B      | F    |
-| 5    | 3       | DPAD U | W    |
-| 4    | 4       | DPAD D | S    |
-| 3    | 5       | DPAD L | A    |
-| 2    | 6       | DPAD R | D    |
-| 1    | 7       | OPT    | R    |
-*/
+#include <Arduino.h>
+#include "BLEDevice.h"
+//#include "BLEScan.h"
+#include "HIDKeys.h"
+#define DEBUG
 
-BleKeyboard bleKeyboard;
+// The remote service we wish to connect to.
+static BLEUUID serviceUUID((uint16_t) 0x1812);
+// The characteristic of the remote service we are interested in.
+static BLEUUID    charUUID((uint16_t) 0x2a4d);
 
-const int pinData[] =         {   7,    6,    5,    4,    3,    2,    1};
-const int buttonNumbers[] =   {   1,    2,    3,    4,    5,    6,    7};
-const uint8_t buttonChars[] = { ' ',  'F',  'W',  'S',  'A',  'D',  'R'};
-const uint8_t buttonAscii[] = {0x2c, 0x09, 0x1a, 0x16, 0x04, 0x07, 0x15};
+static bool doConnect = false;
+static bool connected = false;
+static bool doScan = false;
+static BLERemoteCharacteristic* pRemoteCharacteristic;
+static BLEAdvertisedDevice* myDevice;
 
-
-int buttonData[7] = {0, 0, 0, 0, 0, 0, 0};
-
-void setPinModes() {
-  for (int i = 0; i < 7; i++) {
-    pinMode(pinData[i], INPUT);
-  }
-}
-
-void readButtonStates() {
-    for (int i = 0; i < 7; i++) {
-        buttonData[i] = digitalRead(pinData[i]);
+static void notifyCallback(
+  BLERemoteCharacteristic* pBLERemoteCharacteristic,
+  uint8_t* pData,
+  size_t length,
+  bool isNotify) {
+#ifdef DEBUG
+    Serial.print("Notify callback for characteristic ");
+    Serial.print(pBLERemoteCharacteristic->getUUID().toString().c_str());
+    Serial.print(" of data length ");
+    Serial.println(length);
+    Serial.print("data: ");
+    for (size_t i = 0; i < length; i++)
+    {
+      Serial.printf("%2x", pData[i]);
+    }
+    Serial.println("");
+#endif
+    if(pData[0] == 0x0 && pData[2] != 0x0) {
+      Serial.printf("%c", keys[pData[2]]);
+    } else if(pData[0] == 0x02 && pData[2] != 0x0) {
+      Serial.printf("%c", shift_keys[pData[2]]);      
     }
 }
 
-uint8_t getButtonCharacter(int buttonNumber) {
-    return buttonAscii[buttonNumber];
+class MyClientCallback : public BLEClientCallbacks {
+  void onConnect(BLEClient* pclient) {
+    connected = true;
+  }
+
+  void onDisconnect(BLEClient* pclient) {
+    connected = false;
+    Serial.println("onDisconnect");
+  }
+};
+
+bool connectToServer() {
+    Serial.print("Forming a connection to ");
+    Serial.println(myDevice->getAddress().toString().c_str());
+    
+    BLEClient*  pClient  = BLEDevice::createClient();
+    Serial.println(" - Created client");
+
+    pClient->setClientCallbacks(new MyClientCallback());
+
+    // Connect to the remove BLE Server.
+    if(!pClient->connect(myDevice)) {  // if you pass BLEAdvertisedDevice instead of address, it will be recognized type of peer device address (public or private)
+      return false;
+    }
+    Serial.println(" - Connected to server");
+
+    // Obtain a reference to the service we are after in the remote BLE server.
+    BLERemoteService* pRemoteService = pClient->getService(serviceUUID);
+    if (pRemoteService == nullptr) {
+      Serial.print("Failed to find our service UUID: ");
+      Serial.println(serviceUUID.toString().c_str());
+      pClient->disconnect();
+      return false;
+    }
+    Serial.println(" - Found our service");
+
+    // Obtain a reference to the characteristic in the service of the remote BLE server.
+    do {
+      pRemoteCharacteristic = pRemoteService->getCharacteristic(charUUID);
+      if (pRemoteCharacteristic == nullptr) {
+        Serial.print("Failed to find our characteristic UUID: ");
+        Serial.println(charUUID.toString().c_str());
+        pClient->disconnect();
+        return false;
+      }
+
+      if(pRemoteCharacteristic->canNotify())
+        break;
+    } while(1);
+    Serial.println(" - Found our characteristic");
+
+    pRemoteCharacteristic->registerForNotify(notifyCallback);
+
+    return true;
 }
+/**
+ * Scan for BLE servers and find the first one that advertises the service we are looking for.
+ */
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+ /**
+   * Called for each advertising BLE server.
+   */
+  void onResult(BLEAdvertisedDevice advertisedDevice) {
+    Serial.print("BLE Advertised Device found: ");
+    Serial.println(advertisedDevice.toString().c_str());
+
+    // We have found a device, let us now see if it contains the service we are looking for.
+    if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID)) {
+
+      BLEDevice::getScan()->stop();
+      myDevice = new BLEAdvertisedDevice(advertisedDevice);
+      doConnect = true;
+      doScan = true;
+
+    } // Found our server
+  } // onResult
+}; // MyAdvertisedDeviceCallbacks
+
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Running BLE Gamepad");
-  setPinModes();
-  bleKeyboard.begin();
-}
+  Serial.println("Starting Arduino BLE Client application...");
+  BLEDevice::init("");
 
-void loop(){
-    readButtonStates();
-    for (int i = 0; i < 7; i++) {
-        if (buttonData[i] == 1) {
-        bleKeyboard.press(getButtonCharacter(i));
-        Serial.println("Pressed: " + String(getButtonCharacter(i)));
-        } else {
-        bleKeyboard.release(getButtonCharacter(i));
-        Serial.println("Released: " + String(getButtonCharacter(i)));
-        }
-    }
-    delay(2);
-}
-/*
+  // Retrieve a Scanner and set the callback we want to use to be informed when we
+  // have detected a new device.  Specify that we want active scanning and start the
+  // scan to run for 5 seconds.
+  BLEScan* pBLEScan = BLEDevice::getScan();
+  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+  pBLEScan->setInterval(1349);
+  pBLEScan->setWindow(449);
+  pBLEScan->setActiveScan(true);
+  pBLEScan->start(5, false);
+} // End of setup.
+
+
+// This is the Arduino main loop function.
 void loop() {
-  if(bleKeyboard.isConnected()) {
-    Serial.println("Sending 'Hello world'...");
-    bleKeyboard.print("Hello world");
 
-    delay(1000);
-
-    Serial.println("Sending Enter key...");
-    bleKeyboard.write(KEY_RETURN);
-
-    delay(1000);
-
-    Serial.println("Sending Play/Pause media key...");
-    bleKeyboard.write(KEY_MEDIA_PLAY_PAUSE);
-
-    delay(1000);
-    
-   //
-   // Below is an example of pressing multiple keyboard modifiers 
-   // which by default is commented out. 
-   // 
-    Serial.println("Sending Ctrl+Alt+Delete...");
-    bleKeyboard.press(KEY_LEFT_CTRL);
-    bleKeyboard.press(KEY_LEFT_ALT);
-    bleKeyboard.press(KEY_DELETE);
-    delay(100);
-    bleKeyboard.releaseAll();
-
+  // If the flag "doConnect" is true then we have scanned for and found the desired
+  // BLE Server with which we wish to connect.  Now we connect to it.  Once we are 
+  // connected we set the connected flag to be true.
+  if (doConnect == true) {
+    if (connectToServer()) {
+      Serial.println("We are now connected to the BLE Server.");
+    } else {
+      Serial.println("We have failed to connect to the server; there is nothin more we will do.");
+    }
+    doConnect = false;
   }
-  Serial.println("Waiting 5 seconds...");
-  delay(5000);
-}
-*/
 
-#define SHIFT 0x80
-const uint8_t asciimap[] =
-{
-	0x2a,			// BS	Backspace
-	0x2b,			// TAB	Tab
-	0x28,			// LF	Enter
-	0x2c,		   //  ' '
-	0x1e|SHIFT,	   // !
-	0x34|SHIFT,	   // "
-	0x20|SHIFT,    // #
-	0x21|SHIFT,    // $
-	0x22|SHIFT,    // %
-	0x24|SHIFT,    // &
-	0x34,          // '
-	0x26|SHIFT,    // (
-	0x27|SHIFT,    // )
-	0x25|SHIFT,    // *
-	0x2e|SHIFT,    // +
-	0x36,          // ,
-	0x2d,          // -
-	0x37,          // .
-	0x38,          // /
-	0x27,          // 0
-	0x1e,          // 1
-	0x1f,          // 2
-	0x20,          // 3
-	0x21,          // 4
-	0x22,          // 5
-	0x23,          // 6
-	0x24,          // 7
-	0x25,          // 8
-	0x26,          // 9
-	0x33|SHIFT,      // :
-	0x33,          // ;
-	0x36|SHIFT,      // <
-	0x2e,          // =
-	0x37|SHIFT,      // >
-	0x38|SHIFT,      // ?
-	0x1f|SHIFT,      // @
-	0x04|SHIFT,      // A
-	0x05|SHIFT,      // B
-	0x06|SHIFT,      // C
-	0x07|SHIFT,      // D
-	0x08|SHIFT,      // E
-	0x09|SHIFT,      // F
-	0x0a|SHIFT,      // G
-	0x0b|SHIFT,      // H
-	0x0c|SHIFT,      // I
-	0x0d|SHIFT,      // J
-	0x0e|SHIFT,      // K
-	0x0f|SHIFT,      // L
-	0x10|SHIFT,      // M
-	0x11|SHIFT,      // N
-	0x12|SHIFT,      // O
-	0x13|SHIFT,      // P
-	0x14|SHIFT,      // Q
-	0x15|SHIFT,      // R
-	0x16|SHIFT,      // S
-	0x17|SHIFT,      // T
-	0x18|SHIFT,      // U
-	0x19|SHIFT,      // V
-	0x1a|SHIFT,      // W
-	0x1b|SHIFT,      // X
-	0x1c|SHIFT,      // Y
-	0x1d|SHIFT,      // Z
-	0x2f,          // [
-	0x31,          // bslash
-	0x30,          // ]
-	0x23|SHIFT,    // ^
-	0x2d|SHIFT,    // _
-	0x35,          // `
-	0x04,          // a
-	0x05,          // b
-	0x06,          // c
-	0x07,          // d
-	0x08,          // e
-	0x09,          // f
-	0x0a,          // g
-	0x0b,          // h
-	0x0c,          // i
-	0x0d,          // j
-	0x0e,          // k
-	0x0f,          // l
-	0x10,          // m
-	0x11,          // n
-	0x12,          // o
-	0x13,          // p
-	0x14,          // q
-	0x15,          // r
-	0x16,          // s
-	0x17,          // t
-	0x18,          // u
-	0x19,          // v
-	0x1a,          // w
-	0x1b,          // x
-	0x1c,          // y
-	0x1d,          // z
-	0x2f|SHIFT,    // {
-	0x31|SHIFT,    // |
-	0x30|SHIFT,    // }
-	0x35|SHIFT,    // ~
-	0				// DEL
-};
+  // If we are connected to a peer BLE Server, update the characteristic each time we are reached
+  // with the current time since boot.
+  if (connected) {
+    // do nothing, all data is handled in notifications callback
+  }else if(doScan){
+    BLEDevice::getScan()->start(0);  // this is just eample to start scan after disconnect, most likely there is better way to do it in arduino
+  }
+  
+  delay(1000); // Delay a second between loops.
+} // End of loop

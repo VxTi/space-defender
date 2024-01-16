@@ -5,4 +5,3 @@
 - https://squidfunk.github.io/mkdocs-material/reference/admonitions/
 - https://sidorares.github.io/node-mysql2/docs/documentation
 - https://randomnerdtutorials.com/power-esp32-esp8266-solar-panels-battery-level-monitoring/
-- 

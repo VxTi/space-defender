@@ -352,6 +352,7 @@ body, html {
     height: 30%;
     background-color: var(--color-button-static);
     border-radius: 5px;
+    visibility: hidden;
 }
 
 .virtual-key {

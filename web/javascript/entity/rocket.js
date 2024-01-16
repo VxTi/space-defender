@@ -46,7 +46,7 @@ class Rocket extends Entity {
                     addScore(e.ENTITY_KILL_SCORE);
                     Statistics.entitiesKilled.value++; // Take measurements!!!
                     Statistics.killDeathRatio.value = Statistics.entitiesKilled.value / Math.max(1, Statistics.timesDied.value);
-
+                    playSound('hit');
                     if (e instanceof Alien)
                         Statistics.aliensKilled.value++;
                     else if (e instanceof EnemyShip)

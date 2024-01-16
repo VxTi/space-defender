@@ -57,12 +57,13 @@ class Spaceship extends Entity {
     // Nothing too interesting, just update some statistics.
     onDamage(amount) {
         Statistics.damageReceived.value += amount;
+        playSound('hit');
     }
 
     shoot() {
         if (!this.alive)
             return;
-
+        playSound('shoot');
         entities.push(new Rocket(this));
         Statistics.rocketsFired.value++;
     }
@@ -70,6 +71,7 @@ class Spaceship extends Entity {
     get facing() { return this.#facing; }
 
     onDeath() {
+        playSound('death');
         Statistics.timesDied.value++;
         let element = document.querySelector('.game-event-indicator');
         element.innerHTML = 'Game over<br>';

@@ -23,6 +23,8 @@ const Config = {
     WAVE_MAX_ENTITIES: 200,
     WAVE_MIN_ENTITIES: 10,
     WAVE_INCREMENT_FACTOR: 2.2,
+    DEFAULT_WAVE: 1
+
 
 }
 
@@ -392,11 +394,13 @@ function performExplosion() {
  */
 function startGame() {
     entities = [player]; // reset entity list
-    setScore(0); // reset score
     let nameInput = document.getElementById('menu-start-name-input');
     playerName = nameInput.value.length >= nameInput.minLength ? nameInput.value : Config.DEFAULT_PLAYER_NAME;
     console.log("Starting game as " + playerName);
     PlayerData.WAVE = 1; // set wave back to 1
+    PlayerData.HIGH_SCORE = 0; // Reset highscore
+    player.health = Config.DEFAULT_HEALTH;
+    setScore(0); // reset score
 
     // reset statistics
     Object.entries(Statistics).forEach(([key, value]) => value.value = 0);
@@ -415,7 +419,7 @@ function startGame() {
                     console.log("Retrieved user data");
                     PlayerData.PLAYER_ID = res.userData.userId;
                     PlayerData.HIGH_SCORE = res.userData.maxScore;
-                    PlayerData.SCORE = res.userData.lastScore;
+                    setScore(PlayerData.SCORE, res.userData.lastWave);
                     if (res.userData.statistics)
                         res.userData.statistics.map(stat => {
                             if (typeof Statistics[stat.field] === 'object')
@@ -455,6 +459,8 @@ async function requestApi(param, content) {
 
 /**
  * Method for respawning the player and resetting some variables.
+ * This also sets the player score to 0 and updates the text on screen,
+ * resets the player health and sets the player position to the center of the screen.
  */
 function respawn() {
     player.health = Config.DEFAULT_HEALTH;
@@ -462,6 +468,7 @@ function respawn() {
     player.vel.translate(0, 0);
     player.acceleration.translate(0, 0);
     entities = [player];
+    PlayerData.WAVE = Config.DEFAULT_WAVE;
     setScore(0, 1);
 }
 

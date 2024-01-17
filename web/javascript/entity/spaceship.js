@@ -44,9 +44,12 @@ class Spaceship extends Entity {
 
         this.acceleration.translate(this.dir.x * Spaceship.MOVEMENT_SPEED.x, this.dir.y * Spaceship.MOVEMENT_SPEED.y);
 
-        if (!audioFiles['spaceshipFlying'].isPlaying() && (Math.abs(this.vel.x) > Spaceship.VELOCITY_THRESHOLD || Math.abs(this.vel.y) > Spaceship.VELOCITY_THRESHOLD))
-            audioFiles['spaceshipFlying'].play();
-
+        if (!audioFiles['spaceshipFlying'].isPlaying()) {
+            if ((Math.abs(this.vel.x) >= Spaceship.VELOCITY_THRESHOLD || Math.abs(this.vel.y) >= Spaceship.VELOCITY_THRESHOLD))
+                audioFiles['spaceshipFlying'].play();
+        } else {
+            audioFiles['spaceshipFlying'].setVolume(Math.max(0, Config.MASTER_VOLUME * 0.4 * (Math.abs(this.vel.x) + Math.abs(this.vel.y)) / Spaceship.MOVEMENT_SPEED.x));
+        }
         if (Math.abs(this.acceleration.x) <= Spaceship.VELOCITY_THRESHOLD && this.dir.x.isZero()) {
             this.vel.x *= Spaceship.ACCELERATION_MULTIPLIER;
             this.acceleration.x *= Spaceship.ACCELERATION_MULTIPLIER;

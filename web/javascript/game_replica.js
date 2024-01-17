@@ -340,6 +340,7 @@ function commenceWave() {
                 entity.onDeath = () => {
                     console.log(this);
                     waveEntitiesRemaining--;
+                    setBroadcastMessage(`Entities Remaining: ${waveEntitiesRemaining}`, 500);
                     if (waveEntitiesRemaining <= 0) {
                         setBroadcastMessage('Wave completed!', 2000);
                         setTimeout(() => {

@@ -242,7 +242,7 @@ function retrieveLeaderboards() {
     })
         .then(result => {
             leaderboardData = result;
-            content = parseLeaderboardData(leaderboardData, leaderboardFilter);
+            content = parseLeaderboardData(leaderboardData);
         })
         .catch((e) => {
             content = "<br>Failed to load leaderboard statistics. <br> Please try again later. <br> ";

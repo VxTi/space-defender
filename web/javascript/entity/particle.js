@@ -31,7 +31,7 @@ class Particle extends Entity {
 
         this.vel.translate(dirX, dirY);
 
-        let range = 0.7;
+        let range = 0.5;
         let offset = Math.random() * range;
 
         // Adjust the color by a little bit

@@ -5,12 +5,12 @@
  */
 class EvolvedAlien extends Entity {
 
-    static #SPRITE_INDEX = 2;
+    static #SPRITE_INDEX = 5;
     static #DAMAGE_REACH = 300;
     static #SHOOT_DELAY = 1;
 
 
-    MINIMAP_SPRITE_INDEX = [1, 1]
+    MINIMAP_SPRITE_INDEX = [3, 1]
 
     #shootDelay = 0;
 
@@ -20,9 +20,9 @@ class EvolvedAlien extends Entity {
      * @param {number} y The y position of the evolved alien.
      */
     constructor(x, y) {
-        super(x, y, 1, 40);
+        super(x, y, 1, 50);
         this.deathAnimations = true;
-        this.damageColor = -1;
+        this.damageColor = 0x601010;
         this.ENTITY_KILL_SCORE = 400;
     }
 
@@ -34,8 +34,13 @@ class EvolvedAlien extends Entity {
     update(dT) {
         super.update(dT);
         this.#shootDelay = Math.max(0, this.#shootDelay - dT);
-        drawRect(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, -1);
-        //spritesheet.animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, Alien.#SPRITE_INDEX);
+        //drawRect(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, -1);
+        push();
+        translate(this.pos.x, this.pos.y);
+        rotate(msElapsed / 500);
+        spritesheet.animate(- this.size/2, - this.size/2, this.size, this.size, EvolvedAlien.#SPRITE_INDEX);
+
+        pop();
         let [Dx, Dy] = [Math.sign(player.pos.x - this.pos.x), Math.sign(player.pos.y - this.pos.y)];
 
         if (this.pos.distSq(player.pos) <= Math.pow(player.size / 2 + this.size / 2 + EvolvedAlien.#DAMAGE_REACH, 2) && player.alive && player.canDamage && this.#shootDelay <= 0) {

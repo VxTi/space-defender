@@ -24,6 +24,7 @@ class Spaceship extends Entity {
         super(x, y, health, Spaceship.SHIP_SIZE);
         this.deathAnimations = true;
         this.damageColor = 0x405060;
+        this.hurtInterval = 0.5;
     }
 
     /**
@@ -42,6 +43,9 @@ class Spaceship extends Entity {
         this.#movingAnimation = (this.#movingAnimation + dT * 10) % 4;
 
         this.acceleration.translate(this.dir.x * Spaceship.MOVEMENT_SPEED.x, this.dir.y * Spaceship.MOVEMENT_SPEED.y);
+
+        if (!audioFiles['spaceshipFlying'].isPlaying() && (Math.abs(this.vel.x) > Spaceship.VELOCITY_THRESHOLD || Math.abs(this.vel.y) > Spaceship.VELOCITY_THRESHOLD))
+            audioFiles['spaceshipFlying'].play();
 
         if (Math.abs(this.acceleration.x) <= Spaceship.VELOCITY_THRESHOLD && this.dir.x.isZero()) {
             this.vel.x *= Spaceship.ACCELERATION_MULTIPLIER;
@@ -118,13 +122,18 @@ class Spaceship extends Entity {
     onDeath() {
         playSound('death');
         Statistics.timesDied.value++;
-        let element = document.querySelector('.game-event-indicator');
-        element.innerHTML = 'Game over<br>';
+        setBroadcastMessage('Game over!')
         setTimeout(() => {
-            element.innerHTML += 'Respawning...<br>'
+            setBroadcastMessage('Respawning in 3...');
             setTimeout(() => {
-                element.innerHTML = '';
-                respawn();
+                setBroadcastMessage('Respawning in 2...');
+                setTimeout(() => {
+                    setBroadcastMessage('Respawning in 1...');
+                    setTimeout(() => {
+                        setBroadcastMessage('')
+                        spawn();
+                    }, 1000);
+                }, 1000);
             }, 1000);
         }, 1000);
     }

@@ -21,10 +21,13 @@ const Config = {
     DEFAULT_PLAYER_NAME: 'Guest',
     API_URL: 'http://localhost:8081/api/',
     WAVE_MAX_ENTITIES: 200,
-    WAVE_MIN_ENTITIES: 10,
-    WAVE_INCREMENT_FACTOR: 2.2,
-
+    WAVE_MIN_ENTITIES: 5,
+    WAVE_INCREMENT_FACTOR: 1.5,
+    WAVE_SPAWN_RATE: 5,
+    DEFAULT_WAVE: 1,
+    MASTER_VOLUME: 0.2
 }
+
 
 /**
  * Object containing all the statistical properties of the spaceship.
@@ -87,6 +90,8 @@ const PlayerData = {
     PLAYER_ID: -1
 }
 
+let waveEntitiesRemaining = 0;
+
 let screenOffsetX = 0;
 
 let gameActive = false;
@@ -118,6 +123,10 @@ Number.prototype.isZero = function() {
     return Math.abs(this) <= 0.0001;
 }
 
+setVolume = (volume) => {
+    Object.values(audioFiles).forEach(sound => sound.setVolume(volume));
+}
+
 isOnScreen = (x, y) => x.isBetween(screenOffsetX, screenOffsetX + window.innerWidth) && y.isBetween(0, window.innerHeight);
 
 // Noise function for the bottom of the screen
@@ -129,9 +138,15 @@ function preload() {
     });
 
     // Load all audio
-    const audioFileNames = ['achievement', 'death', 'explosion', 'hit', 'hit2', 'lose', 'navigate1', 'navigate2', 'navigate3', 'navigate4', 'pickup', 'shoot', 'win'];
+    const audioFileNames = [
+        'death', 'explosion', 'hit',
+        'navigate1', 'navigate2',
+        'shoot', 'spaceshipFlying', 'scary'
+    ];
     for (let file of audioFileNames)
         audioFiles[file] = loadSound(`./assets/soundpack/${file}.wav`);
+
+    setVolume(Config.MASTER_VOLUME);
 }
 
 /**
@@ -182,17 +197,14 @@ function setup() {
         }
     }
 
-    let scoreContainer = document.querySelector('.game-scores');
+    let hueElements = document.querySelectorAll('.hue-element');
     let hueDeg = 0;
 
     /** -- FUNCTIONALITY -- CHANGE COLOR OF SCORE BAR -- **/
     setInterval(() => {
-        scoreContainer.style.color = `hsl(${hueDeg}deg, 100%, 50%)`;
+        hueElements.forEach(e => e.style.color = `hsl(${hueDeg}deg, 100%, 50%)`)
         hueDeg = (hueDeg + 50) % 360;
     }, 500);
-
-    /** -- FUNCTIONALITY -- FILTER OUT DEAD ENTITIES. -- **/
-    setInterval(checkEntitySpawning, 1000);
 }
 
 /**
@@ -208,7 +220,6 @@ function draw() {
 
     // Update which direction the player is going to
     player.dir.translate((-keyIsDown(65) + keyIsDown(68)), (-keyIsDown(87) + keyIsDown(83)));
-
 
     msElapsed += deltaTime;
     let dT = deltaTime / 1000;
@@ -290,36 +301,55 @@ function draw() {
 /**
  * Method for introducing a new entity wave into the game.
  * This method is called when the player has killed all entities in the current wave.
- * @param {number} wave The wave number to introduce
+ * Whenever this function is called, it introduces a specified amount of entities, depending
+ * on the coefficients defined in the Config object.
  */
-function introduceWave(wave) {
-    let entityCount = Math.min(wave * Config.WAVE_INCREMENT_FACTOR + Config.WAVE_MIN_ENTITIES, Config.WAVE_MAX_ENTITIES);
-    for (let i = 0; i < entityCount; i++) {
-        let [x, y] = [-mapWidth / 2 + Math.random() * mapWidth, mapTop + Math.random() * mapHeight];
+function commenceWave() {
+    // Amount of entities that spawn per wave is linearly increasing.
+    // This follows the equation ax + b, where a = Config.WAVE_INCREMENT_FACTOR and b = Config.WAVE_MIN_ENTITIES
+    // The maximum amount of entities is capped at Config.WAVE_MAX_ENTITIES
+    let entityCount = Math.round(Math.min(PlayerData.WAVE * Config.WAVE_INCREMENT_FACTOR + Config.WAVE_MIN_ENTITIES, Config.WAVE_MAX_ENTITIES));
 
-    }
+    console.log(`Commencing wave, spawning ${entityCount} entities`)
 
-}
+    setBroadcastMessage(`Wave ${PlayerData.WAVE} incoming!`, 2000);
 
-/**
- * Function for checking whether an entity can spawn or not
- * Occasionally introduces new entities.
- */
-function checkEntitySpawning() {
-    if (!gameActive || !document.hasFocus())
-        return;
+    // Array containing the factors which determine how many of which entities spawn.
+    // The order of the entities is as followed:
+    // 0: Alien, 1: EnemyShip, 2: EvolvedAlien, 3: HealthElement
+    // Sum of the elements must be equal to 1
+    let factors = [0.4, 0.3, 0.2, 0.1];
 
-    let [x, y] = [-mapWidth / 2 + Math.random() * mapWidth, mapTop + Math.random() * mapHeight];
-    if (Math.random() < 0.5) entities.push(new EvolvedAlien(x, y))
-    for (let i = 0, probabilities = [0.2, 0.05, 0.3, 0.45]; i < probabilities.length; i++) {
-        if (Math.random() < probabilities[i]) {
+    // Array containing the amount of entities to spawn per entity type
+    let entitiesToSpawn = Array(4).fill(0).map((_, i) => Math.ceil(entityCount * factors[i]));
+
+    // Iterate over all elements in the entitiesToSpawn array and introduce them into the game.
+    for (let i = 0; i < entitiesToSpawn.length; i++) {
+        for (let j = 0; j < entitiesToSpawn[i]; j++) {
+            if (i < 3) waveEntitiesRemaining++;
+            let [x, y] = [-mapWidth / 2 + Math.random() * mapWidth, mapTop + Math.random() * mapHeight];
+
+            let entity;
             switch (i) {
-                case 0: entities.push(new EvolvedAlien(x, y)); break;
-                case 1: entities.push(new HealthElement(x, y, 1)); break;
-                case 2: entities.push(new EnemyShip(x, y)); break;
-                case 3: entities.push(new Alien(x, y)); break;
+                case 0: entities.push(entity = new Alien(x, y)); break;
+                case 1: entities.push(entity = new EnemyShip(x, y)); break;
+                case 2: entities.push(entity = new EvolvedAlien(x, y)); break;
+                case 3: entities.push(new HealthElement(x, y, 1)); break;
             }
-            break;
+            if (entity !== undefined) {
+                entity.onDeath = () => {
+                    console.log(this);
+                    waveEntitiesRemaining--;
+                    if (waveEntitiesRemaining <= 0) {
+                        setBroadcastMessage('Wave completed!', 2000);
+                        setTimeout(() => {
+                            setScore(PlayerData.SCORE, ++PlayerData.WAVE);
+                            player.health = Config.DEFAULT_HEALTH;
+                            commenceWave();
+                        }, 2000);
+                    }
+                }
+            }
         }
     }
 }
@@ -366,7 +396,7 @@ function performExplosion() {
 
         // Check what entities are within range
         entities.forEach(e => {
-            if (!e.canDamage || e instanceof Particle || !e.alive || e === player || e instanceof HealthElement)
+            if (e instanceof Particle || !e.alive || e === player || e instanceof HealthElement)
                 return;
 
             // Check whether the entity is within distance of the player
@@ -391,13 +421,10 @@ function performExplosion() {
  * Method for starting the game and configuring the right variables
  */
 function startGame() {
-    entities = [player]; // reset entity list
-    setScore(0); // reset score
     let nameInput = document.getElementById('menu-start-name-input');
-    playerName = nameInput.value.length >= nameInput.minLength ? nameInput.value : Config.DEFAULT_PLAYER_NAME;
+    playerName = nameInput.value.length > 0 ? nameInput.value : Config.DEFAULT_PLAYER_NAME;
     console.log("Starting game as " + playerName);
-    PlayerData.WAVE = 1; // set wave back to 1
-
+    PlayerData.HIGH_SCORE = 0; // Reset highscore
     // reset statistics
     Object.entries(Statistics).forEach(([key, value]) => value.value = 0);
 
@@ -415,7 +442,7 @@ function startGame() {
                     console.log("Retrieved user data");
                     PlayerData.PLAYER_ID = res.userData.userId;
                     PlayerData.HIGH_SCORE = res.userData.maxScore;
-                    PlayerData.SCORE = res.userData.lastScore;
+                    setScore(PlayerData.SCORE, res.userData.lastWave);
                     if (res.userData.statistics)
                         res.userData.statistics.map(stat => {
                             if (typeof Statistics[stat.field] === 'object')
@@ -429,6 +456,7 @@ function startGame() {
                 setInterval(scoreUpdater, 5000);
         })();
     }
+    spawn(); // spawn the player
 }
 
 /**
@@ -455,14 +483,17 @@ async function requestApi(param, content) {
 
 /**
  * Method for respawning the player and resetting some variables.
+ * This also sets the player score to 0 and updates the text on screen,
+ * resets the player health and sets the player position to the center of the screen.
  */
-function respawn() {
+function spawn() {
     player.health = Config.DEFAULT_HEALTH;
     player.pos.translate(window.innerWidth/2, window.innerHeight/2);
     player.vel.translate(0, 0);
     player.acceleration.translate(0, 0);
     entities = [player];
-    setScore(0, 1);
+    setScore(0, Config.DEFAULT_WAVE);
+    commenceWave()
 }
 
 /**

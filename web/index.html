@@ -10,15 +10,15 @@
 
         <div class="game-intro"></div>
 
-        <div class="game-wave-indicator">
-            <span class="game-event-indicator"></span>
+        <div class="game-broadcast">
+            <span class="game-broadcast-content hue-element"></span>
         </div>
 
         <div class="menu">
             <!-- Settings icon -->
             <img class="game-settings-button" src="assets/settings_icon.png" alt="Settings"/>
 
-            <div class="game-scores">
+            <div class="game-scores hue-element">
                 <div class="game-scores-element">Score <span class="game-score-value game-score-points-value">0</span></div>
                 <div class="game-scores-element">Highscore <span class="game-score-value game-score-high-value">0</span></div>
                 <div class="game-scores-element">Wave <span class="game-score-value game-score-wave-value">1</span></div>
@@ -31,9 +31,10 @@
                 <div class="bg">
                     <div class="frame-title">DEFENDER</div>
                     <label>
-                        <input type="text" placeholder="Play as..." class="menu-text-input" id="menu-start-name-input" minlength="3" maxlength="10">
+                        <input type="text" placeholder="Play as..." class="menu-text-input gamepad-selectable"
+                               id="menu-start-name-input" maxlength="10" data-select="keyboardShow" data-deselect="keyboardHide">
                     </label>
-                    <div class="menu-button main-play gamepad-selectable" data-menu="" data-onload="startGame">Play</div>
+                    <div class="menu-button main-play gamepad-selectable" data-menu="" data-onload="startGame" data-select="keyboardHide">Play</div>
                     <div class="menu-button main-leaderboards gamepad-selectable" data-menu="menu-leaderboards" data-onload="retrieveLeaderboards">Scores</div>
                     <div class="menu-button main-information gamepad-selectable" data-menu="menu-information">How to play</div>
                 </div>
@@ -84,6 +85,9 @@
                 <div class="bg">
                     <div class="button-menu gamepad-selectable" data-menu="menu-pause"><</div>
                     <div class="frame-title">Settings</div>
+                    <!-- Slider for audio volume -->
+                    <label for="audio-slider"></label>
+                    <input type="range" min="0" max="100" value="50" class="input-slider" id="audio-slider">
                     <div class="menu-text-content">
                         <!-- TODO: Put settings here -->
                         put game settings here

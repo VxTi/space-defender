@@ -15,7 +15,7 @@ class Entity {
     #damageColor;
     #doDeathAnimation = false;
     #doHurtAnimation = false;
-    #hurtInterval = 0.5;
+    #hurtInterval = 0.2;
 
     MINIMAP_SPRITE_INDEX = null;
     ENTITY_KILL_SCORE = 200;

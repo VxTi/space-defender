@@ -284,7 +284,7 @@ body, html {
     margin-right: -50%;
 }
 
-.game-wave-indicator {
+.game-broadcast {
     display: flex;
     position: absolute;
     width: 100vw;
@@ -294,12 +294,13 @@ body, html {
     justify-content: center;
 }
 
-.game-event-indicator {
+.game-broadcast-content {
     text-align: center;
     font-family: arcade, serif;
     letter-spacing: 2px;
     color: white;
     font-size: 50px;
+    opacity: 0.5;
 }
 
 .menu-text-input {
@@ -344,6 +345,7 @@ body, html {
 }
 .virtual-keyboard {
     left: calc(100vw - 75%);
+    top: 20px;
     position: absolute;
     display: flex;
     flex-flow: row wrap;
@@ -357,14 +359,45 @@ body, html {
 
 .virtual-key {
     border-radius: 3px;
-    display: block;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     margin: 3px;
     width: calc(10% - 2 * 3px);
     height: 30%;
     background-color: var(--color-button-hover);
-    color: black;
+    color: white;
+    font-family: 'minecraft-font', serif;
+    user-select: none;
+}
+
+.keyboard-active {
+    visibility: visible;
 }
 
 .virtual-key > .selected {
     border: 1px solid white;
+}
+
+.input-slider {
+    margin: 5px;
+    width: 100%;
+}
+
+.input-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #04AA6D;
+    cursor: pointer;
+}
+
+.input-slider::-moz-range-thumb {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #04AA6D;
+    cursor: pointer;
 }

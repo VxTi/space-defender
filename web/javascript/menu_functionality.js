@@ -4,15 +4,13 @@ const serverAddress = "http://localhost:8081/api/getleaderboards";//"http://oege
 let element = {};
 
 const maxScores = 10;
-
-let leaderboardFilter = 'coins';
-
 let leaderboardData = {};
 
 let currentMenu = null;
+let keyboardVisible = false;
 
 
-selectNextMenuItem = (direction = 1) => {
+function selectNextMenuItem(x = 1, y = 0) {
 
     // Check if we're currently in a menu, if not, discard the action
     if (currentMenu === null)
@@ -27,13 +25,27 @@ selectNextMenuItem = (direction = 1) => {
     // If we're not selecting an element, pick the first one and stop.
     if (currentlySelected == null) {
         selectables[0].classList.add("gamepad-selected");
+        // If the next element has a function to perform when selected, perform it
+        if (selectables[0].dataset.select && typeof window[selectables[0].dataset.select] === 'function')
+            window[selectables[0].dataset.select]();
         return;
     }
 
-
+    // Find the next element to select
     for (let i = 0; i < selectables.length; i++) {
+
+        // If we've found the currently selected element, select the next one
         if (selectables[i] === currentlySelected) {
-            selectables[(i + direction + selectables.length) % selectables.length].classList.add("gamepad-selected");
+            let next = selectables[(i + x + selectables.length) % selectables.length];
+            next.classList.add("gamepad-selected");
+
+            // If the next element has a function to perform when selected, perform it
+            if (next.dataset.select && typeof window[next.dataset.select] === 'function')
+                window[next.dataset.select]();
+
+            // If the currently selected element has a function to perform when deselected, perform it
+            if (currentlySelected && currentlySelected.dataset.deselect && typeof window[currentlySelected.dataset.deselect] === 'function')
+                window[currentlySelected.dataset.deselect]();
             break;
         }
     }
@@ -42,12 +54,26 @@ selectNextMenuItem = (direction = 1) => {
     currentlySelected.classList.remove("gamepad-selected");
 }
 
+function keyboardShow() {
+    document.querySelector('.virtual-keyboard').classList.add('keyboard-active');
+}
+
+function keyboardHide() {
+    document.querySelector('.virtual-keyboard').classList.remove('keyboard-active');
+}
+
+/**
+ * Method for handling user input.
+ * This is used for navigating through the menu
+ */
 function keyTyped() {
 
+    // If the current element is the text input, don't do anything
+    // This prevents the user from navigating through the menu while typing
     if (document.activeElement === document.querySelector('.menu-text-input'))
         return;
 
-    let keyboardActive = document.querySelector('.virtual-keyboard').classList.contains('keyboard-active');
+    keyboardVisible = document.querySelector('.virtual-keyboard').classList.contains('keyboard-active');
 
     switch (key) {
         case 'r':
@@ -58,27 +84,11 @@ function keyTyped() {
             }
             break;
         case 'w':
-            if (keyboardActive) {
-                moveKeyboardCursor(0, -1);
-                break;
-            }
         case 'd':
-            if (keyboardActive) {
-                moveKeyboardCursor(1, 0);
-                break;
-            }
             selectNextMenuItem(-1);
             break;
         case 's':
-            if (keyboardActive) {
-                moveKeyboardCursor(0, 1);
-                break;
-            }
         case 'a':
-            if (keyboardActive) {
-                moveKeyboardCursor(-1, 0);
-                break;
-            }
             selectNextMenuItem(1);
             break;
         case ' ':
@@ -120,16 +130,6 @@ function keyTyped() {
     document.querySelectorAll('.button-menu').forEach(e =>
         e.onclick = () => showMenu(e.dataset.menu ?? 'menu-start'));
 
-    // Add event listeners to the leaderboard buttons, so that when the user clicks on one of the filters,
-    // the page automatically updates the order of elements
-    let leadFilterButtons = document.querySelectorAll('.leaderboards-filter');
-    leadFilterButtons.forEach(e => e.onclick = () => {
-            leadFilterButtons.forEach(e => e.classList.remove('selected'));
-            e.classList.add('selected');
-            leaderboardFilter = e.dataset.filter;
-            element['leaderboard-content'].innerHTML = parseLeaderboardData(leaderboardData, leaderboardFilter);
-        });
-
     element['game-settings-button'].onclick = () => showMenu('menu-pause');
 
     // If any of the menu buttons have a tag named 'data-menu' with a valid menu assigned,
@@ -144,37 +144,59 @@ function keyTyped() {
     });
 
     showMenu("menu-start");
+    createKeyboard();
 
+})();
+
+/**
+ * Method for loading all the components of the custom keyboard.
+ * The purpose of this is that the user can select a name even when
+ * they're using a controller.
+ */
+function createKeyboard() {
+    let inputBox = document.querySelector('.menu-text-input');
     let virtualKeyboard = document.querySelector('.virtual-keyboard');
-    let keys = 'qwertyuiopasdfghjklzxcvbnm';
+    let keys = 'QWERTYUIOPASDFGHJKLZXCVBNM';
+
+    // Add the querty characters to the keyboard
     for (let i = 0; i < keys.length; i++) {
         let key = document.createElement('div');
         key.classList.add('virtual-key');
+        key.classList.add('gamepad-selectable');
         key.innerHTML = keys[i];
-        key.onclick = () => {
-            let input = document.querySelector('.menu-text-input');
-            input.value += keys[i];
-        }
+        key.onclick = () => inputBox.value += keys[i];
         virtualKeyboard.appendChild(key);
     }
 
-})();
+    // Add the backspace key to the keyboard
+    let backspace = document.createElement('div');
+    backspace.classList.add('virtual-key');
+    backspace.classList.add('gamepad-selectable');
+    backspace.innerHTML = 'DEL';
+    backspace.onclick = () => inputBox.value = inputBox.value.substring(0, input.value.length - 1);
+    virtualKeyboard.appendChild(backspace);
+}
 
 /**
  * Method for moving the keyboard cursor.
  * @param x
  * @param y
  */
-function moveKeyboardCursor(x, y) {
-    let cursor = document.querySelector('.keyboard-cursor');
-    let keyboard = document.querySelector('.virtual-keyboard');
-    let keys = keyboard.querySelectorAll('.virtual-key');
-    let cursorPos = cursor.dataset.pos.split(',').map(e => parseInt(e));
-    cursorPos[0] = (cursorPos[0] + x + keys.length) % keys.length;
-    cursorPos[1] = (cursorPos[1] + y + Math.ceil(keys.length / 10)) % Math.ceil(keys.length / 10);
-    cursor.dataset.pos = cursorPos.join(',');
-    cursor.style.left = `${cursorPos[0] * 50}px`;
-    cursor.style.top = `${cursorPos[1] * 50}px`;
+function setSelectedKey(x, y) {
+    // Move the currently selected key to the next one
+
+}
+
+/**
+ * Method for setting the broadcast message.
+ * @param {string} message The message to display
+ * @param {number} timeout The time in seconds to display the message, optional
+ */
+function setBroadcastMessage(message, timeout = 0) {
+    let indicator = document.querySelector('.game-broadcast-content');
+    indicator.innerHTML = message;
+    if (timeout > 0)
+        setTimeout(() => indicator.innerHTML = '', timeout);
 }
 
 /**
@@ -234,10 +256,9 @@ function retrieveLeaderboards() {
  * Method accepts data, as an object containing leaderboard data,
  * and filter as a string, denoting what to filter
  * @param {Array} data Object containing all leaderboard data
- * @param {string} filter What key to filter the data with
  * @return {string} String containing the HTML data for the leaderboards
  * */
-function parseLeaderboardData(data, filter) {
+function parseLeaderboardData(data) {
     data = data.sort((a, b) => b.maxScore - a.maxScore).slice(0, maxScores);
     return Object.entries(data).map(([key, object]) => `${formatLeaderboardEntry(object)}\n`).join('');
 }
@@ -249,28 +270,4 @@ function parseLeaderboardData(data, filter) {
  */
 formatLeaderboardEntry = (data) => {
     return `<span class="leaderboard-data">${data.userName}</span> <span class="leaderboard-data" style="color: #a29b06">${data.maxScore} </span> <span class="leaderboard-data" style="color: #001055">WAVE ${data.maxWave}</span><br>\n`;
-}
-
-
-function HSVtoRGB(h, s, v) {
-    var r, g, b, i, f, p, q, t;
-    if (arguments.length === 1) {
-        s = h.s;
-        v = h.v;
-        h = h.h;
-    }
-    i = Math.floor(h * 6);
-    f = h * 6 - i;
-    p = v * (1 - s);
-    q = v * (1 - f * s);
-    t = v * (1 - (1 - f) * s);
-    switch (i % 6) {
-        case 0: [r, g, b] = [v, t, p]; break;
-        case 1: [r, g, b] = [q, v, p]; break;
-        case 2: [r, g, b] = [p, v, t]; break;
-        case 3: [r, g, b] = [p, q, v]; break;
-        case 4: [r, g, b] = [t, p, v]; break;
-        case 5: [r, g, b] = [v, p, q]; break;
-    }
-    return Math.round(r * 255) << 16 | Math.round(g * 255) << 8 | Math.round(b * 255);
 }

@@ -37,7 +37,7 @@ class Rocket extends Entity {
         //this.health = (this.#trailX >= -mapWidth/2 && this.#trailX <= mapWidth / 2) ? 1 : 0;
         this.health = Math.max(0, this.health - dT);
         let dw = Math.abs(this.pos.x - this.#trailX);
-        spritesheet.drawSection(Math.min(this.#trailX, this.pos.x), this.pos.y, dw, 4, this.#facing < 0 ? 2 : 1, 2);
+        sprite.drawSection(Math.min(this.#trailX, this.pos.x), this.pos.y, dw, 4, this.#facing < 0 ? 2 : 1, 2);
         drawRect(this.pos.x + 4, this.pos.y - 2, 4, 4, -1, Math.min(1, this.health));
 
         // Check for collision with entities.

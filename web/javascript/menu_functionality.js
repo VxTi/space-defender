@@ -1,6 +1,4 @@
 
-const serverAddress = "http://localhost:8081/api/getleaderboards";//"http://oege.ie.hva.nl:8081/api/get";
-
 let element = {};
 
 const maxScores = 10;
@@ -8,6 +6,9 @@ let leaderboardData = {};
 
 let currentMenu = null;
 let keyboardVisible = false;
+
+// The queue for messages to be displayed
+let messageQueue = [];
 
 
 function selectNextMenuItem(x = 1, y = 0) {
@@ -146,6 +147,23 @@ function keyTyped() {
     showMenu("menu-start");
     createKeyboard();
 
+    let broadcastElement = document.querySelector('.game-broadcast-content');
+
+    // Set the interval for updating the broadcast message
+    // This displays messages that are stored in 'messageQueue'
+    setInterval(() => {
+
+        broadcastElement.innerHTML = messageQueue.length > 0 ? messageQueue[0].message : "";
+
+        if (messageQueue.length > 0) {
+            if (messageQueue[0].startMs < 0) messageQueue[0].startMs = msElapsed;
+            if (msElapsed - messageQueue[0].startMs > messageQueue[0].duration) {
+                messageQueue.shift();
+                messageQueue.startMs = msElapsed;
+            }
+        }
+    }, 100);
+
 })();
 
 /**
@@ -190,13 +208,10 @@ function setSelectedKey(x, y) {
 /**
  * Method for setting the broadcast message.
  * @param {string} message The message to display
- * @param {number} timeout The time in seconds to display the message, optional
+ * @param {number} duration The time in seconds to display the message, optional
  */
-function setBroadcastMessage(message, timeout = 0) {
-    let indicator = document.querySelector('.game-broadcast-content');
-    indicator.innerHTML = message;
-    if (timeout > 0)
-        setTimeout(() => indicator.innerHTML = '', timeout);
+function broadcast(message, duration = 1000) {
+    messageQueue.push({message: message, startMs: -1, duration: duration});
 }
 
 /**

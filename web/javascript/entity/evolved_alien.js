@@ -38,7 +38,7 @@ class EvolvedAlien extends Entity {
         push();
         translate(this.pos.x, this.pos.y);
         rotate(msElapsed / 500);
-        spritesheet.animate(- this.size/2, - this.size/2, this.size, this.size, EvolvedAlien.#SPRITE_INDEX);
+        sprite.animate(- this.size/2, - this.size/2, this.size, this.size, EvolvedAlien.#SPRITE_INDEX);
 
         pop();
         let [Dx, Dy] = [Math.sign(player.pos.x - this.pos.x), Math.sign(player.pos.y - this.pos.y)];

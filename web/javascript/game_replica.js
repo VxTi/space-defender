@@ -3,29 +3,28 @@ let windowSegments = 50;
 
 let pixelPerCm;  // How many pixels a physical centimeter occupy.
 
-let mapWidth;              // Size of the map in pixels
-let mapHeight;             // Height of the map. This is mapTop - mapBottom(x)
-let mapTop = 150; // Top of the map, in pixels.
-let innerMapWidth = 600; // Width of the inner map in pixels
-let innerMapTop = 50;    // Top of the inner map
+let mapWidth;                   // Size of the map in pixels
+let mapHeight;                  // Height of the map. This is mapTop - mapBottom(x)
+let mapTop = 150;               // Top of the map, in pixels.
+let innerMapWidth = 600;        // Width of the inner map in pixels
+let innerMapTop = 50;           // Top of the inner map
 
 // Configuration settings for the game.
 const Config = {
-    EXPLOSION_PARTICLE_COLOR: 0x00FF00,
-    EXPLOSION_TIMER_DELAY: 5,           // Delay in seconds until the explosive effect can be used.
-    EXPLOSION_RADIUS: 200,              // Explosion radius of the explosive effect in pixels.
-    EXPLOSION_PARTICLE_COUNT: 50,
-    STAR_COUNT: 200,
-    SHOOT_FREQUENCY: 5,                // How many bullets the spaceship can shoot each second
-    DEFAULT_HEALTH: 5,
-    DEFAULT_PLAYER_NAME: 'Guest',
-    API_URL: 'http://localhost:8081/api/',
-    WAVE_MAX_ENTITIES: 200,
-    WAVE_MIN_ENTITIES: 5,
-    WAVE_INCREMENT_FACTOR: 1.5,
-    WAVE_SPAWN_RATE: 5,
-    DEFAULT_WAVE: 1,
-    MASTER_VOLUME: 0.2
+    EXPLOSION_PARTICLE_COLOR: 0x00FF00,     // Color of the explosion effect particles
+    EXPLOSION_TIMER_DELAY: 5,               // Delay in seconds until the explosive effect can be used.
+    EXPLOSION_RADIUS: 200,                  // Explosion radius of the explosive effect in pixels.
+    EXPLOSION_PARTICLE_COUNT: 50,           // How many particles to spawn when the explosive effect is used.
+    STAR_COUNT: 200,                        // How many stars to spawn in the background
+    SHOOT_FREQUENCY: 5,                     // How many bullets the spaceship can shoot each second
+    DEFAULT_HEALTH: 5,                      // Default health of the player
+    DEFAULT_PLAYER_NAME: 'Guest',           // Default name of the player if they haven't chosen one
+    API_URL: 'http://localhost:8081/api/',  // URL of the API
+    WAVE_MAX_ENTITIES: 200,                 // Maximum amount of entities that can spawn in a wave
+    WAVE_MIN_ENTITIES: 5,                   // Minimum amount of entities that can spawn in a wave
+    WAVE_INCREMENT_FACTOR: 1.5,             // Factor by which the amount of entities increases per wave
+    DEFAULT_WAVE: 1,                        // Default wave the player starts on
+    MASTER_VOLUME: 0.2                      // Master volume of the game
 }
 
 
@@ -76,31 +75,31 @@ const Statistics = {
     }
 }
 
-let playerName = Config.DEFAULT_PLAYER_NAME;
-let player;
+let player; // The player object
 
 /**
  * Object containing all the scores of the player.
  * @type {{WAVE: number, SCORE: number, HIGH_SCORE: number, PLAYER_ID: number}}
  */
 const PlayerData = {
-    HIGH_SCORE: 0,
-    SCORE: 0,
-    WAVE: 1,
-    PLAYER_ID: -1
+    HIGH_SCORE: 0,                      // High score of the player
+    SCORE: 0,                           // Current score of the player
+    WAVE: 1,                            // Current wave the player is on
+    PLAYER_ID: -1,                      // ID of the player. This is used for API calls.
+    NAME: Config.DEFAULT_PLAYER_NAME    // Name of the player
 }
 
 let waveEntitiesRemaining = 0;
 
 let screenOffsetX = 0;
 
+// Whether the game is currently active
 let gameActive = false;
 
 // Object where all resources are stored in at preload
-let _resources = {};
 let resources = {}; // Here are all images stored as Resource objects
 let audioFiles = {};     // Here are all audio files stored as p5 SoundFile objects
-let spritesheet;
+let sprite;
 
 // Array containing all the entities in the game
 let entities = [];
@@ -134,7 +133,7 @@ GNoise = (x) => noise(x / 3) * 200;
 
 function preload() {
     loadImage('./assets/spritesheet.png', (img) => {
-        spritesheet = new Resource(img, 10, 10);
+        sprite = new Resource(img, 10, 10);
     });
 
     // Load all audio
@@ -242,11 +241,11 @@ function draw() {
     drawLine(midX - innerMapRadius, innerMapTop, midX - innerMapRadius, mapTop, 0xff, 4);
     drawLine(midX + innerMapRadius, innerMapTop, midX + innerMapRadius, mapTop, 0xff, 4);
 
-    spritesheet.drawSection(midX + (player.pos.x) * mapCoordinateFrac - innerMapHeight/2, innerMapTop - 1, innerMapHeight, innerMapHeight, 0, 2)
+    sprite.drawSection(midX + (player.pos.x) * mapCoordinateFrac - innerMapHeight/2, innerMapTop - 1, innerMapHeight, innerMapHeight, 0, 2)
 
     /** -- SECTION -- RENDERING LIVES -- **/
     for (let i = 0, s = 200 / Config.DEFAULT_HEALTH; i < player.health; i++)
-        spritesheet.animate(midX - innerMapRadius - 215 + s * i, mapTop - 22 - s, s, s, 0);
+        sprite.animate(midX - innerMapRadius - 215 + s * i, mapTop - 22 - s, s, s, 0);
 
     /** -- SECTION -- RENDERING SHOOT CHARGE -- **/
     drawRect(midX - innerMapRadius - 215, mapTop - 20, 205, 15, 0x404040);
@@ -288,7 +287,7 @@ function draw() {
             entities.splice(i, 1);
         else {
             if (e.MINIMAP_SPRITE_INDEX != null && typeof e.MINIMAP_SPRITE_INDEX === 'object')
-                spritesheet.drawSection(
+                sprite.drawSection(
                     midX + e.pos.x * mapCoordinateFrac - screenOffsetX,
                     innerMapTop + Math.round((e.pos.y - mapTop) / (window.innerHeight - mapTop) * innerMapHeight), 30, 30,
                     e.MINIMAP_SPRITE_INDEX[0], e.MINIMAP_SPRITE_INDEX[1]
@@ -308,11 +307,14 @@ function commenceWave() {
     // Amount of entities that spawn per wave is linearly increasing.
     // This follows the equation ax + b, where a = Config.WAVE_INCREMENT_FACTOR and b = Config.WAVE_MIN_ENTITIES
     // The maximum amount of entities is capped at Config.WAVE_MAX_ENTITIES
-    let entityCount = Math.round(Math.min(PlayerData.WAVE * Config.WAVE_INCREMENT_FACTOR + Config.WAVE_MIN_ENTITIES, Config.WAVE_MAX_ENTITIES));
+    let entityCount = Math.ceil(Math.min(PlayerData.WAVE * Config.WAVE_INCREMENT_FACTOR + Config.WAVE_MIN_ENTITIES, Config.WAVE_MAX_ENTITIES));
+
+    // Remove all previous power-ups from the game, only leave the player behind.
+    entities = [player];
 
     console.log(`Commencing wave, spawning ${entityCount} entities`)
 
-    setBroadcastMessage(`Wave ${PlayerData.WAVE} incoming!`, 2000);
+    broadcast(`Wave ${PlayerData.WAVE} incoming!`, 2000);
 
     // Array containing the factors which determine how many of which entities spawn.
     // The order of the entities is as followed:
@@ -321,7 +323,7 @@ function commenceWave() {
     let factors = [0.4, 0.3, 0.2, 0.1];
 
     // Array containing the amount of entities to spawn per entity type
-    let entitiesToSpawn = Array(4).fill(0).map((_, i) => Math.ceil(entityCount * factors[i]));
+    let entitiesToSpawn = Array(4).fill(0).map((_, i) => Math.round(entityCount * factors[i]));
 
     // Iterate over all elements in the entitiesToSpawn array and introduce them into the game.
     for (let i = 0; i < entitiesToSpawn.length; i++) {
@@ -338,11 +340,10 @@ function commenceWave() {
             }
             if (entity !== undefined) {
                 entity.onDeath = () => {
-                    console.log(this);
                     waveEntitiesRemaining--;
-                    setBroadcastMessage(`Entities Remaining: ${waveEntitiesRemaining}`, 500);
+                    broadcast(`Entities Remaining: ${waveEntitiesRemaining}`, 500);
                     if (waveEntitiesRemaining <= 0) {
-                        setBroadcastMessage('Wave completed!', 2000);
+                        broadcast('Wave completed!', 1700);
                         setTimeout(() => {
                             setScore(PlayerData.SCORE, ++PlayerData.WAVE);
                             player.health = Config.DEFAULT_HEALTH;
@@ -362,14 +363,14 @@ function commenceWave() {
  */
 function scoreUpdater() {
     // Check if the player has selected a name, if not, don't update the score.
-    if (playerName === Config.DEFAULT_PLAYER_NAME || !gameActive)
+    if (PlayerData.NAME === Config.DEFAULT_PLAYER_NAME || !gameActive)
         return;
 
     // Send the score to the server
     requestApi('updatescore', {userId: PlayerData.PLAYER_ID, score: PlayerData.SCORE, wave: PlayerData.WAVE})
         .catch(e => console.error(e));
     let stats = Object.entries(Statistics).map(([key, value]) => ({field: key, value: value.value}));
-    requestApi('updatestatistics', {userId: PlayerData.PLAYER_ID, userName: playerName, statistics: stats})
+    requestApi('updatestatistics', {userId: PlayerData.PLAYER_ID, userName: PlayerData.NAME, statistics: stats})
         .catch(e => console.error(e));
 }
 
@@ -401,15 +402,13 @@ function performExplosion() {
                 return;
 
             // Check whether the entity is within distance of the player
-            if (e.pos.distSq(player.pos) <= Math.pow(Config.EXPLOSION_RADIUS, 2))  {
+            let dist = e.pos.dist(player.pos);
+            if (dist <= Math.pow(Config.EXPLOSION_RADIUS, 2))  {
                 theta = Math.atan2((e.pos.y - player.pos.y), (e.pos.x - player.pos.x));
                 e.damage(1);
                 if (!e.alive)
                     addScore(e.ENTITY_KILL_SCORE);
-                e.vel.add(
-                    Math.cos(theta) * 10,
-                    Math.sin(theta) * 10
-                )
+                e.vel.add(Math.cos(theta) * (Config.EXPLOSION_RADIUS - dist) * 0.05, Math.sin(theta) * (Config.EXPLOSION_RADIUS - dist) * 0.05);
             }
         })
         // Reset the timer
@@ -423,23 +422,22 @@ function performExplosion() {
  */
 function startGame() {
     let nameInput = document.getElementById('menu-start-name-input');
-    playerName = nameInput.value.length > 0 ? nameInput.value : Config.DEFAULT_PLAYER_NAME;
-    console.log("Starting game as " + playerName);
+    PlayerData.NAME = nameInput.value.length > 0 ? nameInput.value : Config.DEFAULT_PLAYER_NAME;
     PlayerData.HIGH_SCORE = 0; // Reset highscore
     // reset statistics
     Object.entries(Statistics).forEach(([key, value]) => value.value = 0);
 
     // If the player decided to use a name, then we'll check whether the user exists,
-    if (playerName !== Config.DEFAULT_PLAYER_NAME) {
+    if (PlayerData.NAME !== Config.DEFAULT_PLAYER_NAME) {
         (async () => {
 
-            let exists = await requestApi('checkuser', {idorname: playerName}).then(res => res.exists);
+            let exists = await requestApi('checkuser', {idorname: PlayerData.NAME}).then(res => res.exists);
 
             // If the user doesn't exist, request a new user to be created.
             if (!exists)
-                await requestApi('createuser', {name: playerName}).then(res => PlayerData.PLAYER_ID = res.userId)
+                await requestApi('createuser', {name: PlayerData.NAME}).then(res => PlayerData.PLAYER_ID = res.userId)
             else {
-                await requestApi('getuser', {name: playerName}).then(res => {
+                await requestApi('getuser', {name: PlayerData.NAME}).then(res => {
                     console.log("Retrieved user data");
                     PlayerData.PLAYER_ID = res.userData.userId;
                     PlayerData.HIGH_SCORE = res.userData.maxScore;
@@ -470,13 +468,8 @@ async function requestApi(param, content) {
     return fetch(`${Config.API_URL}${param}`, {
         method: 'POST',
         cors: 'no-cors',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            key: apiKey,
-            ...content
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: apiKey,  ...content })
     })
         .then(res => res.json())
         .catch(e => console.error(e));

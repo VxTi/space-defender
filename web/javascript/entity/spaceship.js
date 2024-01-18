@@ -37,7 +37,7 @@ class Spaceship extends Entity {
             return;
 
         super.update(dT);
-        spritesheet.drawSection(this.pos.x - this.size / 2, this.pos.y - this.size / 2, this.size, this.size, this.#facing < 0 ? 1  : 0, 0);
+        sprite.drawSection(this.pos.x - this.size / 2, this.pos.y - this.size / 2, this.size, this.size, this.#facing < 0 ? 1  : 0, 0);
 
         this.#facing = this.dir.x !== 0 ? this.dir.x: this.#facing;
         this.#movingAnimation = (this.#movingAnimation + dT * 10) % 4;
@@ -61,7 +61,7 @@ class Spaceship extends Entity {
 
         // If we're moving, draw the fire animation behind the ship
         if (Math.abs(this.vel.x) > Spaceship.VELOCITY_THRESHOLD || Math.abs(this.vel.y) > Spaceship.VELOCITY_THRESHOLD)
-            spritesheet.drawSection(this.pos.x - (this.#facing + 0.5) * this.size, this.pos.y - this.size / 2, this.size, this.size, Math.floor(this.#movingAnimation), this.#facing < 0 ? 4 : 3);
+            sprite.drawSection(this.pos.x - (this.#facing + 0.5) * this.size, this.pos.y - this.size / 2, this.size, this.size, Math.floor(this.#movingAnimation), this.#facing < 0 ? 4 : 3);
 
         // Make the screen move if the player comes too close to the edges
         if (this.pos.x + screenOffsetX <= window.innerWidth * Spaceship.EDGE_SCROLL_OFFSET)
@@ -125,20 +125,11 @@ class Spaceship extends Entity {
     onDeath() {
         playSound('death');
         Statistics.timesDied.value++;
-        setBroadcastMessage('Game over!')
-        setTimeout(() => {
-            setBroadcastMessage('Respawning in 3...');
-            setTimeout(() => {
-                setBroadcastMessage('Respawning in 2...');
-                setTimeout(() => {
-                    setBroadcastMessage('Respawning in 1...');
-                    setTimeout(() => {
-                        setBroadcastMessage('')
-                        spawn();
-                    }, 1000);
-                }, 1000);
-            }, 1000);
-        }, 1000);
+        broadcast('Game over!', 1000);
+        broadcast('Respawning in 3...');
+        broadcast('Respawning in 2...');
+        broadcast('Respawning in 1...');
+        setTimeout(spawn, 3000);
     }
 
 }

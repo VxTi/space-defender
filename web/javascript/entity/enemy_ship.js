@@ -31,7 +31,7 @@ class EnemyShip extends Entity {
      */
     update(dT) {
         super.update(dT);
-        spritesheet.animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, EnemyShip.#SPRITE_INDEX);
+        sprite.animate(this.pos.x - this.size/2, this.pos.y - this.size/2, this.size, this.size, EnemyShip.#SPRITE_INDEX);
 
         this.#doPathfinding(dT);
 

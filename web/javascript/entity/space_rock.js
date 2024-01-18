@@ -35,7 +35,7 @@ class Rock extends Entity {
             showDeathAnimation(this);
         this.pos.add(this.velocity.x * dT, this.velocity.y * dT);
         this.velocity.y += 100 * dT;
-        spritesheet.drawSection(this.pos.x - this.size / 2, this.pos.y - this.size / 2, this.size, this.size, 6, 0);
+        sprite.drawSection(this.pos.x - this.size / 2, this.pos.y - this.size / 2, this.size, this.size, 6, 0);
     }
 
 }

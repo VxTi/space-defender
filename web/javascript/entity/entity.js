@@ -15,7 +15,7 @@ class Entity {
     #damageColor;
     #doDeathAnimation = false;
     #doHurtAnimation = false;
-    #hurtInterval = 0.2;
+    #damageInterval = 0.2;
 
     MINIMAP_SPRITE_INDEX = null;
     ENTITY_KILL_SCORE = 200;
@@ -47,8 +47,9 @@ class Entity {
     update(dT) {
         this.#damageCooldown = Math.max(0, this.#damageCooldown - dT);
         if (this.pos.x < -mapWidth / 2 || this.pos.x > mapWidth / 2) {
-            this.pos.x = Math.max(Math.min(this.pos.x, mapWidth / 2), -mapWidth / 2);
-            this.vel.x = this.acceleration.x = 0;
+            this.vel.x = -Math.sign(this.vel.x) * 10;
+            this.pos.x = Math.max(Math.min(this.pos.x + this.vel.x, mapWidth / 2), -mapWidth / 2);
+            //this.vel.x = this.acceleration.x = 0;
         }
         if (this.pos.y < mapTop || this.pos.y > window.innerHeight - this.size/2) {
             this.pos.y = Math.max(Math.min(this.pos.y, window.innerHeight - this.size/2), mapTop);
@@ -78,7 +79,7 @@ class Entity {
 
     get canDamage() { return this.#damageCooldown <= 0; }
 
-    set hurtInterval(a) { this.#hurtInterval = a; }
+    set damageInterval(a) { this.#damageInterval = a; }
 
     set deathAnimations(state) { this.#doDeathAnimation = state; }
     set hurtAnimations(state) { this.#doHurtAnimation = state; }
@@ -111,7 +112,7 @@ class Entity {
 
         // do the harm >:)
         this.#health = Math.max(0, this.#health - amount);
-        this.#damageCooldown = this.#hurtInterval
+        this.#damageCooldown = this.#damageInterval
 
         // For when the entity is hurt and is still alive,
         // call the 'onDamage' method (if present)

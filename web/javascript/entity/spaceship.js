@@ -1,6 +1,9 @@
-
-
-
+/**
+ * Class representing the spaceship.
+ * This is the player's character.
+ * The player can move the spaceship around and shoot rockets.
+ * The spaceship is also responsible for moving the screen.
+ */
 class Spaceship extends Entity {
 
     #facing = 1;
@@ -24,7 +27,7 @@ class Spaceship extends Entity {
         super(x, y, health, Spaceship.SHIP_SIZE);
         this.deathAnimations = true;
         this.damageColor = 0x405060;
-        this.hurtInterval = 0.5;
+        this.damageInterval = 0.5;
     }
 
     /**

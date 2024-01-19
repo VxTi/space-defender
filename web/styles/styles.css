@@ -253,12 +253,12 @@ body, html {
     }
 }
 
-.gamepad-selected:not(.menu-button) {
+.gamepad-selected/*:not(.menu-button)*/ {
     border: white 1px solid;
 }
-
+/*
 .menu-button.gamepad-selected {
-    /*margin: 10px 0;*/
+    !*margin: 10px 0;*!
     overflow: hidden;
     text-align: center;
     width: 100%;
@@ -282,7 +282,7 @@ body, html {
 .menu-button.gamepad-selected:after {
     left: 0.5em;
     margin-right: -50%;
-}
+}*/
 
 .game-broadcast {
     display: flex;
@@ -363,9 +363,10 @@ body, html {
     justify-content: center;
     align-items: center;
     margin: 3px;
-    width: calc(10% - 2 * 3px);
+    width: calc(10% - 8px);
     height: 30%;
     background-color: var(--color-button-hover);
+    border: 1px solid var(--color-button-hover);
     color: white;
     font-family: 'minecraft-font', serif;
     user-select: none;
@@ -375,7 +376,7 @@ body, html {
     visibility: visible;
 }
 
-.virtual-key > .selected {
+.virtual-key.selected {
     border: 1px solid white;
 }
 

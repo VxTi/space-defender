@@ -3,7 +3,7 @@ class Rock extends Entity {
     #source;
     #direction;
 
-    static MOVEMENT_SPEED = 400;
+    static MOVEMENT_SPEED = 600;
 
     /**
      * Constructor for creating a bomb from an evolved alien
@@ -27,14 +27,14 @@ class Rock extends Entity {
         // Check whether the bomb has intersected with the player or whether it died
         if (this.pos.distSq(player.pos) <= Math.pow(player.size / 2 + this.size / 2 + 4, 2)) {
             player.damage(1);
-            Statistics.timesBlownUp.value++;
+            Statistics.rocksCollided.value++;
             this.terminate();
         }
         this.health = Math.max(0, this.health - dT);
         if (!this.alive)
             showDeathAnimation(this);
         this.pos.add(this.velocity.x * dT, this.velocity.y * dT);
-        this.velocity.y += 100 * dT;
+        this.velocity.y += 0.25 * Rock.MOVEMENT_SPEED * dT;
         sprite.drawSection(this.pos.x - this.size / 2, this.pos.y - this.size / 2, this.size, this.size, 6, 0);
     }
 

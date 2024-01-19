@@ -69,8 +69,17 @@ const Statistics = {
         name: 'Times Died',
         value: 0
     },
-    timesBlownUp: {
-        name: 'Times Blown Up',
+    // How many times the ship has been hit by a rock
+    rocksCollided: {
+        name: 'Rocks Collided With',
+        value: 0
+    },
+    explosionsUsed: {
+        name: 'Explosions Used',
+        value: 0
+    },
+    entitiesBlownUp: {
+        name: 'Entities Blown Up',
         value: 0
     }
 }
@@ -140,7 +149,9 @@ function preload() {
     const audioFileNames = [
         'death', 'explosion', 'hit',
         'navigate1', 'navigate2',
-        'shoot', 'spaceshipFlying', 'scary'
+        'shoot', 'spaceshipFlying', 'scary',
+        'health_element_pickup', 'entity_kill',
+        'wave_complete'
     ];
     for (let file of audioFileNames)
         audioFiles[file] = loadSound(`./assets/soundpack/${file}.wav`);
@@ -280,16 +291,19 @@ function draw() {
 
     translate(screenOffsetX, 0);
 
-    // Update all entity positions and remove ones that aren't alive.
+    /** -- SECTION -- UPDATING ENTITIES AND RENDERING MAP -- **/
     for (let i = entities.length - 1; i >= 0; i--) {
         let e = entities[i];
+
+        // If the entity is dead, remove it from the game
         if (!e.alive && e !== player)
             entities.splice(i, 1);
         else {
+            // If the entity has a minimap sprite image, draw it on the minimap
             if (e.MINIMAP_SPRITE_INDEX != null && typeof e.MINIMAP_SPRITE_INDEX === 'object')
                 sprite.drawSection(
-                    midX + e.pos.x * mapCoordinateFrac - screenOffsetX,
-                    innerMapTop + Math.round((e.pos.y - mapTop) / (window.innerHeight - mapTop) * innerMapHeight), 30, 30,
+                    midX + e.pos.x * mapCoordinateFrac - screenOffsetX - 15,
+                    innerMapTop + Math.round((e.pos.y - mapTop - 30) / (window.innerHeight - mapTop) * innerMapHeight) - 15, 30, 30,
                     e.MINIMAP_SPRITE_INDEX[0], e.MINIMAP_SPRITE_INDEX[1]
                 );
         }
@@ -307,10 +321,12 @@ function commenceWave() {
     // Amount of entities that spawn per wave is linearly increasing.
     // This follows the equation ax + b, where a = Config.WAVE_INCREMENT_FACTOR and b = Config.WAVE_MIN_ENTITIES
     // The maximum amount of entities is capped at Config.WAVE_MAX_ENTITIES
-    let entityCount = Math.ceil(Math.min(PlayerData.WAVE * Config.WAVE_INCREMENT_FACTOR + Config.WAVE_MIN_ENTITIES, Config.WAVE_MAX_ENTITIES));
+    let entityCount = Math.round(Math.min(PlayerData.WAVE * Config.WAVE_INCREMENT_FACTOR + Config.WAVE_MIN_ENTITIES, Config.WAVE_MAX_ENTITIES));
 
     // Remove all previous power-ups from the game, only leave the player behind.
     entities = [player];
+
+    waveEntitiesRemaining = 0;
 
     console.log(`Commencing wave, spawning ${entityCount} entities`)
 
@@ -344,6 +360,7 @@ function commenceWave() {
                     broadcast(`Entities Remaining: ${waveEntitiesRemaining}`, 500);
                     if (waveEntitiesRemaining <= 0) {
                         broadcast('Wave completed!', 1700);
+                        playSound('wave_complete');
                         setTimeout(() => {
                             setScore(PlayerData.SCORE, ++PlayerData.WAVE);
                             player.health = Config.DEFAULT_HEALTH;
@@ -383,6 +400,7 @@ function performExplosion() {
     if (explosiveTimer <= 0 && player.alive) {
 
         playSound('explosion');
+        Statistics.explosionsUsed.value++;
         let [dX, dY] = [0, 0];
         let theta = 0;
         explosiveTimer = Config.EXPLOSION_TIMER_DELAY;
@@ -403,12 +421,14 @@ function performExplosion() {
 
             // Check whether the entity is within distance of the player
             let dist = e.pos.dist(player.pos);
-            if (dist <= Math.pow(Config.EXPLOSION_RADIUS, 2))  {
+            if (dist <= Config.EXPLOSION_RADIUS)  {
                 theta = Math.atan2((e.pos.y - player.pos.y), (e.pos.x - player.pos.x));
                 e.damage(1);
-                if (!e.alive)
-                    addScore(e.ENTITY_KILL_SCORE);
-                e.vel.add(Math.cos(theta) * (Config.EXPLOSION_RADIUS - dist) * 0.05, Math.sin(theta) * (Config.EXPLOSION_RADIUS - dist) * 0.05);
+                if (!e.alive && typeof player['onEntityKill'] === 'function') {
+                    player['onEntityKill'](e);
+                    Statistics.entitiesBlownUp.value++;
+                }
+                e.vel.add(Math.cos(theta) * (Config.EXPLOSION_RADIUS - dist) * 0.2, Math.sin(theta) * (Config.EXPLOSION_RADIUS - dist) * 0.2);
             }
         })
         // Reset the timer
@@ -422,8 +442,14 @@ function performExplosion() {
  */
 function startGame() {
     let nameInput = document.getElementById('menu-start-name-input');
-    PlayerData.NAME = nameInput.value.length > 0 ? nameInput.value : Config.DEFAULT_PLAYER_NAME;
-    PlayerData.HIGH_SCORE = 0; // Reset highscore
+    PlayerData.NAME = nameInput.value.length > 0 ?
+        (nameInput.value.charAt(0).toUpperCase().concat(nameInput.value.toLowerCase().substring(1)))
+        : Config.DEFAULT_PLAYER_NAME;
+
+    console.log("playing as: " + PlayerData.NAME);
+
+    // Hide the custom keyboard
+    hideKeyboard();
     // reset statistics
     Object.entries(Statistics).forEach(([key, value]) => value.value = 0);
 
@@ -441,7 +467,6 @@ function startGame() {
                     console.log("Retrieved user data");
                     PlayerData.PLAYER_ID = res.userData.userId;
                     PlayerData.HIGH_SCORE = res.userData.maxScore;
-                    setScore(PlayerData.SCORE, res.userData.lastWave);
                     if (res.userData.statistics)
                         res.userData.statistics.map(stat => {
                             if (typeof Statistics[stat.field] === 'object')
@@ -486,6 +511,7 @@ function spawn() {
     player.vel.translate(0, 0);
     player.acceleration.translate(0, 0);
     entities = [player];
+    PlayerData.HIGH_SCORE = 0; // Reset high-score
     setScore(0, Config.DEFAULT_WAVE);
     commenceWave()
 }
@@ -552,22 +578,22 @@ function setScore(score, wave = PlayerData.WAVE) {
 /**
  * Function for adding score of the player
  * @param {number} score How much score to add
- * @param {Entity} [e] Source from which the score was added
  */
-function addScore(score, e = null) {
+function addScore(score) {
     setScore(PlayerData.SCORE += Math.abs(score));
-    if (e)
-        console.log("Score received from entity ", e);
 }
 
 /**
- * Method for playing a sound effect
+ * Method for playing a sound effect. An intensity can be provided to change how loud the sound plays
+ * relative to the master volume.
  * @param {string} sound Name of the sound effect to play
+ * @param {number} [intensity] Intensity of the sound effect. Ranges between 0 and 1
  */
-function playSound(sound) {
+function playSound(sound, intensity = 1) {
     if (typeof audioFiles[sound] === 'undefined'){
         console.error(`Sound file '${sound}' doesn't exist`);
     } else {
+        audioFiles[sound].setVolume(intensity * Config.MASTER_VOLUME);
         audioFiles[sound].play();
     }
 }

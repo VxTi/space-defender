@@ -150,7 +150,8 @@ function preload() {
         'death', 'explosion', 'hit',
         'navigate1', 'navigate2',
         'shoot', 'spaceshipFlying', 'scary',
-        'health_element_pickup'
+        'health_element_pickup', 'entity_kill',
+        'wave_complete'
     ];
     for (let file of audioFileNames)
         audioFiles[file] = loadSound(`./assets/soundpack/${file}.wav`);
@@ -290,16 +291,19 @@ function draw() {
 
     translate(screenOffsetX, 0);
 
-    // Update all entity positions and remove ones that aren't alive.
+    /** -- SECTION -- UPDATING ENTITIES AND RENDERING MAP -- **/
     for (let i = entities.length - 1; i >= 0; i--) {
         let e = entities[i];
+
+        // If the entity is dead, remove it from the game
         if (!e.alive && e !== player)
             entities.splice(i, 1);
         else {
+            // If the entity has a minimap sprite image, draw it on the minimap
             if (e.MINIMAP_SPRITE_INDEX != null && typeof e.MINIMAP_SPRITE_INDEX === 'object')
                 sprite.drawSection(
-                    midX + e.pos.x * mapCoordinateFrac - screenOffsetX,
-                    innerMapTop + Math.round((e.pos.y - mapTop) / (window.innerHeight - mapTop) * innerMapHeight), 30, 30,
+                    midX + e.pos.x * mapCoordinateFrac - screenOffsetX - 15,
+                    innerMapTop + Math.round((e.pos.y - mapTop - 30) / (window.innerHeight - mapTop) * innerMapHeight) - 15, 30, 30,
                     e.MINIMAP_SPRITE_INDEX[0], e.MINIMAP_SPRITE_INDEX[1]
                 );
         }
@@ -356,6 +360,7 @@ function commenceWave() {
                     broadcast(`Entities Remaining: ${waveEntitiesRemaining}`, 500);
                     if (waveEntitiesRemaining <= 0) {
                         broadcast('Wave completed!', 1700);
+                        playSound('wave_complete');
                         setTimeout(() => {
                             setScore(PlayerData.SCORE, ++PlayerData.WAVE);
                             player.health = Config.DEFAULT_HEALTH;
@@ -437,7 +442,11 @@ function performExplosion() {
  */
 function startGame() {
     let nameInput = document.getElementById('menu-start-name-input');
-    PlayerData.NAME = nameInput.value.length > 0 ? nameInput.value : Config.DEFAULT_PLAYER_NAME;
+    PlayerData.NAME = nameInput.value.length > 0 ?
+        (nameInput.value.charAt(0).toUpperCase().concat(nameInput.value.toLowerCase().substring(1)))
+        : Config.DEFAULT_PLAYER_NAME;
+
+    console.log("playing as: " + PlayerData.NAME);
 
     // Hide the custom keyboard
     hideKeyboard();

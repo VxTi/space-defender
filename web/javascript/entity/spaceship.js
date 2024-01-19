@@ -94,7 +94,7 @@ class Spaceship extends Entity {
         addScore(entity.ENTITY_KILL_SCORE);
         Statistics.entitiesKilled.value++; // Take measurements!!!
         Statistics.killDeathRatio.value = Statistics.entitiesKilled.value / Math.max(1, Statistics.timesDied.value);
-        playSound('hit');
+        playSound('entity_kill');
         if (entity instanceof Alien)
             Statistics.aliensKilled.value++;
         else if (entity instanceof EnemyShip)
@@ -127,12 +127,13 @@ class Spaceship extends Entity {
      */
     onDeath() {
         playSound('death');
+        messageQueue = [];
         Statistics.timesDied.value++;
-        broadcast('Game over!', 1000);
+        broadcast('Game over!');
         broadcast('Respawning in 3...');
         broadcast('Respawning in 2...');
         broadcast('Respawning in 1...');
-        setTimeout(spawn, 3000);
+        setTimeout(spawn, 4000);
     }
 
 }

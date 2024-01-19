@@ -12,6 +12,7 @@ let messageQueue = [];
 
 function showKeyboard() {
     document.querySelector('.virtual-keyboard').classList.add('keyboard-active');
+    document.querySelector('.virtual-key.selected').classList.remove('selected');
     document.querySelector('.virtual-key').classList.add('selected');
 }
 
@@ -156,7 +157,6 @@ function createKeyboard() {
 }
 
 function pressKeyboard() {
-    console.log("key pressed")
     let selected = document.querySelector('.virtual-key.selected');
     if (selected !== null)
         selected.onclick();
@@ -236,7 +236,7 @@ function keyTyped() {
         switch (key) {
             case 'r':
                 hideKeyboard();
-                selectNextMenuItem(-1);
+                selectNextMenuItem(1);
                 break;
             case 'w': moveKeyboardCursor(0, 1);  break;
             case 'a': moveKeyboardCursor(-1, 0); break;
@@ -258,8 +258,8 @@ function keyTyped() {
                 showMenu('menu-pause');
             }
             break;
-        case 'w': case 'd': dy--; break;
-        case 's': case 'a': dy++; break;
+        case 'w': case 'd': selectNextMenuItem(-1); break;
+        case 's': case 'a': selectNextMenuItem(1); break;
         case ' ':
             if (currentMenu != null) {
                 playSound('navigate2');
@@ -270,16 +270,15 @@ function keyTyped() {
                     break;
 
                 // Check if it has a menu to go to
-                if (selected.dataset.menu != null) {
+                if (selected.dataset.menu != null)
                     showMenu(selected.dataset.menu);
-                }
+
                 // Check if it has a function to perform when interacted with
                 if (selected.dataset.onload != null && typeof window[selected.dataset.onload] === 'function')
                     window[selected.dataset.onload]();
             }
             break;
     }
-    selectNextMenuItem(dy);
 }
 
 /**

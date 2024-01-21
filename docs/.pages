@@ -2,6 +2,8 @@ nav:
     - 🏚️ Home: index.md
     - Gebruiksaanwijzing Controller: project/gebruiksaanwijzing
     - Gebruiksaanwijzing Game: project/functionaliteit
+    - Design:
+        - PCB: project/pcb
     - Documentatie:
         - API documentatie: project/apidocs
         - TO-DO lijst: taken

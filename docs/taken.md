@@ -43,7 +43,7 @@
 > ### PCB Design documenteren
 >
 > PCB design documenteren en uitleggen etc..
-> - [ ] Afgerond
+> - [X] Afgerond
 
 > ### UML diagrammen in markdown zetten
 >

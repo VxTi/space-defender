@@ -3,7 +3,7 @@ nav:
     - Gebruiksaanwijzing Controller: project/gebruiksaanwijzing
     - Gebruiksaanwijzing Game: project/functionaliteit
     - Design:
-        - PCB: project/pcb
+        - PCB: pcb
     - Documentatie:
         - API documentatie: project/apidocs
         - TO-DO lijst: taken

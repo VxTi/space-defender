@@ -24,7 +24,8 @@ const Config = {
     WAVE_MIN_ENTITIES: 5,                   // Minimum amount of entities that can spawn in a wave
     WAVE_INCREMENT_FACTOR: 1.5,             // Factor by which the amount of entities increases per wave
     DEFAULT_WAVE: 1,                        // Default wave the player starts on
-    MASTER_VOLUME: 0.2                      // Master volume of the game
+    MASTER_VOLUME: 0.2,                     // Master volume of the game
+    OFFLINE_MODE: false                     // Whether the game is in offline mode or not
 }
 
 
@@ -81,6 +82,10 @@ const Statistics = {
     entitiesBlownUp: {
         name: 'Entities Blown Up',
         value: 0
+    },
+    minutesPlayed: {
+        name: 'Minutes Played',
+        value: 0
     }
 }
 
@@ -88,7 +93,7 @@ let player; // The player object
 
 /**
  * Object containing all the scores of the player.
- * @type {{WAVE: number, SCORE: number, HIGH_SCORE: number, PLAYER_ID: number}}
+ * @type {{WAVE: number, SCORE: number, HIGH_SCORE: number, PLAYER_ID: number, NAME: string}}
  */
 const PlayerData = {
     HIGH_SCORE: 0,                      // High score of the player
@@ -121,6 +126,7 @@ let explosiveTimer = Config.EXPLOSION_TIMER_DELAY; // Time until the explosive e
 
 let msElapsed = 0;
 
+
 // Create a method for checking whether a number is between two other numbers.
 Number.prototype.isBetween = function(a, b) {
     return this >= Math.min(a) && this <= Math.max(b);
@@ -131,7 +137,12 @@ Number.prototype.isZero = function() {
     return Math.abs(this) <= 0.0001;
 }
 
-setVolume = (volume) => {
+/**
+ * Method for setting the master volume of the game.
+ * @param {number} volume The volume to set the game to. This is a value between 0 and 1.
+ */
+function setVolume(volume)  {
+    Config.MASTER_VOLUME = volume;
     Object.values(audioFiles).forEach(sound => sound.setVolume(volume));
 }
 
@@ -177,7 +188,7 @@ function setup() {
     player = new Spaceship(100, window.innerHeight/2, 5);
     entities.push(player);
 
-    document.addEventListener('keydown', (event) => {
+    document.onkeydown = (event) => {
         // Check if we've hit the space-bar (shoot) and if there's enough time elapsed
         if (!gameActive)
             return;
@@ -192,7 +203,7 @@ function setup() {
                 performExplosion();
             break;
         }
-    })
+    };
 
     /** -- FUNCTIONALITY -- BACKGROUND STARS -- **/
     stars = Array(Config.STAR_COUNT);
@@ -218,7 +229,8 @@ function setup() {
 }
 
 /**
- * Main Rendering loop
+ * Main Rendering loop.
+ * Here we draw all objects in the game and update their properties.
  */
 function draw() {
 
@@ -354,10 +366,11 @@ function commenceWave() {
                 case 2: entities.push(entity = new EvolvedAlien(x, y)); break;
                 case 3: entities.push(new HealthElement(x, y, 1)); break;
             }
+            // If it's a health element, we don't want to add it to the waveEntitiesRemaining counter.
             if (entity !== undefined) {
                 entity.onDeath = () => {
                     waveEntitiesRemaining--;
-                    broadcast(`Entities Remaining: ${waveEntitiesRemaining}`, 500);
+                    broadcast(`Entities Remaining: ${waveEntitiesRemaining}`, 300);
                     if (waveEntitiesRemaining <= 0) {
                         broadcast('Wave completed!', 1700);
                         playSound('wave_complete');
@@ -379,8 +392,11 @@ function commenceWave() {
  * and one is connected to the internet.
  */
 function scoreUpdater() {
+
+    Statistics.minutesPlayed = Math.round(msElapsed / 60000);
+
     // Check if the player has selected a name, if not, don't update the score.
-    if (PlayerData.NAME === Config.DEFAULT_PLAYER_NAME || !gameActive)
+    if (PlayerData.NAME === Config.DEFAULT_PLAYER_NAME || !gameActive || Config.OFFLINE_MODE)
         return;
 
     // Send the score to the server
@@ -438,15 +454,20 @@ function performExplosion() {
 
 
 /**
- * Method for starting the game and configuring the right variables
+ * Method for starting the game and configuring the right variables.
+ * This method attempts to retrieve data from the database. If there is any data present
+ * of the provided player name, it will retrieve that player and set the statistics accordingly.
  */
 function startGame() {
     let nameInput = document.getElementById('menu-start-name-input');
+
+    // Check whether the user has provided a name, if not, use the default name.
+    // If the user did provide a name, capitalize the first letter and make the rest lowercase.
     PlayerData.NAME = nameInput.value.length > 0 ?
         (nameInput.value.charAt(0).toUpperCase().concat(nameInput.value.toLowerCase().substring(1)))
         : Config.DEFAULT_PLAYER_NAME;
 
-    console.log("playing as: " + PlayerData.NAME);
+    broadcast(`Welcome, ${PlayerData.NAME}!`, 1000);
 
     // Hide the custom keyboard
     hideKeyboard();
@@ -457,11 +478,24 @@ function startGame() {
     if (PlayerData.NAME !== Config.DEFAULT_PLAYER_NAME) {
         (async () => {
 
-            let exists = await requestApi('checkuser', {idorname: PlayerData.NAME}).then(res => res.exists);
+            await requestApi('checkuser', {idorname: PlayerData.NAME})
+                .then(exists => {
+                if (exists) {
+
+                } else {
+                    requestApi('createuser', {name: PlayerData.NAME})
+                        .then(res => PlayerData.PLAYER_ID = res.userId)
+                        .catch(e => console.error(e));
+                }
+            }).catch(e => {
+                console.warn("Failed to fetch check user request.");
+            })
+
+            let exists = await requestApi('checkuser', {idorname: PlayerData.NAME}).then(res => res.exists).catch(e => false) || false;
 
             // If the user doesn't exist, request a new user to be created.
             if (!exists)
-                await requestApi('createuser', {name: PlayerData.NAME}).then(res => PlayerData.PLAYER_ID = res.userId)
+                await requestApi('createuser', {name: PlayerData.NAME}).then(res => PlayerData.PLAYER_ID = res.userId).catch(e => console.error(e));
             else {
                 await requestApi('getuser', {name: PlayerData.NAME}).then(res => {
                     console.log("Retrieved user data");
@@ -472,6 +506,9 @@ function startGame() {
                             if (typeof Statistics[stat.field] === 'object')
                                 Statistics[stat.field].value = stat.value
                         });
+                }).catch(e => {
+                    console.error(e);
+                    PlayerData.PLAYER_ID = -1;
                 })
             }
 

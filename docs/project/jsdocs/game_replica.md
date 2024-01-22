@@ -17,15 +17,14 @@ These can be viewed in the &#39;statistics&#39; tab in-game.</p>
 <dd><p>Main setup method. Here we load resources and initialize variables.</p>
 </dd>
 <dt><a href="#draw">draw()</a></dt>
-<dd><p>Main Rendering loop</p>
+<dd><p>Main Rendering loop.
+Here we draw all objects in the game and update their properties.</p>
 </dd>
-<dt><a href="#introduceWave">introduceWave(wave)</a></dt>
+<dt><a href="#commenceWave">commenceWave()</a></dt>
 <dd><p>Method for introducing a new entity wave into the game.
-This method is called when the player has killed all entities in the current wave.</p>
-</dd>
-<dt><a href="#checkEntitySpawning">checkEntitySpawning()</a></dt>
-<dd><p>Function for checking whether an entity can spawn or not
-Occasionally introduces new entities.</p>
+This method is called when the player has killed all entities in the current wave.
+Whenever this function is called, it introduces a specified amount of entities, depending
+on the coefficients defined in the Config object.</p>
 </dd>
 <dt><a href="#scoreUpdater">scoreUpdater()</a></dt>
 <dd><p>Function for updating the score of the player.
@@ -38,13 +37,17 @@ This method checks which entities are within range of the explosion, and damages
 Also introduces particles into space.</p>
 </dd>
 <dt><a href="#startGame">startGame()</a></dt>
-<dd><p>Method for starting the game and configuring the right variables</p>
+<dd><p>Method for starting the game and configuring the right variables.
+This method attempts to retrieve data from the database. If there is any data present
+of the provided player name, it will retrieve that player and set the statistics accordingly.</p>
 </dd>
 <dt><a href="#requestApi">requestApi(param, content)</a> ⇒ <code>Promise.&lt;Object&gt;</code></dt>
 <dd><p>Method for making an API request to the server.</p>
 </dd>
-<dt><a href="#respawn">respawn()</a></dt>
-<dd><p>Method for respawning the player and resetting some variables.</p>
+<dt><a href="#spawn">spawn()</a></dt>
+<dd><p>Method for respawning the player and resetting some variables.
+This also sets the player score to 0 and updates the text on screen,
+resets the player health and sets the player position to the center of the screen.</p>
 </dd>
 <dt><a href="#randDir">randDir(thetaMin, thetaMax, rMin, rMax)</a> ⇒ <code>Array.&lt;number&gt;</code></dt>
 <dd><p>Method for retrieving a random direction vector.</p>
@@ -61,11 +64,12 @@ amount of released particles is less.</p>
 <dd><p>Function for setting the score of the user
 Also updates the high score if the score is higher than the current high score</p>
 </dd>
-<dt><a href="#addScore">addScore(score, [e])</a></dt>
+<dt><a href="#addScore">addScore(score)</a></dt>
 <dd><p>Function for adding score of the player</p>
 </dd>
-<dt><a href="#playSound">playSound(sound)</a></dt>
-<dd><p>Method for playing a sound effect</p>
+<dt><a href="#playSound">playSound(sound, [intensity])</a></dt>
+<dd><p>Method for playing a sound effect. An intensity can be provided to change how loud the sound plays
+relative to the master volume.</p>
 </dd>
 <dt><a href="#drawRect">drawRect(x, y, width, height, rgb, opacity)</a></dt>
 <dd><p>Method for drawing a rectangle onto the screen with provided color values</p>
@@ -106,26 +110,17 @@ Main setup method. Here we load resources and initialize variables.
 <a name="draw"></a>
 
 ## draw()
-Main Rendering loop
+Main Rendering loop.
+Here we draw all objects in the game and update their properties.
 
 **Kind**: global function  
-<a name="introduceWave"></a>
+<a name="commenceWave"></a>
 
-## introduceWave(wave)
+## commenceWave()
 Method for introducing a new entity wave into the game.
 This method is called when the player has killed all entities in the current wave.
-
-**Kind**: global function  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| wave | <code>number</code> | The wave number to introduce |
-
-<a name="checkEntitySpawning"></a>
-
-## checkEntitySpawning()
-Function for checking whether an entity can spawn or not
-Occasionally introduces new entities.
+Whenever this function is called, it introduces a specified amount of entities, depending
+on the coefficients defined in the Config object.
 
 **Kind**: global function  
 <a name="scoreUpdater"></a>
@@ -147,7 +142,9 @@ Also introduces particles into space.
 <a name="startGame"></a>
 
 ## startGame()
-Method for starting the game and configuring the right variables
+Method for starting the game and configuring the right variables.
+This method attempts to retrieve data from the database. If there is any data present
+of the provided player name, it will retrieve that player and set the statistics accordingly.
 
 **Kind**: global function  
 <a name="requestApi"></a>
@@ -162,10 +159,12 @@ Method for making an API request to the server.
 | param | <code>string</code> | The appropriate URL parameter for the request |
 | content | <code>object</code> | The content to send to the server |
 
-<a name="respawn"></a>
+<a name="spawn"></a>
 
-## respawn()
+## spawn()
 Method for respawning the player and resetting some variables.
+This also sets the player score to 0 and updates the text on screen,
+resets the player health and sets the player position to the center of the screen.
 
 **Kind**: global function  
 <a name="randDir"></a>
@@ -222,26 +221,27 @@ Also updates the high score if the score is higher than the current high score
 
 <a name="addScore"></a>
 
-## addScore(score, [e])
+## addScore(score)
 Function for adding score of the player
-
-**Kind**: global function  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| score | <code>number</code> |  | How much score to add |
-| [e] | <code>Entity</code> | <code></code> | Source from which the score was added |
-
-<a name="playSound"></a>
-
-## playSound(sound)
-Method for playing a sound effect
 
 **Kind**: global function  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| sound | <code>string</code> | Name of the sound effect to play |
+| score | <code>number</code> | How much score to add |
+
+<a name="playSound"></a>
+
+## playSound(sound, [intensity])
+Method for playing a sound effect. An intensity can be provided to change how loud the sound plays
+relative to the master volume.
+
+**Kind**: global function  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| sound | <code>string</code> |  | Name of the sound effect to play |
+| [intensity] | <code>number</code> | <code>1</code> | Intensity of the sound effect. Ranges between 0 and 1 |
 
 <a name="drawRect"></a>
 

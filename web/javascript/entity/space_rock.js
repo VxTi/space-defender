@@ -29,10 +29,11 @@ class Rock extends Entity {
             player.damage(1);
             Statistics.rocksCollided.value++;
             this.terminate();
+        } else if (this.pos.y > window.innerHeight + this.size / 2) {
+            this.terminate();
         }
         this.health = Math.max(0, this.health - dT);
-        if (!this.alive)
-            showDeathAnimation(this);
+
         this.pos.add(this.velocity.x * dT, this.velocity.y * dT);
         this.velocity.y += 0.25 * Rock.MOVEMENT_SPEED * dT;
         sprite.drawSection(this.pos.x - this.size / 2, this.pos.y - this.size / 2, this.size, this.size, 6, 0);

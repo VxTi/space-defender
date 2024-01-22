@@ -12,7 +12,7 @@ let messageQueue = [];
 
 function showKeyboard() {
     document.querySelector('.virtual-keyboard').classList.add('keyboard-active');
-    document.querySelector('.virtual-key.selected').classList.remove('selected');
+    document.querySelectorAll('.virtual-key.selected').forEach(e => e.classList.remove('selected'));
     document.querySelector('.virtual-key').classList.add('selected');
 }
 
@@ -158,8 +158,10 @@ function createKeyboard() {
 
 function pressKeyboard() {
     let selected = document.querySelector('.virtual-key.selected');
-    if (selected !== null)
+    if (selected !== null) {
         selected.onclick();
+        playSound('navigate2')
+    }
 }
 
 /**
@@ -170,6 +172,7 @@ function pressKeyboard() {
  * @param {number} dy By how much to move the cursor in the y direction. y > 0 means up, y < 0 means down
  */
 function moveKeyboardCursor(dx, dy) {
+    playSound('navigate1')
     let v_selected_next = new Vec2();
     let v_dimensions = new Vec2();
     let v_store = new Vec2();

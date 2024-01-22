@@ -1,6 +1,11 @@
 <a name="Spaceship"></a>
 
 ## Spaceship
+Class representing the spaceship.
+This is the player's character.
+The player can move the spaceship around and shoot rockets.
+The spaceship is also responsible for moving the screen.
+
 **Kind**: global class  
 
 * [Spaceship](#Spaceship)

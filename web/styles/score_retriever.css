@@ -1,0 +1,67 @@
+body, html {
+    background-color: #000;
+}
+
+
+.stats-container {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: center;
+    align-items: center;
+}
+
+.stats-frame {
+    width: 60vw;
+    height: 60vh;
+    display: block;
+    background-color: var(--color-button-static);
+    border-radius: var(--border-radius);
+}
+
+.stats-title {
+    font-family: arcade, serif;
+    text-align: center;
+    color: white;
+    font-size: var(--font-size);
+    margin: 10px 0;
+    word-spacing: 2px;
+}
+
+.stats-user {
+    color: white;
+    font-family: arcade, serif;
+    font-size: calc(0.9 * var(--font-size));
+    text-align: center;
+}
+
+.stats-score {
+    color: white;
+    font-family: arcade, serif;
+    width: 100%;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-evenly;
+    font-size: calc(0.8 * var(--font-size));
+    word-spacing: 5px;
+}
+
+.stats-score:hover {
+    cursor: pointer;
+    background-color: var(--color-button-hover);
+}
+
+.stats-type {
+    width: 40%;
+    margin-left: 10%;
+}
+
+.stats-value {
+    width: 50%;
+}
+
+.stats-text {
+    text-align: center;
+}

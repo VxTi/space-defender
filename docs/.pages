@@ -1,16 +1,15 @@
 nav:
     - 🏚️ Home: index.md
-    - 🧰 Opdracht: 
-        - Omschrijving: opdracht/omschrijving
-        - Criteria: opdracht/criteria
-        - Definition of Done: opdracht/dod
-        - Game Controller: opdracht/game_controller
-        - Userstory overzicht: opdracht/user_learning_stories
-        - Links: opdracht/links
-    - Gebruiksaanwijzing: project/gebruiksaanwijzing
-    - Game functionaliteit: project/functionaliteit
-    - API documentatie: project/apidocs
-    - Code:
+    - Gebruiksaanwijzing Controller: project/gebruiksaanwijzing
+    - Gebruiksaanwijzing Game: project/functionaliteit
+    - Design:
+        - PCB: pcb
+    - Documentatie:
+        - API documentatie: project/apidocs
+        - TO-DO lijst: taken
+        - Testplan: testplan
+        - Bronvermelding: bronvermelding
+    - OOP:
         - Game: project/jsdocs/game_replica
         - Alien: project/jsdocs/alien
         - Entity: project/jsdocs/entity

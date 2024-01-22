@@ -8,15 +8,18 @@
 #include "HIDKeyboardTypes.h"
 
 // Port indices for all buttons / LEDs
-#define PIN_BUTTON_UP 3
-#define PIN_BUTTON_LEFT 8
-#define PIN_BUTTON_RIGHT 9
-#define PIN_BUTTON_DOWN 46
-#define PIN_BUTTON_A 12
-#define PIN_BUTTON_B 11
-#define PIN_BUTTON_OPT 10
+#define PIN_BUTTON_UP 21
+#define PIN_BUTTON_LEFT 38
+#define PIN_BUTTON_RIGHT 45
+#define PIN_BUTTON_DOWN 42
+#define PIN_BUTTON_A 7
+#define PIN_BUTTON_B 6
+#define PIN_BUTTON_OPT 4
 #define PIN_LED 4
-#define PIN_BATTERY 13
+#define PIN_BATTERY 5
+#define PIN_LED_RED 35
+#define PIN_LED_GREEN 36
+#define PIN_LED_BLUE 37
 
 #define BUTTON_UP_KEY ((uint8_t)'w')
 #define BUTTON_LEFT_KEY ((uint8_t)'a')
@@ -102,7 +105,7 @@ void loop() {
     for (int i = 0; i < BUTTON_COUNT; i++) {
 
       // Set the 'pressed' state to true when the pin is at HIGH (4095 is max value)
-      buttonData[i].pressed = analogRead(buttonData[i].pin) >= 4095;
+      buttonData[i].pressed = digitalRead(buttonData[i].pin);
 
       // Check if the current button is pressed
       if (buttonData[i].pressed) {  // Check if the pin is high
@@ -112,7 +115,9 @@ void loop() {
         // Update report map and send it
         input->setValue((uint8_t*)&reportMap, sizeof(reportMap));
         input->notify();
+        setLedColor(255, 255, 0);
         delay(25);
+        setLedColor(0, 0, 0);
       }
 
       // Clear pressed keys from report map
@@ -199,6 +204,13 @@ class BleKeyboardCallbacks : public BLEServerCallbacks {
 void readBatteryLevel() {
   // Set battery level, read from battery pin. Input value is converted from 0-4095 to 0-100 range
   hid->setBatteryLevel((uint8_t)((float)analogRead(PIN_BATTERY) * 100.0 / 4095.0));
+}
+
+void setLedColor(uint8_t red, uint8_t green, uint8_t blue) {
+  // Set the LED color
+  analogWrite(PIN_LED_RED, red);
+  analogWrite(PIN_LED_GREEN, green);
+  analogWrite(PIN_LED_BLUE, blue);
 }
 
 // The task containing the initialization code for the BLE Keyboard.

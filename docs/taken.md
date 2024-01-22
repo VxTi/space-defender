@@ -32,10 +32,30 @@
 > ### UML bestanden beter weergeven 
 > 
 > Deze bestanden moeten we in de documentatie plaatsen.
-> - [ ] Afgerond
+> - [X] Afgerond (denk ik)
 
 > ### Eigen User-Stories aanmaken 
 > 
 > We moeten afhankelijk van feedback user-stories creëren
 > 
 > ![2/3](https://progress-bar.dev/33)
+
+> ### PCB Design documenteren
+>
+> PCB design documenteren en uitleggen etc..
+> - [X] Afgerond
+
+> ### UML diagrammen in markdown zetten
+>
+> UML diagrammen in markdown zetten zodat deze op de pages staan.
+> - [ ] Afgerond
+
+> ### Nieuwe game ontwerp documenteren
+>
+> Nieuwe game ontwerp documenteren met gebruiksaanwijzing enz
+> - [ ] Afgerond
+
+> ### Bronvermelding maken
+>
+> Alle bronnen die we gebruikt hebben in de documentatie zetten. Check knowledgebase hoe dat moet.
+> - [ ] Afgerond

@@ -32,4 +32,6 @@ Hier een lijst met onderdelen:
   
 
 ## Resultaat
-Hieronder zie je het resultaat van de PCB die we op school hebben laten printen. De PCB ziet er niet uit zoals je gewend bent, hij is niet standaard groen en de koperbanen zijn blootgesteld. We hebben alle componenten erop gesoldeerd. Sommige knoppen waarvan de tracks aan de achterkant lopen doen het wel, maar de knoppen waarvan de tracks aan de voorkant lopen doen het niet. Dit komt omdat de pads niet doorverbonden zijn. We hebben de PCB getest met een ESP32S3 Dev Module en de meeste functies werken. Stel dat we een PCB hadden die wel doorverbonden pads had weten we zeker dat dit design een succes was geweest. 
+Hieronder zie je het resultaat van de PCB die we op school hebben laten printen. De PCB ziet er niet uit zoals je gewend bent, hij is niet standaard groen en de koperbanen zijn blootgesteld. We hebben alle componenten erop gesoldeerd. Sommige knoppen waarvan de tracks aan de achterkant lopen doen het wel, maar de knoppen waarvan de tracks aan de voorkant lopen doen het niet. Dit komt omdat de pads niet doorverbonden zijn. We hebben de PCB getest met een ESP32S3 Dev Module en de meeste functies werken. Stel dat we een PCB hadden die wel doorverbonden pads had weten we zeker dat dit design een succes was geweest.
+
+[Resultaat](https://cdn.discordapp.com/attachments/1152210205300502610/1199065978575790140/20240121_222201.jpg?ex=65c13036&is=65aebb36&hm=a450b57e151ee18286a068134f5536691f9fcd6993f0c9ff76e69350e373969a&)

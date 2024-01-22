@@ -1,26 +1,28 @@
 nav:
     - 🏚️ Home: index.md
-    - Gebruiksaanwijzing Controller: project/gebruiksaanwijzing
-    - Gebruiksaanwijzing Game: project/functionaliteit
-    - Design:
-        - PCB: pcb
-    - Documentatie:
-        - API documentatie: project/apidocs
-        - TO-DO lijst: taken
-        - Testplan: testplan
-        - Bronvermelding: bronvermelding
-    - OOP:
-        - Game: project/jsdocs/game_replica
-        - Alien: project/jsdocs/alien
-        - Entity: project/jsdocs/entity
-        - Enemy Ship: project/jsdocs/enemy_ship
-        - Evolved Alien: project/jsdocs/evolved_alien
-        - Rocket: project/jsdocs/rocket
-        - Script Loader: project/jsdocs/scriptloader
-        - Spaceship: project/jsdocs/spaceship
-        - Space Rock: project/jsdocs/space_rock
-        - Particle: project/jsdocs/particle
-        - Health Element: project/jsdocs/health_element
-        - Resource: project/jsdocs/resource
-        - Menu Functionaliteit: project/jsdocs/menu_functionality
-        - Vec2: project/jsdocs/vec2
+    - 📖 Gebruiksdocumentatie:
+        - 🎮 Controller: project/gebruiksaanwijzing
+        - 🕹️ Game: project/functionaliteit
+    - 🛠️ Technische Documentatie:
+        - 📚 API documentatie: project/apidocs
+        - 📝 TO-DO lijst: taken
+        - 🧪 Testplan: testplan
+        - 📜 Bronvermelding: bronvermelding
+        - 📊 UML Diagrammen: uml
+    - 🎨 Design:
+        - 🖥️ PCB: pcb
+    - 🧩 OOP:
+        - 🎮 Game: project/jsdocs/game_replica
+        - 👽 Alien: project/jsdocs/alien
+        - 🎯 Entity: project/jsdocs/entity
+        - 🚀 Enemy Ship: project/jsdocs/enemy_ship
+        - 👾 Evolved Alien: project/jsdocs/evolved_alien
+        - 🚀 Rocket: project/jsdocs/rocket
+        - 📚 Script Loader: project/jsdocs/scriptloader
+        - 🚀 Spaceship: project/jsdocs/spaceship
+        - 🪨 Space Rock: project/jsdocs/space_rock
+        - ✨ Particle: project/jsdocs/particle
+        - ❤️ Health Element: project/jsdocs/health_element
+        - 💎 Resource: project/jsdocs/resource
+        - 📑 Menu Functionaliteit: project/jsdocs/menu_functionality
+        - 🧮 Vec2: project/jsdocs/vec2

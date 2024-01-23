@@ -1,22 +1,35 @@
+/*
+  Keyboard Message test
 
-#define US_KEYBOARD 1
+  For the Arduino Leonardo and Micro.
 
-#include <Arduino.h>
-#include "BLEDevice.h"
-#include "BLEHIDDevice.h"
-#include "HIDTypes.h"
-#include "HIDKeyboardTypes.h"
+  Sends a text string when a button is pressed.
 
-// Port indices for all buttons / LEDs
+  The circuit:
+  - pushbutton attached from pin 0 to ground
+  - 10 kilohm resistor attached from pin 0 to +5V
+
+  created 24 Oct 2011
+  modified 27 Mar 2012
+  by Tom Igoe
+  modified 11 Nov 2013
+  by Scott Fitzgerald
+
+  This example code is in the public domain.
+
+  http://www.arduino.cc/en/Tutorial/KeyboardMessage
+*/
+
 #define PIN_BUTTON_UP 21
 #define PIN_BUTTON_LEFT 38
 #define PIN_BUTTON_RIGHT 45
 #define PIN_BUTTON_DOWN 42
-#define PIN_BUTTON_A 7
-#define PIN_BUTTON_B 6
+#define PIN_BUTTON_A 6
+#define PIN_BUTTON_B 7
 #define PIN_BUTTON_OPT 4
 #define PIN_LED 4
 #define PIN_BATTERY 5
+
 #define PIN_LED_RED 35
 #define PIN_LED_GREEN 36
 #define PIN_LED_BLUE 37
@@ -29,229 +42,74 @@
 #define BUTTON_B_KEY ((uint8_t)'f')
 #define BUTTON_OPT_KEY ((uint8_t)'r')
 
+#define BUTTON_A_IDX 0
+#define BUTTON_B_IDX 1
+#define BUTTON_LEFT_IDX 2
+#define BUTTON_UP_IDX 3
+#define BUTTON_RIGHT_IDX 4
+#define BUTTON_DOWN_IDX 5
+#define BUTTON_OPT_IDX 6
+
 #define DEVICE_NAME "Game Controller"
 
 #define BUTTON_COUNT 7
 
-// Message (report) sent when a key is pressed or released
-struct InputReport {
-  uint8_t modifiers;       // bitmask: CTRL = 1, SHIFT = 2, ALT = 4
-  uint8_t reserved;        // must be 0
-  uint8_t pressedKeys[6];  // up to six concurrenlty pressed keys
-};
+const uint8_t button_keys[BUTTON_COUNT] = {BUTTON_A_KEY, BUTTON_B_KEY, BUTTON_LEFT_KEY, BUTTON_UP_KEY, BUTTON_RIGHT_KEY, BUTTON_DOWN_KEY, BUTTON_OPT_KEY};
+const uint8_t button_pins[BUTTON_COUNT] = {PIN_BUTTON_A, PIN_BUTTON_B, PIN_BUTTON_LEFT, PIN_BUTTON_UP, PIN_BUTTON_RIGHT, PIN_BUTTON_DOWN, PIN_BUTTON_OPT};
+const uint8_t led_pins[3] = {PIN_LED_RED, PIN_LED_GREEN, PIN_LED_BLUE};
 
-struct ButtonData {
-  char character;
-  uint8_t pin;
-  uint8_t pressed;
-};
-
-#define BDATA(bChar, bPin) \
-  (ButtonData) { \
-    .character = (uint8_t)bChar, .pin = (uint8_t)bPin \
-  }
-
-struct ButtonData buttonData[BUTTON_COUNT] = {
-  BDATA(BUTTON_UP_KEY, PIN_BUTTON_UP),
-  BDATA(BUTTON_LEFT_KEY, PIN_BUTTON_LEFT),
-  BDATA(BUTTON_DOWN_KEY, PIN_BUTTON_DOWN),
-  BDATA(BUTTON_RIGHT_KEY, PIN_BUTTON_RIGHT),
-  BDATA(BUTTON_A_KEY, PIN_BUTTON_A),
-  BDATA(BUTTON_B_KEY, PIN_BUTTON_B),
-  BDATA(BUTTON_OPT_KEY, PIN_BUTTON_OPT)
-};
+void setRGB(uint8_t r, uint8_t g, uint8_t b, float a);
 
 
-BLEHIDDevice* hid;
-BLECharacteristic* input;
-BLECharacteristic* output;
+#include "USB.h"
+#include "USBHIDKeyboard.h"
+USBHIDKeyboard keyboard;
 
-InputReport reportMap = {};
-const InputReport NO_KEY_PRESSED = {};
+uint8_t key_states = 0;
 
-bool useBluetooth = false;  // False = Serial communication, True = BLE communication.
-
-// Forward declarations
-void bluetoothTask(void*);
-void write(const char* text);
-
-
-bool isBleConnected = false;
-
-/**
- * Setup method.
- * Sets the pins to the right I/O state and initializes the bluetooth task.
- */
 void setup() {
-  Serial.begin(115200);
 
-  pinMode(PIN_LED, OUTPUT);
+  // set LED pins to output
+  for (uint8_t i = 0; i < 3; i++)
+    pinMode(led_pins[i], OUTPUT);
 
-  // Set all button pins to INPUT
-  for (uint8_t i = 0; i < BUTTON_COUNT; i++)
-    pinMode(buttonData[i].pin, INPUT);
+  // Set all button pins to input
+  for (uint8_t i = 0; i < BUTTON_COUNT; i++) 
+    pinMode(button_pins[i], INPUT);
 
-  // start Bluetooth task
-  xTaskCreate(bluetoothTask, "bluetooth", 20000, NULL, 5, NULL);
+  // initialize control over the keyboard:
+  keyboard.begin();
+  USB.begin();
+  setRGB(0, 255, 0, 0.3f);
 }
 
-/**
- * Main loop.
- * Method checks whether buttons are pressed or not.
- * If this is the case, it sends the updates via bluetooth to the connected device.
+/** 
+ * Method for changing the rgb values of the LED on the controller.
  */
+void setRGB(uint8_t r, uint8_t g, uint8_t b, float a = 1.0f) {
+  analogWrite(led_pins[0], (uint8_t) (r * a));
+  analogWrite(led_pins[1], (uint8_t) (g * a));
+  analogWrite(led_pins[2], (uint8_t) (b * a));
+}
+
+// Main loop
 void loop() {
-  if (isBleConnected) {
-    for (int i = 0; i < BUTTON_COUNT; i++) {
+  
+  uint8_t previous_key_states = key_states;
 
-      // Set the 'pressed' state to true when the pin is at HIGH (4095 is max value)
-      buttonData[i].pressed = digitalRead(buttonData[i].pin);
+  // Whenever a button is pressed or released, we want to check the difference between the last state and its current state
+  // If these differ, we send a 'release' or 'press' report.
+  for (uint8_t i = 0, state = 0, diff, key_states = 0; i < BUTTON_COUNT; i++) {
 
-      // Check if the current button is pressed
-      if (buttonData[i].pressed) {  // Check if the pin is high
-        // Set first pressed key to currently pressed button
-        reportMap.pressedKeys[0] = keymap[(uint8_t)buttonData[i].character].usage;
+    state = digitalRead(button_pins[i]);
+    key_states |= state << i;
+    diff = (state - ((previous_key_states >> (BUTTON_COUNT - i - 1)) & 1));
 
-        // Update report map and send it
-        input->setValue((uint8_t*)&reportMap, sizeof(reportMap));
-        input->notify();
-        setLedColor(255, 255, 0);
-        delay(25);
-        setLedColor(0, 0, 0);
-      }
-
-      // Clear pressed keys from report map
-      reportMap.pressedKeys[0] = (uint8_t)0;
-
-      // Update unpressed key and send it
-      input->setValue((uint8_t*)&NO_KEY_PRESSED, sizeof(NO_KEY_PRESSED));
-      input->notify();
-    }
-
-    readBatteryLevel();
-    delay(25);
+    // If there is a change in button state, press or release it.
+    if (diff) 
+      keyboard.press((uint8_t) button_keys[i]);
+    else 
+      keyboard.release((uint8_t) button_keys[i]);
+    
   }
 }
-
-
-// The report map describes the HID device (a keyboard in this case) and
-// the messages (reports in HID terms) sent and received.
-static const uint8_t REPORT_MAP[] = {
-  USAGE_PAGE(1), 0x01,       // Generic Desktop Controls
-  USAGE(1), 0x06,            // Keyboard
-  COLLECTION(1), 0x01,       // Application
-  REPORT_ID(1), 0x01,        //   Report ID (1)
-  USAGE_PAGE(1), 0x07,       //   Keyboard/Keypad
-  USAGE_MINIMUM(1), 0xE0,    //   Keyboard Left Control
-  USAGE_MAXIMUM(1), 0xE7,    //   Keyboard Right Control
-  LOGICAL_MINIMUM(1), 0x00,  //   Each bit is either 0 or 1
-  LOGICAL_MAXIMUM(1), 0x01,
-  REPORT_COUNT(1), 0x08,  //   8 bits for the modifier keys
-  REPORT_SIZE(1), 0x01,
-  HIDINPUT(1), 0x02,      //   Data, Var, Abs
-  REPORT_COUNT(1), 0x01,  //   1 byte (unused)
-  REPORT_SIZE(1), 0x08,
-  HIDINPUT(1), 0x01,      //   Const, Array, Abs
-  REPORT_COUNT(1), 0x06,  //   6 bytes (for up to 6 concurrently pressed keys)
-  REPORT_SIZE(1), 0x08,
-  LOGICAL_MINIMUM(1), 0x00,
-  LOGICAL_MAXIMUM(1), 0x65,  //   101 keys
-  USAGE_MINIMUM(1), 0x00,
-  USAGE_MAXIMUM(1), 0x65,
-  HIDINPUT(1), 0x00,      //   Data, Array, Abs
-  REPORT_COUNT(1), 0x05,  //   5 bits (Num lock, Caps lock, Scroll lock, Compose, Kana)
-  REPORT_SIZE(1), 0x01,
-  USAGE_PAGE(1), 0x08,     //   LEDs
-  USAGE_MINIMUM(1), 0x01,  //   Num Lock
-  USAGE_MAXIMUM(1), 0x05,  //   Kana
-  LOGICAL_MINIMUM(1), 0x00,
-  LOGICAL_MAXIMUM(1), 0x01,
-  HIDOUTPUT(1), 0x02,     //   Data, Var, Abs
-  REPORT_COUNT(1), 0x01,  //   3 bits (Padding)
-  REPORT_SIZE(1), 0x03,
-  HIDOUTPUT(1), 0x01,  //   Const, Array, Abs
-  END_COLLECTION(0)    // End application collections
-};
-
-
-/*
- * Callbacks related to BLE connection
- */
-class BleKeyboardCallbacks : public BLEServerCallbacks {
-
-  void onConnect(BLEServer* server) {
-    isBleConnected = true;
-
-    // Allow notifications for characteristics
-    BLE2902* cccDesc = (BLE2902*)input->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
-    cccDesc->setNotifications(true);
-
-    Serial.println("Client has connected");
-  }
-
-  void onDisconnect(BLEServer* server) {
-    isBleConnected = false;
-
-    // Disallow notifications for characteristics
-    BLE2902* cccDesc = (BLE2902*)input->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
-    cccDesc->setNotifications(false);
-
-    Serial.println("Client has disconnected");
-  }
-};
-
-// Function for reading battery level via the selected PIN
-void readBatteryLevel() {
-  // Temporary fix
-  hid->setBatteryLevel((uint8_t)100);
-}
-
-void setLedColor(uint8_t red, uint8_t green, uint8_t blue) {
-  // Set the LED color
-  analogWrite(PIN_LED_RED, red);
-  analogWrite(PIN_LED_GREEN, green);
-  analogWrite(PIN_LED_BLUE, blue);
-}
-
-// The task containing the initialization code for the BLE Keyboard.
-void bluetoothTask(void*) {
-
-  // initialize the device
-  BLEDevice::init(DEVICE_NAME);
-  BLEServer* server = BLEDevice::createServer();
-  server->setCallbacks(new BleKeyboardCallbacks());
-
-  // create an HID device
-  hid = new BLEHIDDevice(server);
-  input = hid->inputReport(1);    // report ID
-  output = hid->outputReport(1);  // report ID
-
-  // set manufacturer name
-  hid->manufacturer()->setValue("HBO-ICT");
-  // set USB vendor and product ID
-  hid->pnp(0x02, 0xe502, 0xa111, 0x0210);
-  // information about HID device: device is not localized, device can be connected
-  hid->hidInfo(0x00, 0x02);
-
-  // Security: device requires bonding
-  BLESecurity* security = new BLESecurity();
-  security->setAuthenticationMode(ESP_LE_AUTH_BOND);
-
-  // set report map
-  hid->reportMap((uint8_t*)REPORT_MAP, sizeof(REPORT_MAP));
-  hid->startServices();
-
-  // Read the battery level and set the characteristic accordingly
-  readBatteryLevel();
-
-  // advertise the services
-  BLEAdvertising* advertising = server->getAdvertising();
-  advertising->setAppearance(HID_KEYBOARD);
-  advertising->addServiceUUID(hid->hidService()->getUUID());
-  advertising->addServiceUUID(hid->deviceInfo()->getUUID());
-  advertising->addServiceUUID(hid->batteryService()->getUUID());
-  advertising->start();
-
-  Serial.println("Bluetooth device is ready to be connected");
-  delay(portMAX_DELAY);
-};

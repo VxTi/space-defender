@@ -42,6 +42,7 @@ markdown_extensions:
     - pymdownx.details
     - md_in_html
     - fenced_code
+    - tables
     - pymdownx.highlight:
           linenums: true
           use_pygments: true

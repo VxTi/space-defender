@@ -1,85 +1,58 @@
 /*
- * This code programs a number of pins on an ESP32 as buttons on a BLE gamepad
- *
- * It uses arrays to cut down on code
- *
- * Before using, adjust the numOfButtons, buttonPins and physicalButtons to suit your senario
- *
- */
+  Keyboard Message test
 
-#include <Arduino.h>
-#include <BleGamepad.h> // https://github.com/lemmingDev/ESP32-BLE-Gamepad
+  For the Arduino Leonardo and Micro.
 
-BleGamepad bleGamepad;
+  Sends a text string when a button is pressed.
 
-#define numOfButtons 10
+  The circuit:
+  - pushbutton attached from pin 0 to ground
+  - 10 kilohm resistor attached from pin 0 to +5V
 
-#define PIN_BUTTON_UP 21
-#define PIN_BUTTON_LEFT 38
-#define PIN_BUTTON_RIGHT 45
-#define PIN_BUTTON_DOWN 42
-#define PIN_BUTTON_A 7
-#define PIN_BUTTON_B 6
-#define PIN_BUTTON_OPT 4
-#define PIN_LED 4
-#define PIN_BATTERY 5
-#define PIN_LED_RED 35
-#define PIN_LED_GREEN 36
-#define PIN_LED_BLUE 37
+  created 24 Oct 2011
+  modified 27 Mar 2012
+  by Tom Igoe
+  modified 11 Nov 2013
+  by Scott Fitzgerald
 
-byte previousButtonStates[numOfButtons];
-byte currentButtonStates[numOfButtons];
-byte buttonPins[numOfButtons] = {PIN_BUTTON_A, PIN_BUTTON_B, PIN_BUTTON_UP, PIN_BUTTON_DOWN, PIN_BUTTON_LEFT, PIN_BUTTON_RIGHT, PIN_BUTTON_OPT};
-byte physicalButtons[numOfButtons] = {1, 2, 3, 4, 5, 6, 7};
+  This example code is in the public domain.
 
-void setup()
-{
-    for (byte currentPinIndex = 0; currentPinIndex < numOfButtons; currentPinIndex++)
-    {
-        pinMode(buttonPins[currentPinIndex], INPUT_PULLUP);
-        previousButtonStates[currentPinIndex] = HIGH;
-        currentButtonStates[currentPinIndex] = HIGH;
-    }
+  http://www.arduino.cc/en/Tutorial/KeyboardMessage
+*/
+void setup(){}
+void loop(){}
 
-    BleGamepadConfiguration bleGamepadConfig;
-    bleGamepadConfig.setAutoReport(false);
-    bleGamepadConfig.setButtonCount(numOfButtons);
-    bleGamepad.begin(&bleGamepadConfig);
+#include "USB.h"
+#include "USBHIDKeyboard.h"
+USBHIDKeyboard Keyboard;
 
-    // changing bleGamepadConfig after the begin function has no effect, unless you call the begin function again
+const int buttonPin = 0;          // input pin for pushbutton
+int previousButtonState = HIGH;   // for checking the state of a pushButton
+int counter = 0;                  // button push counter
+
+void setup() {
+  // make the pushButton pin an input:
+  pinMode(buttonPin, INPUT_PULLUP);
+  // initialize control over the keyboard:
+  Keyboard.begin();
+  USB.begin();
 }
 
-void loop()
-{
-    if (bleGamepad.isConnected())
-    {
-        for (byte currentIndex = 0; currentIndex < numOfButtons; currentIndex++)
-        {
-            currentButtonStates[currentIndex] = digitalRead(buttonPins[currentIndex]);
-
-            if (currentButtonStates[currentIndex] != previousButtonStates[currentIndex])
-            {
-                if (currentButtonStates[currentIndex] == LOW)
-                {
-                    bleGamepad.press(physicalButtons[currentIndex]);
-                }
-                else
-                {
-                    bleGamepad.release(physicalButtons[currentIndex]);
-                }
-            }
-        }
-
-        if (currentButtonStates != previousButtonStates)
-        {
-            for (byte currentIndex = 0; currentIndex < numOfButtons; currentIndex++)
-            {
-                previousButtonStates[currentIndex] = currentButtonStates[currentIndex];
-            }
-
-            bleGamepad.sendReport();
-        }
-
-        delay(20);
-    }
+void loop() {
+  // read the pushbutton:
+  int buttonState = digitalRead(buttonPin);
+  // if the button state has changed,
+  if ((buttonState != previousButtonState)
+      // and it's currently pressed:
+      && (buttonState == LOW)) {
+    // increment the button counter
+    counter++;
+    // type out a message
+    Keyboard.print("You pressed the button ");
+    Keyboard.print(counter);
+    Keyboard.println(" times.");
+  }
+  // save the current button state for comparison next time:
+  previousButtonState = buttonState;
 }
+#endif /* ARDUINO_USB_MODE */

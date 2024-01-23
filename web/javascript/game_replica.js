@@ -230,12 +230,10 @@ function setup() {
     let scary = () => {
         if (gameActive) {
             playSound('scary', 0.5);
-            clearInterval(scary);
-            setInterval(scary, 10000 + Math.random() * 10000);
             console.log('playing scary sound')
         }
     }
-    setInterval(scary, 10000 + Math.random() * 10000);
+    setInterval(scary, 8000);
 }
 
 /**

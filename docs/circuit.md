@@ -14,6 +14,7 @@ Hieronder is de elektrische schakeling van de game controller te zien. Ook deze 
 | `42`        | :material-gesture-tap-button: DPAD DOWN Knop             |
 | `7`         | :material-gesture-tap-button: Primary A Knop             |
 | `6`         | :material-gesture-tap-button: Secondary B Knop           |
+| `4`         | :material-gesture-tap-button: Option Knop                |
 | `5`         | :material-battery-unknown-bluetooth: Accu spanningsmeter |
 | `35`        | :material-led-on: RGB LED - Rood PWM Signaal             |
 | `36`        | :material-led-on: RGB LED - Groen PWM Signaal            |

@@ -369,9 +369,12 @@ function commenceWave() {
             // If it's a health element, we don't want to add it to the waveEntitiesRemaining counter.
             if (entity !== undefined) {
                 entity.onDeath = () => {
+                    if (!player.alive)
+                        return;
                     waveEntitiesRemaining--;
                     broadcast(`Entities Remaining: ${waveEntitiesRemaining}`, 300);
                     if (waveEntitiesRemaining <= 0) {
+                        messageQueue = [];
                         broadcast('Wave completed!', 1700);
                         playSound('wave_complete');
                         setTimeout(() => {

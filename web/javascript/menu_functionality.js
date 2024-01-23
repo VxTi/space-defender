@@ -319,10 +319,14 @@ function showMenu(element = null) {
  * and convert it to a readable page on the 'statistics' page.
  */
 function loadStatistics() {
-    document.querySelector('.statistics-content').innerHTML =
+    let stats = document.querySelector('.statistics-content');
+    stats.innerHTML += `<div class="statistics-element"><span class="statistics-name">Current Score</span><span class="statistics-value">${PlayerData.SCORE}</span></div>`
+    stats.innerHTML += `<div class="statistics-element"><span class="statistics-name">Highest Score</span><span class="statistics-value">${PlayerData.HIGH_SCORE}</span></div>`
+    stats.innerHTML +=
         Object.entries(Statistics).map(([key, value]) => {
            return  `<div class="statistics-element"><span class="statistics-name">${value.name}</span><span class="statistics-value">${value.value}</span></div>`
         }).join('');
+    return stats;
 }
 
 /**

@@ -11,6 +11,7 @@ nav:
         - 📊 UML Diagrammen: uml
     - 🎨 Design:
         - 🖥️ PCB: pcb
+        - 📝 Circuit: circuit
     - 🧩 OOP:
         - 🎮 Game: project/jsdocs/game_replica
         - 👽 Alien: project/jsdocs/alien

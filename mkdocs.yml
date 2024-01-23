@@ -33,6 +33,7 @@ plugins:
     - mkdocs-video
     - section-index
     - autolinks
+    - material-extensions
     - macros:
           modules: [mkdocs_macros_mdocotion]
 

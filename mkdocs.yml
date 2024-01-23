@@ -33,7 +33,6 @@ plugins:
     - mkdocs-video
     - section-index
     - autolinks
-    - material-extensions
     - macros:
           modules: [mkdocs_macros_mdocotion]
 
@@ -44,6 +43,9 @@ markdown_extensions:
     - md_in_html
     - fenced_code
     - tables
+    - pymdownx.emoji:
+          emoji_index: !!python/name:materialx.emoji.twemoji
+          emoji_generator: !!python/name:materialx.emoji.to_svg
     - pymdownx.highlight:
           linenums: true
           use_pygments: true

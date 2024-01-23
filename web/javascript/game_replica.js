@@ -226,6 +226,16 @@ function setup() {
         hueElements.forEach(e => e.style.color = `hsl(${hueDeg}deg, 100%, 50%)`)
         hueDeg = (hueDeg + 50) % 360;
     }, 500);
+
+    let scary = () => {
+        if (gameActive) {
+            playSound('scary', 0.5);
+            clearInterval(scary);
+            setInterval(scary, 10000 + Math.random() * 10000);
+            console.log('playing scary sound')
+        }
+    }
+    setInterval(scary, 10000 + Math.random() * 10000);
 }
 
 /**

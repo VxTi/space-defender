@@ -29,10 +29,10 @@ Hier een lijst met onderdelen:
 | 1x     | :material-toggle-switch: On/Off Switch                               |
 | 7x     | :material-gesture-tap-button: Non-Latching Push Button               |
 | 1x     | :material-led-on: RGB LED                                            |
-| 1x     | :material-resistor: 100 kOhm weerstand                               |
-| 1x     | :material-resistor: 27 kOhm weerstand                                |
-| 3x     | :material-resistor: 47 Ohm weerstand                                 |
-| 7x     | :material-resistor: 500 Ohm weerstand                                |
+| 1x     | :material-resistor: 100 k:material-omega: weerstand                  |
+| 1x     | :material-resistor: 27 k:material-omega: weerstand                   |
+| 3x     | :material-resistor: 47 :material-omega: weerstand                    |
+| 7x     | :material-resistor: 500 :material-omega: weerstand                   |
 
   
 

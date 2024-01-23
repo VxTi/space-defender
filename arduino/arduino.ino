@@ -170,7 +170,7 @@ static const uint8_t REPORT_MAP[] = {
   REPORT_COUNT(1), 0x01,  //   3 bits (Padding)
   REPORT_SIZE(1), 0x03,
   HIDOUTPUT(1), 0x01,  //   Const, Array, Abs
-  END_COLLECTION(0)    // End application collection
+  END_COLLECTION(0)    // End application collections
 };
 
 
@@ -202,8 +202,8 @@ class BleKeyboardCallbacks : public BLEServerCallbacks {
 
 // Function for reading battery level via the selected PIN
 void readBatteryLevel() {
-  // Set battery level, read from battery pin. Input value is converted from 0-4095 to 0-100 range
-  hid->setBatteryLevel((uint8_t)((float)analogRead(PIN_BATTERY) * 100.0 / 4095.0));
+  // Temporary fix
+  hid->setBatteryLevel((uint8_t)100);
 }
 
 void setLedColor(uint8_t red, uint8_t green, uint8_t blue) {

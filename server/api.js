@@ -52,7 +52,7 @@ console.error = (...args) => _default_console_err(`${new Date().toLocaleString('
 app.use((req,res,next) => {
 
     // Check whether the user provided a valid API key (unless the request is a create key request)
-    if (isApiKeyInvalid(req.body.key) && !req.url.includes('createkey')) {
+    if ((!req.body.key || isApiKeyInvalid(req.body.key)) && !req.url.includes('createkey')) {
         res.status(401).json({ message: 'Invalid API key' });
         console.log('Received faulty request: Invalid API key');
         return;

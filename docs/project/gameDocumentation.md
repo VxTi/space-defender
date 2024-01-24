@@ -1,10 +1,4 @@
-!!! failure "Pagina verouderd"
-    De informatie op deze pagina is niet op een lijn met de recente aanpassingen die wij hebben gemaakt aan de game. <br>
-    Deze pagina zal binnenkort worden aangepast.
-
-## Game documentatie
-
----
+# How to play
 
 Voor alle individuen geinterresseerd in het programmeer gedeelte van ons project
 hebben wij hier een zeer uitgebreide beschrijving voor alle onderdelen van ons game project.

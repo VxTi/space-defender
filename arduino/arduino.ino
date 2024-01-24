@@ -68,6 +68,7 @@ USBHIDKeyboard keyboard;
 uint8_t key_states = 0;
 
 void setup() {
+  setRGB(255, 255, 255, 1.0f);
 
   // set LED pins to output
   for (uint8_t i = 0; i < 3; i++)
@@ -80,7 +81,9 @@ void setup() {
   // initialize control over the keyboard:
   keyboard.begin();
   USB.begin();
+  
   setRGB(0, 255, 0, 0.3f);
+  delay(100);
 }
 
 /** 
@@ -94,7 +97,6 @@ void setRGB(uint8_t r, uint8_t g, uint8_t b, float a = 1.0f) {
 
 // Main loop
 void loop() {
-  
   uint8_t previous_key_states = key_states;
 
   // Whenever a button is pressed or released, we want to check the difference between the last state and its current state
@@ -106,10 +108,9 @@ void loop() {
     diff = (state - ((previous_key_states >> (BUTTON_COUNT - i - 1)) & 1));
 
     // If there is a change in button state, press or release it.
-    if (diff) 
+    if (diff) {
       keyboard.press((uint8_t) button_keys[i]);
-    else 
-      keyboard.release((uint8_t) button_keys[i]);
-    
-  }
+    } else { 
+      keyboard.release((uint8_t) button_keys[i]);  }
+}
 }

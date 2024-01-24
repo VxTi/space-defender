@@ -1,13 +1,4 @@
-!!! failure "Pagina verouderd"
-    De informatie op deze pagina is niet op een lijn met de recente aanpassingen die wij hebben gemaakt aan de game. <br>
-    Deze pagina zal binnenkort worden aangepast.
-
 # Game functionaliteit
-
----
-
-Om het gebruik van de game gemakkelijker te maken is het noodzakelijk om 
-een korte beschrijving van het spel te geven.
 
 ### Wat doet ons spel, en hoe speel je het?
 
@@ -22,19 +13,19 @@ links (`A`) en rechts (`D`) te gaan, `SHIFT` om te sneaken (langzamer lopen) en
 Indien je wel tot de controller beschikt zijn al deze bewegingen uiteraard
 nogsteeds mogelijk, alleen dien je dan andere knoppen te gebruiken.
 
-Hierbij is knop `DPAD LINKS` om naar links te gaan, `DPAD RECHTS` voor rechts,
-`A` voor springen, `B` voor rennen en `DPAD OMHOOG` om te springen.
+Hierbij is de `DPAD` om je rechts, links etc te bewegen. Option is om te pauzeren. A is schieten of selecteren en B is jouw ability.
 
----
+### How to play
 
-### Doel van het spel
+Voor alle individuen geinterresseerd in het programmeer gedeelte van ons project
+hebben wij hier een zeer uitgebreide beschrijving voor alle onderdelen van ons game project.
 
-Okay, tot nu toe weet je hoe je het spel moet besturen, maar verder is het nog
-niet echt duidelijk wat je uiteindelijk hiermee kan.
+Al start je het spel, dan kom je in het hoofdmenu. Hier kan je kiezen uit 3 opties:
+- Play
+- Scores
+- How to play
 
+In het 'How to play' menu staat uitgebreid beschreven hoe het spel werkt.
 
-
----
-
-### De graphics
+In het 'Scores' menu kan je de highscores zien van alle spelers die het spel hebben gespeeld.
 

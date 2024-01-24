@@ -1,25 +1,3 @@
-/*
-  Keyboard Message test
-
-  For the Arduino Leonardo and Micro.
-
-  Sends a text string when a button is pressed.
-
-  The circuit:
-  - pushbutton attached from pin 0 to ground
-  - 10 kilohm resistor attached from pin 0 to +5V
-
-  created 24 Oct 2011
-  modified 27 Mar 2012
-  by Tom Igoe
-  modified 11 Nov 2013
-  by Scott Fitzgerald
-
-  This example code is in the public domain.
-
-  http://www.arduino.cc/en/Tutorial/KeyboardMessage
-*/
-
 #define PIN_BUTTON_UP 21
 #define PIN_BUTTON_LEFT 38
 #define PIN_BUTTON_RIGHT 45
@@ -112,5 +90,5 @@ void loop() {
       keyboard.press((uint8_t) button_keys[i]);
     } else { 
       keyboard.release((uint8_t) button_keys[i]);  }
-}
+    }
 }
